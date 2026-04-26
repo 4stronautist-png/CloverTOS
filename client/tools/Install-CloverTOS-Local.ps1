@@ -6,6 +6,7 @@ param(
     [int]$GroupId = 1001,
     [string]$ServerName = "Clover",
     [string]$SteamTosPath = "",
+    [string]$ExpectedRevision = "402595",
     [switch]$SkipPrerequisites
 )
 
@@ -18,6 +19,43 @@ function Write-Step($Message) {
 
 function Write-Ok($Message) {
     Write-Host "OK  $Message" -ForegroundColor Green
+}
+
+function Test-SourceClientVersion {
+    param([string]$SourcePath)
+
+    $revisionPath = Join-Path $SourcePath "release\release.revision.txt"
+    if (-not (Test-Path -LiteralPath $revisionPath)) {
+        throw "Nao encontrei release.revision.txt no client Steam: $revisionPath"
+    }
+
+    $revision = (Get-Content -LiteralPath $revisionPath -Raw).Trim()
+    if ($revision -ne $ExpectedRevision) {
+        throw "Versao do Tree of Savior incompativel. Esperado release $ExpectedRevision, encontrado $revision. Atualize/ajuste a instalacao Steam para a mesma versao do ambiente CloverTOS."
+    }
+
+    $expectedFiles = @{
+        "release\Client_tos_x64.exe" = 29056352
+        "data\ies.ipf" = 3077599
+        "data\ui.ipf" = 347228473
+        "data\script_client.ipf" = 42738
+        "data\xml.ipf" = 1688308
+    }
+
+    foreach ($relativePath in $expectedFiles.Keys) {
+        $path = Join-Path $SourcePath $relativePath
+        if (-not (Test-Path -LiteralPath $path)) {
+            throw "Arquivo obrigatorio ausente no client Steam: $relativePath"
+        }
+
+        $actualLength = (Get-Item -LiteralPath $path).Length
+        $expectedLength = $expectedFiles[$relativePath]
+        if ($actualLength -ne $expectedLength) {
+            throw "Arquivo do client incompativel: $relativePath tem $actualLength bytes, esperado $expectedLength. Use a mesma instalacao/revisao de client do ambiente CloverTOS."
+        }
+    }
+
+    Write-Ok "Client Steam compativel com release $ExpectedRevision"
 }
 
 function Test-Admin {
@@ -282,6 +320,7 @@ function Test-ClientServerList {
 Write-Step "Localizando Tree of Savior instalado pela Steam"
 $source = Find-TreeOfSaviorPath -ExplicitPath $SteamTosPath
 Write-Ok "Origem: $source"
+Test-SourceClientVersion -SourcePath $source
 
 if (-not $SkipPrerequisites) {
     Write-Step "Verificando pre-requisitos do Windows"

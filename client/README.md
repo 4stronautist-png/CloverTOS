@@ -38,8 +38,9 @@ C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
 - Localiza o Tree of Savior instalado pela Steam.
 - Instala/verifica os pre-requisitos do Windows:
   - Microsoft Visual C++ Redistributable v14 x64/x86.
-  - Microsoft DirectX End-User Runtime legado.
+- Microsoft DirectX End-User Runtime legado.
 - Copia os arquivos para `C:\CloverTOS-Local`.
+- Valida se o client Steam esta na revisao compativel `402595`.
 - Configura o cliente para `127.0.0.1:8080`.
 - Cria `Start-CloverTOS-Local.bat`.
 - Desativa ReShade se encontrar DLLs conhecidas como `dxgi.dll`.
