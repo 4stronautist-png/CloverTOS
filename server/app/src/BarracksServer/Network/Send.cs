@@ -127,10 +127,8 @@ namespace Melia.Barracks.Network
 		/// <param name="character"></param>
 		public static void BC_COMMANDER_CREATE_SLOTID(IBarracksConnection conn, Character character)
 		{
-			var characterCount = conn.Account.CharacterCount;
-
 			using var packet = Packet.Rent(Op.BC_COMMANDER_CREATE_SLOTID);
-			packet.PutByte((byte)characterCount);
+			packet.PutByte(character.Index);
 
 			conn.Send(packet);
 		}

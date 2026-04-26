@@ -240,6 +240,23 @@ function Disable-Reshade {
     }
 }
 
+function Reset-ClientState {
+    param([string]$ReleasePath)
+
+    $transientFiles = @(
+        "user.xml",
+        "chatmacro.xml",
+        "system.cfg"
+    )
+
+    foreach ($name in $transientFiles) {
+        $path = Join-Path $ReleasePath $name
+        if (Test-Path -LiteralPath $path) {
+            Remove-Item -LiteralPath $path -Force
+        }
+    }
+}
+
 Write-Step "Localizando Tree of Savior instalado pela Steam"
 $source = Find-TreeOfSaviorPath -ExplicitPath $SteamTosPath
 Write-Ok "Origem: $source"
@@ -288,6 +305,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $releasePath "Client_tos_x64.exe")))
 Write-Step "Aplicando configuracao do servidor $ServerName"
 Write-ClientConfig -ReleasePath $releasePath
 Disable-Reshade -ReleasePath $releasePath
+Reset-ClientState -ReleasePath $releasePath
 Write-Ok "Configuracao aplicada"
 
 Write-Step "Finalizado"
