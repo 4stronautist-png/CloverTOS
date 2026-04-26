@@ -182,22 +182,31 @@ namespace Melia.Barracks.Database
 		/// Adds character to account object and assigns index and team name.
 		/// </summary>
 		/// <param name="character"></param>
-		private void AddCharacter(Character character)
+		private bool AddCharacter(Character character)
 		{
 			lock (_characters)
 			{
-				for (byte i = 1; i <= byte.MaxValue; ++i)
+				var indexChanged = false;
+				var indexIsValid = character.Index != 0 && !_characters.Any(a => a.Index == character.Index);
+
+				if (!indexIsValid)
 				{
-					if (!_characters.Any(a => a.Index == i))
+					for (byte i = 1; i <= byte.MaxValue; ++i)
 					{
-						character.Index = i;
-						break;
+						if (!_characters.Any(a => a.Index == i))
+						{
+							character.Index = i;
+							indexChanged = true;
+							break;
+						}
 					}
 				}
 
+				character.AccountId = this.Id;
 				character.TeamName = this.TeamName;
 
 				_characters.Add(character);
+				return indexChanged;
 			}
 		}
 
@@ -267,7 +276,10 @@ namespace Melia.Barracks.Database
 
 			var characters = BarracksServer.Instance.Database.GetCharacters(account.Id);
 			foreach (var character in characters)
-				account.AddCharacter(character);
+			{
+				if (account.AddCharacter(character))
+					BarracksServer.Instance.Database.SaveCharacter(character);
+			}
 
 			var companions = BarracksServer.Instance.Database.GetCompanions(account.Id);
 			foreach (var companion in companions)
@@ -309,8 +321,16 @@ namespace Melia.Barracks.Database
 		/// <param name="character"></param>
 		public void CreateCharacter(Character character)
 		{
-			BarracksServer.Instance.Database.CreateCharacter(this.Id, character);
 			this.AddCharacter(character);
+			try
+			{
+				BarracksServer.Instance.Database.CreateCharacter(this.Id, character);
+			}
+			catch
+			{
+				this.RemoveCharacter(character);
+				throw;
+			}
 		}
 
 		/// <summary>
