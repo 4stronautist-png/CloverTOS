@@ -10,7 +10,6 @@ Thumbs.db
 
 server/runtime/
 server/.env
-server/docker/.env
 
 client/release/
 !client/release/.gitkeep

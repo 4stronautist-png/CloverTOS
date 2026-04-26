@@ -236,7 +236,7 @@ start_server() {
 }
 
 if [ ! -f "Melia.sln" ]; then
-    log_error "Execute dentro de /home/z3ck/Melia-TOS-Server/Clover-Melia"
+    log_error "Execute dentro da pasta server/app do CloverTOS"
     exit 1
 fi
 

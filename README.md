@@ -1,146 +1,112 @@
 # CloverTOS
 
-Monorepo do ambiente local do CloverTOS.
+Ambiente local do CloverTOS/Melia para rodar no Ubuntu WSL, com cliente Windows instalado a partir do Tree of Savior da Steam.
 
-Este repositório empacota:
+Este repositorio empacota:
 
-- `server/`: o código-fonte do servidor Clover atual, bootstrap Docker, compose e dump do banco `clover_local`.
-- `client/`: instalador leve e launcher do cliente CloverTOS para Windows.
+- `server/app/`: codigo-fonte do servidor Clover/Melia.
+- `server/db/clover_local.sql.gz`: dump do banco `clover_local` usado para restaurar o ambiente local.
+- `server/scripts/install-wsl.sh`: instalador completo do servidor para Ubuntu WSL.
+- `server/scripts/up.sh`, `down.sh`, `logs.sh`: controle do servidor no WSL.
+- `server/scripts/Manage-CloverTOS.ps1`: wrapper opcional para controlar o WSL pelo PowerShell.
+- `client/tools/Install-CloverTOS-Local.ps1`: copia o cliente da Steam para `C:\CloverTOS-Local` e aplica a config CloverTOS.
 
-## Estrutura
+O repositorio nao inclui os arquivos proprietarios do cliente Tree of Savior. O cliente e sempre copiado da instalacao Steam local.
 
-- `server/app`
-  - código-fonte do servidor Clover baseado no estado atual que está rodando localmente
-- `server/docker`
-  - `Dockerfile`
-  - `docker-compose.yml`
-  - `entrypoint.sh`
-  - `db/init/20-clover_local.sql.gz`
-- `server/scripts`
-  - `up.sh`
-  - `down.sh`
-  - `logs.sh`
-  - `Manage-CloverTOS.ps1`
-- `client/tools`
-  - `Install-CloverTOS-Local.ps1`
-  - `Start-CloverTOS-Client.ps1`
+## Fluxo do zero
 
-## Subindo o server no WSL
-
-No WSL:
+No Ubuntu WSL:
 
 ```bash
-cd server/scripts
-./up.sh
+git clone https://github.com/4stronautist-png/CloverTOS.git
+cd CloverTOS
+./server/scripts/install-wsl.sh
 ```
 
-Para parar:
+O instalador do WSL faz:
 
-```bash
-cd server/scripts
-./down.sh
-```
+- instala dependencias APT;
+- instala .NET SDK 8, se necessario;
+- instala e inicia MariaDB;
+- cria usuario/banco `melia / melia123` e `clover_local`;
+- restaura `server/db/clover_local.sql.gz`;
+- repara personagens com slot invalido;
+- escreve `server/app/user/conf/database.conf`;
+- escreve `server/app/user/db/servers.txt`;
+- compila `server/app/Melia.sln`;
+- configura portproxy/firewall do Windows quando possivel;
+- sobe Barracks, Zone 1/2, Social 1/2 e WebServer;
+- cria/verifica a conta padrao `clover / clover123`.
 
-Para acompanhar logs:
-
-```bash
-cd server/scripts
-./logs.sh
-```
-
-## Subindo o server pelo PowerShell
-
-No Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action up
-```
-
-Para parar:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action down
-```
-
-Para acompanhar logs:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action logs
-```
-
-Para ver containers:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action ps
-```
-
-O compose sobe:
-
-- MariaDB
-- BarracksServer
-- ZoneServer1
-- ZoneServer2
-- SocialServer1
-- SocialServer2
-- WebServer
-
-Portas expostas:
-
-- `18080` -> web/patch/register
-- `2000` -> barracks
-- `7001`, `7002` -> zone
-- `9001`, `9002` -> social
-
-## Instalando o cliente no Windows
-
-Este repositório nao inclui os binários proprietários completos do Tree of Savior. Em vez disso, o instalador reutiliza a instalação oficial já existente no Windows e cria uma cópia local configurada para o CloverTOS.
-
-No Windows PowerShell:
+Depois, no Windows PowerShell, dentro da pasta do repo:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\client\tools\Install-CloverTOS-Local.ps1
 ```
 
-Depois, para abrir o jogo:
+Se o Tree of Savior estiver fora da pasta padrao:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\client\tools\Start-CloverTOS-Client.ps1
+powershell -ExecutionPolicy Bypass -File .\client\tools\Install-CloverTOS-Local.ps1 -SteamTosPath "D:\SteamLibrary\steamapps\common\TreeOfSavior"
 ```
 
-Ou diretamente:
+Para abrir o jogo:
 
 ```txt
 C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
 ```
 
-## Instalacao completa em outro PC
+## Instalador unico pelo PowerShell
 
-No Windows PowerShell, execute dentro da pasta do CloverTOS:
+Tambem existe um wrapper que chama o instalador WSL e depois instala o cliente:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Install-CloverTOS-Full.ps1 -StartClient
 ```
 
-O script verifica Git e Docker Desktop, clona/atualiza o repositorio quando necessario, sobe MariaDB + servidores via Docker Compose, instala o cliente local a partir do Tree of Savior da Steam, cria a conta local padrao `clover / clover123`, e deixa o launcher em:
+Esse wrapper ainda exige que o Ubuntu WSL ja exista. O servidor continua sendo instalado dentro do Ubuntu WSL, sem Docker.
 
-```txt
-C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
+## Comandos do servidor
+
+No Ubuntu WSL:
+
+```bash
+cd CloverTOS
+./server/scripts/up.sh
+./server/scripts/down.sh
+./server/scripts/logs.sh
 ```
 
-Para informar a pasta do Tree of Savior manualmente:
+Pelo PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\Install-CloverTOS-Full.ps1 -SteamTosPath "C:\Program Files (x86)\Steam\steamapps\common\TreeOfSavior" -StartClient
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action install
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action up
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action down
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action logs
 ```
 
-Tambem e possivel criar conta depois:
+## Portas
+
+- `18080` no Windows -> `8080` no WSL para web/patch/register.
+- `2000` -> Barracks.
+- `7001`, `7002` -> Zone.
+- `9001`, `9002` -> Social.
+
+ServerListURL esperado:
+
+```txt
+http://127.0.0.1:18080/toslive/patch/serverlist.xml
+```
+
+## Conta padrao
+
+```txt
+clover / clover123
+```
+
+Para criar outra conta:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\server\scripts\Create-CloverTOS-Account.ps1 -Username meuuser -Password minhasenha
 ```
-
-## Observações
-
-- O dump do banco representa o estado atual do `clover_local` no momento do empacotamento.
-- Na primeira subida do compose, o banco é restaurado automaticamente.
-- Em subidas seguintes, o volume do MariaDB preserva o estado salvo.

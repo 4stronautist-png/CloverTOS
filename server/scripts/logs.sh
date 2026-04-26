@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVER_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMPOSE_FILE="$SERVER_DIR/docker/docker-compose.yml"
+APP_DIR="$(cd "$SCRIPT_DIR/../app" && pwd)"
 
-docker compose -f "$COMPOSE_FILE" logs -f
+mkdir -p "$APP_DIR/logs"
+tail -n 80 -F "$APP_DIR"/logs/*.log
