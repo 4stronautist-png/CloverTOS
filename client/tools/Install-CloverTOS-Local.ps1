@@ -31,7 +31,16 @@ function Test-SourceClientVersion {
 
     $revision = (Get-Content -LiteralPath $revisionPath -Raw).Trim()
     if ($revision -ne $ExpectedRevision) {
-        throw "Versao do Tree of Savior incompativel. Esperado release $ExpectedRevision, encontrado $revision. Atualize/ajuste a instalacao Steam para a mesma versao do ambiente CloverTOS."
+        throw @"
+Versao do Tree of Savior incompativel.
+
+O servidor CloverTOS deste repositorio foi validado com o client release $ExpectedRevision.
+O Tree of Savior instalado neste PC esta no release $revision.
+
+Isso causa exatamente os bugs de Barracks/personagem: criar personagem trava, personagem aparece estranho ao relogar, textos/UI ficam fora do esperado, e o botao de entrar pode sumir.
+
+Corrija instalando/selecionando no Steam a mesma revisao do client usada pelo ambiente CloverTOS, ou atualize o servidor CloverTOS para suportar o release $revision antes de instalar o client.
+"@
     }
 
     $expectedFiles = @{
@@ -51,7 +60,7 @@ function Test-SourceClientVersion {
         $actualLength = (Get-Item -LiteralPath $path).Length
         $expectedLength = $expectedFiles[$relativePath]
         if ($actualLength -ne $expectedLength) {
-            throw "Arquivo do client incompativel: $relativePath tem $actualLength bytes, esperado $expectedLength. Use a mesma instalacao/revisao de client do ambiente CloverTOS."
+            throw "Arquivo do client incompativel para release ${ExpectedRevision}: $relativePath tem $actualLength bytes, esperado $expectedLength. Use a mesma instalacao/revisao de client do ambiente CloverTOS."
         }
     }
 

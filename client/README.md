@@ -45,6 +45,10 @@ C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
 - Cria `Start-CloverTOS-Local.bat`.
 - Desativa ReShade se encontrar DLLs conhecidas como `dxgi.dll`.
 
+Se o script informar outra revisao, como `403892`, nao continue com esse client.
+O servidor deste pacote foi validado com `402595`; usar outra revisao causa bugs no Barracks,
+como personagem travado na criacao, personagem estranho depois de relogar e botao de entrar ausente.
+
 ## Erros comuns de DLL
 
 Se aparecer erro de `XINPUT1_3.DLL`, `MSVCP140.DLL`, `CONCRT140.DLL` ou `VCOMP140.DLL`, rode o instalador novamente em um PowerShell aberto como administrador. Esses arquivos sao componentes do DirectX legado e do Visual C++ Redistributable, nao arquivos especificos do servidor.
