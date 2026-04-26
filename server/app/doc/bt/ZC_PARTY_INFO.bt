@@ -1,0 +1,62 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_PARTY_INFO.bt
+//   Authors: Tachiorz, Salman T. Khan
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+PartyType partyType; // 0: normal, 1: guild
+byte b1;
+
+// PARTY_INFO
+FILETIME creationTime;
+int64 partyId;
+lpString partyName;
+int64 partyLeaderId;
+lpString leaderTeamName;
+if (partyType == 0)
+{
+    int i1;
+    int i2;
+    short s1;
+    short s2;
+    short s3;
+    short propCount;
+    if (propCount > 0) {
+        getProperties(propCount);
+    }
+}
+else if (partyType == 1) {
+    int i1;
+    int i2; // 1548
+    short s1; // 1
+    byte b1; // 0
+    lpString notice;
+    int64 l1;
+    byte b2;
+    FILETIME registrationTime;
+    byte bin[20004];
+    int i4;
+    ShortDate date;
+    //short s2;
+    //short s[5];
+    byte bin2[64];
+    ubyte bin3[4];
+    short propCount;
+    if (propCount > 0) {
+        getProperties(propCount);
+    }
+}
+//short propertiesSize;
+//if (propertiesSize > 0)
+    //getProperties(propertiesSize);

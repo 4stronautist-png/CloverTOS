@@ -1,0 +1,417 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Net;
+using Melia.Barracks.Database;
+using Melia.Shared.IES;
+using Melia.Barracks.Network.Helpers;
+using Melia.Shared.Network;
+using Melia.Shared.Network.Helpers;
+using Melia.Shared.Game.Const;
+using Melia.Shared.World;
+using Yggdrasil.Extensions;
+using Melia.Shared.Data.Database;
+
+namespace Melia.Barracks.Network
+{
+	public static partial class Send
+	{
+		/// <summary>
+		/// Sends notification that login packet was received.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_LOGIN_PACKET_RECEIVED(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_LOGIN_PACKET_RECEIVED);
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends positive response to login attempt.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_LOGINOK(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_LOGINOK);
+			packet.PutShort(1001); // Server Group Id
+			packet.PutLong(conn.Account.Id);
+			packet.PutString(conn.Account.Name, 33);
+			packet.PutEmptyBin(23);
+			packet.PutInt((int)conn.Account.PermissionLevel); // accountPrivileges? <= 3 enables a kind of debug context menu
+			packet.PutString(conn.SessionKey, 64);
+			packet.PutInt(4475);
+			packet.PutLong(0);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends positive response to logout attempt.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_LOGOUTOK(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_LOGOUTOK);
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends a list of characters to the client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="characters"></param>
+		public static void BC_SPLIT_COMMANDER_INFO_LIST(IBarracksConnection conn, IEnumerable<Character> characters)
+		{
+			var characterCount = characters.Count();
+
+			using var packet = Packet.Rent(Op.BC_SPLIT_COMMANDER_INFO_LIST);
+			packet.PutInt(characterCount);
+			packet.PutLong(conn.Account.Id);
+
+			packet.PutByte((byte)conn.Account.SelectedCharacterSlot);
+			packet.PutByte(0);
+			packet.PutByte(1);
+
+			foreach (var character in characters)
+				packet.AddBarrackPc(character);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends character list and account information to client.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_COMMANDER_LIST(IBarracksConnection conn)
+		{
+			var allCharacters = conn.Account.GetCharacters();
+			var layerCharacters = allCharacters.Where(x => x.BarrackLayer == conn.Account.SelectedBarrackLayer);
+			var totalCharacterCount = allCharacters.Length;
+			var layerCharacterCount = layerCharacters.Count();
+			var availableThemas = conn.Account.Themas;
+
+			using var packet = Packet.Rent(Op.BC_COMMANDER_LIST);
+
+			packet.PutLong(conn.Account.Id);
+			packet.PutByte(0);
+			packet.PutByte(0); // 1 = 5/4 slots?
+			packet.PutString(conn.Account.TeamName, 64);
+			packet.AddAccountProperties(conn.Account);
+
+			// List of available themas. The client won't apply themas if
+			// they're not in this list.
+			packet.PutShort(availableThemas.Count);
+			foreach (var mapId in availableThemas)
+			{
+				var selected = (conn.Account.SelectedBarrack == mapId);
+
+				packet.PutInt(mapId);
+				packet.PutShort(selected ? 1 : 0);
+			}
+
+			packet.PutShort(conn.Account.AdditionalSlotCount);
+			packet.PutInt(conn.Account.TeamExp);
+			packet.PutShort(totalCharacterCount);
+
+			conn.Send(packet);
+
+			if (allCharacters.Length > 0)
+				Send.BC_SPLIT_COMMANDER_INFO_LIST(conn, layerCharacters);
+		}
+
+		/// <summary>
+		/// Sends the new character's index.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="character"></param>
+		public static void BC_COMMANDER_CREATE_SLOTID(IBarracksConnection conn, Character character)
+		{
+			var characterCount = conn.Account.CharacterCount;
+
+			using var packet = Packet.Rent(Op.BC_COMMANDER_CREATE_SLOTID);
+			packet.PutByte((byte)characterCount);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends information about newly created character.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="character"></param>
+		public static void BC_COMMANDER_CREATE(IBarracksConnection conn, Character character)
+		{
+			using var packet = Packet.Rent(Op.BC_COMMANDER_CREATE);
+			packet.AddAppearanceBarrackPc(character);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends response to team name change request.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="result"></param>
+		/// <param name="teamName"></param>
+		/// <param name="message"></param>
+		public static void BC_BARRACKNAME_CHECK_RESULT(IBarracksConnection conn, TeamNameChangeResult result, string teamName, string message)
+		{
+			using var packet = Packet.Rent(Op.BC_BARRACKNAME_CHECK_RESULT);
+
+			packet.PutInt((int)result);
+			packet.PutString(message, 256);
+			packet.PutString(teamName, 64);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends response to team name change request.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="result"></param>
+		/// <param name="teamName"></param>
+		public static void BC_BARRACKNAME_CHANGE(IBarracksConnection conn, TeamNameChangeResult result, string teamName)
+		{
+			using var packet = Packet.Rent(Op.BC_BARRACKNAME_CHANGE);
+			packet.PutInt(1);
+			packet.PutByte((byte)result);
+			packet.PutString(teamName, 64);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends pre-defined message to client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="msgType"></param>
+		public static void BC_MESSAGE(IBarracksConnection conn, MsgType msgType)
+			=> BC_MESSAGE(conn, msgType, null);
+
+		/// <summary>
+		/// Sends custom message to client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="msg"></param>
+		public static void BC_MESSAGE(IBarracksConnection conn, string msg)
+			=> BC_MESSAGE(conn, MsgType.Text, msg);
+
+		/// <summary>
+		/// Sends message to client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="msgType"></param>
+		/// <param name="msg"></param>
+		public static void BC_MESSAGE(IBarracksConnection conn, MsgType msgType, string msg)
+		{
+			using var packet = Packet.Rent(Op.BC_MESSAGE);
+			packet.PutByte((byte)msgType);
+
+			if (msg != null)
+			{
+				packet.PutEmptyBin(40);
+				packet.PutString(msg);
+			}
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Removes character from barrack.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="index"></param>
+		public static void BC_COMMANDER_DESTROY(IBarracksConnection conn, byte index)
+		{
+			using var packet = Packet.Rent(Op.BC_COMMANDER_DESTROY);
+			packet.PutByte(index);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends positive response to game start request.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="character"></param>
+		/// <param name="channelId"></param>
+		/// <param name="ip"></param>
+		/// <param name="port"></param>
+		public static void BC_START_GAMEOK(IBarracksConnection conn, Character character, int channelId, string ip, int port)
+		{
+			using var packet = Packet.Rent(Op.BC_START_GAMEOK);
+
+			packet.PutInt(0); // Zone ID.
+			packet.PutInt(IPAddress.Parse(ip).ToInt32());
+			packet.PutInt(port);
+			packet.PutInt(character.MapId);
+			packet.PutByte((byte)channelId);
+			packet.PutLong(character.ObjectId);
+			packet.PutByte(0); // Only connects if 0
+			packet.PutByte(1); // Passed to a function if ^ is 0
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends social server connection information.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_SERVER_ENTRY(IBarracksConnection conn)
+		{
+			// Get the social servers or default to localhost if they're missing.
+			// This won't fix anything for players if an admin removes the entries
+			// for some reason, but we still want to send the packet either way.
+			var socialServers = BarracksServer.Instance.ServerList.GetAll(ServerType.Social);
+
+			var chatServer = socialServers.FirstOrDefault(a => a.Id == 1) ?? new() { Ip = "127.0.0.1", Port = 9001 };
+			var relationServer = socialServers.FirstOrDefault(a => a.Id == 2) ?? new() { Ip = "127.0.0.1", Port = 9002 };
+
+			using var packet = Packet.Rent(Op.BC_SERVER_ENTRY);
+
+			packet.PutInt(IPAddress.Parse(chatServer.Ip).ToInt32());
+			packet.PutInt(IPAddress.Parse(relationServer.Ip).ToInt32());
+			packet.PutShort(chatServer.Port);
+			packet.PutShort(relationServer.Port);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Updates account's properties on the client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="account"></param>
+		public static void BC_ACCOUNT_PROP(IBarracksConnection conn, Account account)
+		{
+			var propertyList = account.Properties.GetAll();
+			var size = propertyList.GetByteCount();
+
+			using var packet = Packet.Rent(Op.BC_ACCOUNT_PROP);
+
+			packet.PutLong(account.Id);
+			packet.PutShort(size);
+			packet.AddProperties(propertyList);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Unknown purpose, maybe logs packets on disconnect?
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_DISCONNECT_PACKET_LOG_COUNT(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_DISCONNECT_PACKET_LOG_COUNT);
+			packet.PutInt(0x1E);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Updates character barrack layer
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_LAYER_CHANGE_SYSTEM_MESSAGE(IBarracksConnection conn, int targetLayer, string script = "MoveBarrackLayer{target}")
+		{
+			using var packet = Packet.Rent(Op.BC_LAYER_CHANGE_SYSTEM_MESSAGE);
+			packet.PutInt(targetLayer);
+			packet.PutString(script, 64);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Updates the number of purchased character slots.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_RETURN_PC_MARKET_REGISTERED(IBarracksConnection conn, long characterId, bool hasMarketItems = false)
+		{
+			using var packet = Packet.Rent(Op.BC_RETURN_PC_MARKET_REGISTERED);
+			packet.PutLong(characterId);
+			packet.PutShort(hasMarketItems ? 1 : 0); // Has Items in Registered in Market
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends positive response to slot swap request.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_CHARACTER_SLOT_SWAP_SUCCESS(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_CHARACTER_SLOT_SWAP_SUCCESS);
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends negative response to slot swap request.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_CHARACTER_SLOT_SWAP_FAIL(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_CHARACTER_SLOT_SWAP_FAIL);
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends a chat message to the client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="characterIndex"></param>
+		/// <param name="message"></param>
+		public static void BC_CHAT(IBarracksConnection conn, byte characterIndex, string message)
+		{
+			using var packet = Packet.Rent(Op.BC_CHAT);
+
+			packet.PutLong(conn.Account.ObjectId);
+			packet.PutByte(characterIndex);
+			packet.PutLpString(message);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Response to CB_JUMP, when a companion requests to jump.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_JUMP(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_JUMP);
+
+			packet.PutLong(0);
+			packet.PutInt(0);
+			packet.PutLong(conn.Account.ObjectId);
+			packet.PutByte(0);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends IES mod list to client.
+		/// </summary>
+		/// <param name="conn"></param>
+		public static void BC_IES_MODIFY_LIST(IBarracksConnection conn)
+		{
+			using var packet = Packet.Rent(Op.BC_IES_MODIFY_LIST);
+			packet.AddIesModList(BarracksServer.Instance.IesMods);
+
+			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends price of buying additional character slots to client.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="price"></param>
+		public static void BC_REQ_SLOT_PRICE(IBarracksConnection conn, int price)
+		{
+			using var packet = Packet.Rent(Op.BC_REQ_SLOT_PRICE);
+			packet.PutInt(price);
+
+			conn.Send(packet);
+		}
+	}
+}

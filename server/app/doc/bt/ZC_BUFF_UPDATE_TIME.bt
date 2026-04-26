@@ -1,0 +1,22 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_BUFF_UPDATE_TIME.bt
+//   Authors: Salman T. Khan
+//   Version: i344887
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int64 id; // 0
+int i1; // 0
+int handle; // 78985
+int buffId; // 67
+int increasingValue; // 1564848

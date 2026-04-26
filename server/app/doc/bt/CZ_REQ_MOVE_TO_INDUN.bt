@@ -1,0 +1,25 @@
+//------------------------------------------------
+//--- 010 Editor v12.0.1 Binary Template
+//
+//      File: CZ_REQ_MOVE_TO_INDUN.bt
+//   Authors: Salman T. Khan
+//   Version: i346841
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+enum DungeonEnterType
+{
+    None,
+    EnterNow,
+    AutoMatch,
+    AutoMatchWithParty
+};
+
+ClientHeaderFixed header;
+DungeonEnterType enterType; // 2

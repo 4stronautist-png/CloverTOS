@@ -1,0 +1,29 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_PLAY_ANI.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i373230
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   -i373230: Added b3+4
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+int animationId;
+byte stopOnLastFrame;
+byte b2;
+float startDelay; // time in seconds
+float animationSpeed; // multiplier, 1 = 100%
+
+if (LOG_DATE >= 20230509)
+{
+    byte b3;
+    byte b4;
+}

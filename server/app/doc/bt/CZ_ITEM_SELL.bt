@@ -1,0 +1,27 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_ITEM_SELL.bt
+//   Authors: exec
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+typedef struct
+{
+    int64 worldId;
+    int amount;
+    int i1;
+}
+Sell;
+
+ClientHeaderDynamic header;
+
+int count;
+Sell sells[count] <optimize=false>;

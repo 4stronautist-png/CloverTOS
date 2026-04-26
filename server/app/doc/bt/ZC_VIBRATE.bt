@@ -1,0 +1,23 @@
+//------------------------------------------------
+//--- 010 Editor v12.0.1 Binary Template
+//
+//      File: ZC_VIBRATE.bt
+//   Authors: Salman T. Khan
+//   Version: i346841
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+float f1;
+float f2;
+float f3;
+float f4;
+int i1;

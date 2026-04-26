@@ -1,0 +1,38 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_MOVE_PATH.bt
+//   Authors: exec
+//   Version: i354444
+//   Purpose: Movement to a specific position.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i354444: f2 was removed, b1 was added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+typedef struct
+{
+    int x;
+    int z;
+    int cell;
+}
+CellPosition <read=readCellPosition>;
+
+string readCellPosition(CellPosition &v)
+{
+    local string result;
+    SPrintf(result, "X: %d, Z: %d, Cell: %d", v.x, v.z, v.cell);
+    return result;
+}
+
+ServerHeaderFixed header;
+
+int handle;
+CellPosition cellPos1;
+CellPosition cellPos2;
+float speed;
+byte b1; // Seems to mess with actors rotation; 2 means actors don't auto-rotate

@@ -1,0 +1,27 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_MOVE_DIR.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i336041
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+position pos;
+direction dir;
+byte b1; // 1
+float speed; // 33f or 30f
+float f1;
+byte bin[24];
+int i1; // 6
+int i2; // 0
+byte b2; // 1

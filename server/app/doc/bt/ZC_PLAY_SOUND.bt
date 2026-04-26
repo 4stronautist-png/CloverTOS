@@ -1,0 +1,21 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_PLAY_SOUND
+//   Authors: Salman T. Khan
+//   Version: i336041
+//   Purpose: Play a sound effect
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+int handle;
+int packetString;
+byte b1; // 0
+float f1; // 1 or -1 (Endless Loop?)
+byte b2; // 0

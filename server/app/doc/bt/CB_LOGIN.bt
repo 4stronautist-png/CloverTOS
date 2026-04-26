@@ -1,0 +1,38 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CB_LOGIN.bt
+//   Authors: exec, celophi
+//   Version: i389072
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i10671:  b3 was added
+//   - i174236: bin1+2 were added
+//   - i191615: bin2 increased by 8 to 4368
+//   - i233292: lodge and slot added
+//   - i373230: unk1 (bin1/2) shrunk to 285
+//   - i373230: str was added (same as in CB_START_BARRACK)
+//   - i389072: unk1 size increased by 4
+//   - i397072: unk1 size increased by 100 rather than 4 and 6 extra bytes at the end of the packet.
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+char accountName[56];
+byte md5password[16];
+byte b1;
+byte b2;
+byte b3;
+IP ip;
+int i1;
+int i2;
+int LCID;        // system locale.
+int lodge;       // active lodge to display.
+int slot;        // active character to display.
+byte unk1[385];
+char str1[70]; // "GLOBAL", localization selection?

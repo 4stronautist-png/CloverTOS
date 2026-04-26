@@ -1,0 +1,20 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_ENABLE_CONTROL.bt
+//   Authors: Salman T. Khan
+//   Version: i351431, exec
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+char ident[64]; // e.g. TUTORIAL_DIRECT
+byte enabled;

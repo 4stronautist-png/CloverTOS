@@ -1,0 +1,34 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_COLONY_TAX_RATE_LIST.bt
+//   Authors: Salman T. Khan
+//   Version: i339415
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+typedef struct
+{
+    int mapId;
+    ShortDate startDate;
+    int i1;
+    int64 guildId;
+    ShortDate endDate;
+    int i2;
+    int i3;
+    ShortDate captureDate;
+    int64 i[1];
+    int i4;
+    lpString name;
+    byte b1;
+} Owner <optimize=false>;
+
+int count;
+Owner owners[count];

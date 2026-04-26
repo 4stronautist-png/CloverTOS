@@ -1,0 +1,41 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: Ability.bt
+//   Authors: exec, Salman T. Khan
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef struct
+{
+    int64 objectId;
+    int id;
+    short propertiesSize;
+    short s1;
+    int propertyCount;
+    if (propertyCount > 0)
+    {
+        local int i;
+        for (i = 0; i < propertyCount; i++)
+        {
+            int propId;
+            byte b1;
+            float propValue;
+        }
+    }
+    if (propertiesSize > 0)
+        getProperties(propertiesSize);
+}
+Ability <read=readAbility, optimize=false>;
+
+string readAbility(Ability &v)
+{
+    local string result;
+    SPrintf(result, "%d", v.id);
+    return result;
+}

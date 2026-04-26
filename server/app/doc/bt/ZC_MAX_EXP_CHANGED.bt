@@ -1,0 +1,24 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_MAX_EXP_CHANGED.bt
+//   Authors: exec, celophi
+//   Version: i184075
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i11037: totalExp was added
+//   - i184075: i1~3 were added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int expAcquired;    // Newly acquired EXP to add.
+int exp;            // Sum of acquired EXP for the current level.
+int i1;
+int64 maxExp;         // Maximum EXP for next level.
+int64 totalExp;       // Total EXP acquired since creation.

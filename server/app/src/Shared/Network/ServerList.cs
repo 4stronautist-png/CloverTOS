@@ -1,0 +1,250 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Melia.Shared.Data.Database;
+using Melia.Shared.Network.Inter.Messages;
+
+namespace Melia.Shared.Network
+{
+	/// <summary>
+	/// Server list manager.
+	/// </summary>
+	public class ServerList
+	{
+		private readonly List<ServerInfo> _servers = new();
+
+		/// <summary>
+		/// Returns the data of the this server group.
+		/// </summary>
+		public ServerGroupData GroupData { get; private set; }
+
+		/// <summary>
+		/// Loads servers for given group from database.
+		/// </summary>
+		/// <param name="serverDb"></param>
+		/// <param name="groupId"></param>
+		public void Load(ServerDb serverDb, int groupId)
+		{
+			if (!serverDb.TryFind(groupId, out var groupData))
+				throw new ArgumentException($"No server group with id {groupId} found.");
+
+			this.GroupData = groupData;
+
+			foreach (var serverData in groupData.Servers)
+			{
+				var serverInfo = new ServerInfo(serverData);
+				_servers.Add(serverInfo);
+			}
+		}
+
+		/// <summary>
+		/// Returns the server with the given type and id via out.
+		/// Returns false if no matching server was found.
+		/// </summary>
+		/// <param name="type"></param>
+		/// <param name="serverId"></param>
+		/// <param name="server"></param>
+		/// <returns></returns>
+		public bool TryGet(ServerType type, int serverId, out ServerInfo server)
+		{
+			server = _servers.Find(a => a.Type == type && a.Id == serverId);
+			return server != null;
+		}
+
+		/// <summary>
+		/// Returns a list of zone servers that serve the given map.
+		/// </summary>
+		/// <param name="mapId"></param>
+		/// <returns></returns>
+		public ServerInfo[] GetZoneServers(int mapId)
+		{
+			var zoneServers = _servers.Where(a => a.Type == ServerType.Zone);
+			var mapServers = zoneServers.Where(a => a.Status == ServerStatus.Online && a.MapIds.Contains(mapId));
+
+			return mapServers.ToArray();
+		}
+
+		/// <summary>
+		/// Returns a list with the information of all servers of the
+		/// given type.
+		/// </summary>
+		/// <param name="serverType"></param>
+		/// <returns></returns>
+		public ServerInfo[] GetAll(ServerType serverType, ServerStatus status = ServerStatus.Online)
+			=> _servers.Where(a => a.Type == serverType).ToArray();
+
+		/// <summary>
+		/// Returns a list with the information of all servers.
+		/// </summary>
+		/// <returns></returns>
+		public ServerInfo[] GetAll()
+			=> _servers.ToArray();
+
+		/// <summary>
+		/// Returns a list of social servers.
+		/// </summary>
+		/// <returns></returns>
+		public ServerInfo[] GetSocialServers()
+		{
+			var socialServers = _servers.Where(a => a.Type == ServerType.Social);
+
+			return socialServers.ToArray();
+		}
+
+		/// <summary>
+		/// Returns true if there's any zone servers online that serve the
+		/// given map.
+		/// </summary>
+		/// <param name="mapId"></param>
+		/// <returns></returns>
+		public bool IsBeingServed(int mapId)
+		{
+			var zoneServers = _servers.Where(a => a.Type == ServerType.Zone);
+			var mapServers = zoneServers.Where(a => a.Status == ServerStatus.Online && a.MapIds.Contains(mapId));
+
+			return mapServers.Any();
+		}
+
+		/// <summary>
+		/// Returns the zone server with the given index that serves the
+		/// given map via out. Returns false if no matching server was found.
+		/// </summary>
+		/// <param name="mapId"></param>
+		/// <returns></returns>
+		public bool TryGetZoneServer(int mapId, int index, out ServerInfo serverInfo)
+		{
+			serverInfo = null;
+
+			// We need to filter for ServerStatus.Online both here and in
+			// GetZoneServers, so the channel list, our list, and the
+			// selected channels match up. Alternatively, we could show
+			// channels even if they're offline.
+
+			var zoneServers = _servers.Where(a => a.Type == ServerType.Zone);
+			var mapServers = zoneServers.Where(a => a.Status == ServerStatus.Online && a.MapIds.Contains(mapId));
+
+			if (index < 0 || index > mapServers.Count() - 1)
+				return false;
+
+			serverInfo = mapServers.ElementAt(index);
+			return true;
+		}
+
+		/// <summary>
+		/// Updates the server list with the given update information.
+		/// </summary>
+		/// <param name="serverUpdateMessage"></param>
+		public void Update(ServerUpdateMessage serverUpdateMessage)
+		{
+			if (!this.TryGet(serverUpdateMessage.ServerType, serverUpdateMessage.ServerId, out var serverInfo))
+				return;
+			serverInfo.Status = serverUpdateMessage.Status;
+			serverInfo.CurrentPlayers = serverUpdateMessage.PlayerCount;
+			serverInfo.Rates = serverUpdateMessage.Rates;
+		}
+	}
+
+	/// <summary>
+	/// Information about a server.
+	/// </summary>
+	public class ServerInfo
+	{
+		/// <summary>
+		/// Returns the server's type.
+		/// </summary>
+		public ServerType Type { get; set; }
+
+		/// <summary>
+		/// Returns the server's id.
+		/// </summary>
+		public int Id { get; set; }
+
+		/// <summary>
+		/// Returns the server's IP address.
+		/// </summary>
+		public string Ip { get; set; }
+
+		/// <summary>
+		/// Returns the port the server is listening on publically.
+		/// </summary>
+		public int Port { get; set; }
+
+		/// <summary>
+		/// Returns the server's internal host address.
+		/// </summary>
+		public string InterHost { get; set; }
+
+		/// <summary>
+		/// Returns the port the server is listening on internally.
+		/// </summary>
+		public int InterPort { get; set; }
+
+		/// <summary>
+		/// Returns the number of players currently connected to the server.
+		/// </summary>
+		public int CurrentPlayers { get; set; }
+
+		/// <summary>
+		/// Returns the maximum number of players that can be connected to
+		/// the server.
+		/// </summary>
+		public int MaxPlayers { get; set; } = 100;
+
+		/// <summary>
+		/// Returns the ids of the maps this server serves.
+		/// </summary>
+		public int[] MapIds { get; set; }
+
+		/// <summary>
+		/// Gets or sets the server's status.
+		/// </summary>
+		public ServerStatus Status { get; set; }
+
+		/// <summary>
+		/// Gets or sets the server's rate.
+		/// </summary>
+		public ServerRates Rates { get; set; }
+
+		/// <summary>
+		/// Creates empty server info.
+		/// </summary>
+		public ServerInfo()
+		{
+		}
+
+		/// <summary>
+		/// Creates new server info.
+		/// </summary>
+		/// <param name="data"></param>
+		public ServerInfo(ServerData data)
+		{
+			this.Type = data.Type;
+			this.Id = data.Id;
+			this.Ip = data.Ip;
+			this.Port = data.Port;
+			this.InterHost = data.InterHost;
+			this.InterPort = data.InterPort;
+			this.MapIds = data.MapIds;
+		}
+	}
+
+	/// <summary>
+	/// Represents the server's experience rates.
+	/// </summary>
+	[Serializable]
+	public class ServerRates
+	{
+		public float ExpRate { get; set; }
+		public float JobExpRate { get; set; }
+		public float DropRate { get; set; }
+		public float EquipRate { get; set; }
+		public float GemRate { get; set; }
+		public float RecipeRate { get; set; }
+	}
+
+	public enum ServerStatus
+	{
+		Offline,
+		Online,
+	}
+}

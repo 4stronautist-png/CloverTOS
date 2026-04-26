@@ -1,0 +1,4 @@
+DROP DATABASE IF EXISTS clover_local;
+CREATE DATABASE clover_local DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT ALL PRIVILEGES ON clover_local.* TO 'melia'@'localhost' IDENTIFIED BY 'melia123';
+FLUSH PRIVILEGES;

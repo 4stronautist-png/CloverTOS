@@ -1,0 +1,23 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_OVERHEAT_CHANGED.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i373766
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int64 characterId;
+int cdClassId;
+int cdTime; // ms for the overheat/cooldown to drop?
+int i3;
+int cdResetTime; // same as overheatResetTime in data?
+int i5;
+int64 l2;

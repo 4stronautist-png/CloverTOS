@@ -1,0 +1,20 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CB_START_GAME.bt
+//   Authors: exec
+//   Version: i374541
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+short channelId;
+byte characterIndex;
+byte b1;

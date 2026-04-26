@@ -1,0 +1,33 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: KnockBackInfo.bt
+//   Authors: Salman T. Khan, exec
+//   Version: 
+//   Purpose: Knock back/down information
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef struct
+{
+    position from;
+    position to;
+    int velocity;
+    int hAngle;
+    int vAngle;
+    int bounceCount;
+    short timeMs;
+    byte b1;
+    byte b2;
+    float f1;
+    float f2;
+    int i1;
+    byte b3;
+    byte b4;
+    byte b5;
+    byte b6;
+}
+KnockBackInfo;

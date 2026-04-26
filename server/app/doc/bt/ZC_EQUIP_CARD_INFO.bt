@@ -1,0 +1,26 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_EQUIP_CARD_INFO.bt
+//   Authors: Salman T. Khan
+//   Version: i339415
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+short count;
+
+local int i;
+for (i = 0; i < count; i++)
+{
+    lpString str;
+    int64 exp;
+    int slot;
+    short level;
+}

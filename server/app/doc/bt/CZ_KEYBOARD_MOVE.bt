@@ -1,0 +1,23 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_KEYBOARD_MOVE.bt
+//   Authors: exec
+//   Version: i354444
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i354444: b1 was removed
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+//byte b1;
+position pos;
+direction dir;
+float f1;
+byte bin1[27];

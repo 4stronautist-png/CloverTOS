@@ -1,0 +1,55 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_ITEM_INVENTORY_DIVISION_LIST.bt
+//   Authors: exec
+//   Version: i339429
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+//#define PROPERTY_NAMES
+#include "inc/common.bt" 
+
+ServerHeaderDynamic header;
+
+typedef struct
+{
+    int id;
+    int propertiesSize;
+    int64 worldId;
+    int amount;
+    int price;
+    int i1;
+    //short s1;
+    //short index;
+    int category; // <format=hex>;
+
+    if (propertiesSize > 0)
+        getProperties(propertiesSize);
+
+    if (worldId > 0)
+    {
+        short s1;
+        int64 worldId2;
+        short s2;
+    }
+}
+Item2 <optimize=false,read=Item2Read>;
+
+string Item2Read(Item2 &v)
+{
+    local string result;
+    SPrintf(result, "%d : %d : %d ", v.id, v.amount, v.category);
+    return result;
+}
+
+int itemCount;
+byte b1;
+byte b2;
+
+if (!checkCompression())
+    Item2 items[itemCount];

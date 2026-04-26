@@ -1,0 +1,37 @@
+//------------------------------------------------
+//--- 010 Editor v12.0 Binary Template
+//
+//      File: ZC_SKILL_MELEE_TARGET.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i374541
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int skillId;
+int casterHandle;
+direction dir;
+int i2;
+float shootTime;
+float f2;
+byte b1;
+byte b2;
+byte b3;
+byte b4;
+int i3;
+int forceId;
+float f5;
+int i5;
+
+int targetHandle;
+byte hitCount;
+
+if (hitCount > 0)
+    SkillHitInfo hits[hitCount];

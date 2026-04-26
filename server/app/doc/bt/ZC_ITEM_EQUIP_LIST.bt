@@ -1,0 +1,74 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_ITEM_EQUIP_LIST.bt
+//   Authors: exec
+//   Version: i339427
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i379XXX: Added firstPacket, minIndex, and maxIndex.
+//------------------------------------------------
+
+//#define PROPERTY_NAMES
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+typedef struct
+{
+    int slot;
+    byte bin[22];
+    int i2;
+}
+Gem <optimize=false>;
+
+typedef struct
+{
+    int slot;
+    byte bin[22];
+    int i2; 
+}
+Socket <optimize=false>;
+
+typedef struct
+{
+    int itemId;
+    int propertiesSize;
+    int64 worldId;
+    int slot;
+    int i1;
+    short s1;
+    if (propertiesSize > 0)
+        getProperties(propertiesSize);
+    
+    if (worldId != 0)
+    {
+        short s2;
+        int64 worldId2;
+        short socketCount;
+
+        if (socketCount > 0)
+        {
+            SocketInfo sockets[socketCount];
+            SocketInfo sockets[socketCount];
+        }
+    }
+}
+EquipItem2 <read=readEquipItem2, optimize=false>;
+
+string readEquipItem2(EquipItem2 &v)
+{
+    local string result;
+    SPrintf(result, "id: %d, propertySize: %d", v.itemId, v.propertiesSize);
+    return result;
+}
+
+byte firstPacket;
+int minIndex;
+int maxIndex;
+
+while(!FEof())
+    EquipItem2 item;

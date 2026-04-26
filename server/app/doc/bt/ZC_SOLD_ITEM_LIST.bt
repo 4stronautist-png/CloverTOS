@@ -1,0 +1,23 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_SOLD_ITEM_LIST.bt
+//   Authors: exec
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+short size;
+byte b1;
+int count; // ?
+byte b2;
+if (count > 0)
+    Item items[count] <optimize=false>;

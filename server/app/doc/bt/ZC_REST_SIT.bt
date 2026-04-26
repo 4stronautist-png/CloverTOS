@@ -1,0 +1,21 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_REST_SIT.bt
+//   Authors: exec
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i11257: isSitting was added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+byte b1;
+byte isSitting;

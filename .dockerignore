@@ -1,0 +1,9 @@
+.git
+client
+server/runtime
+server/docker/db/init
+server/app/bin
+server/app/logs
+server/app/**/bin
+server/app/**/obj
+server/app/user/tmp

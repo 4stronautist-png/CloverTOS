@@ -1,0 +1,22 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_POSE
+//   Authors: exec, Salman T. Khan
+//   Version: i336041
+//   Purpose: Request to change character's pose
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i170175: b2 was added
+//   - i336041: extra 12 bytes before actual packet
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+int pose;
+position pos;
+direction dir;

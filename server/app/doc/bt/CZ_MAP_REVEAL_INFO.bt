@@ -1,0 +1,35 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_MAP_REVEAL_INFO.bt
+//   Authors: exec, celophi
+//   Version: i170175
+//   Purpose: Sends a bitmap representing explored areas of a map.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+// Similar to the struct in ZC_MAP_REVEAL_LIST,
+// but doesn't include a second float.
+typedef struct
+{
+    int mapId;
+    ubyte data[128];
+    float percentage;
+}
+MapRevealData <read=MapRevealDataRead>;
+
+string MapRevealDataRead(MapRevealData &v)
+{
+    local string result;
+    SPrintf(result, "%d", v.mapId);
+    return result;
+}
+
+ClientHeaderFixed header;
+
+MapRevealData data;

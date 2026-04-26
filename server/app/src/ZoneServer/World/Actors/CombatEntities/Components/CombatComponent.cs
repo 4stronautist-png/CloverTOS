@@ -1,0 +1,426 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Melia.Shared.Game.Const;
+using Melia.Zone.Buffs.Base;
+using Melia.Zone.Network;
+using Melia.Zone.Skills;
+using Melia.Zone.World.Actors;
+using Melia.Zone.World.Actors.Characters;
+using Melia.Zone.World.Actors.Monsters;
+using Yggdrasil.Extensions;
+using Yggdrasil.Scheduling;
+
+namespace Melia.Zone.World.Actors.CombatEntities.Components
+{
+	/// <summary>
+	/// An entity component that encapsulates combat-related methods
+	/// and properties.
+	/// </summary>
+	public class CombatComponent : CombatEntityComponent, IUpdateable
+	{
+		private static readonly TimeSpan AttackStateDuration = TimeSpan.FromSeconds(10);
+
+		private readonly object _hitLock = new();
+		private readonly Dictionary<int, float> _damageTaken = new();
+		private readonly Dictionary<int, int> _hitsTaken = new();
+		private readonly List<int> _targets = new();
+
+		private Skill _castingSkill;
+		private bool _isCasting;
+
+		/// <summary>
+		/// Returns the entity's attack state.
+		/// </summary>
+		public bool AttackState { get; private set; }
+
+		/// <summary>
+		/// Returns the entity's guard state.
+		/// </summary>
+		public bool IsGuarding { get; set; }
+
+		/// <summary>
+		/// Returns the last time the entity was involved in combat in
+		/// any way.
+		/// </summary>
+		public DateTime LastCombatTime { get; private set; }
+
+		/// <summary>
+		/// Raised when combat state changes.
+		/// </summary>
+		public event Action<ICombatEntity, bool> CombatStateChanged;
+
+		/// <summary>
+		/// Creates new component for entity.
+		/// </summary>
+		/// <param name="entity"></param>
+		public CombatComponent(ICombatEntity entity) : base(entity)
+		{
+		}
+
+		/// <summary>
+		/// Sets the entity's attack state.
+		/// </summary>
+		/// <param name="state"></param>
+		public void SetAttackState(bool state)
+		{
+			var prevState = this.AttackState;
+
+			this.AttackState = state;
+			this.LastCombatTime = DateTime.UtcNow;
+
+			Send.ZC_PC_ATKSTATE(this.Entity, state);
+
+			if (prevState != state)
+				CombatStateChanged?.Invoke(this.Entity, state);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="elapsed"></param>
+		public void Update(TimeSpan elapsed)
+		{
+			this.UpdateAttackState();
+		}
+
+		/// <summary>
+		/// Updates the entity's attack state.
+		/// </summary>
+		private void UpdateAttackState()
+		{
+			if (!this.AttackState)
+				return;
+
+			var timePassed = DateTime.UtcNow - this.LastCombatTime;
+			if (timePassed > AttackStateDuration)
+				this.SetAttackState(false);
+		}
+
+		/// <summary>
+		/// Registers a hit from the given attacker.
+		/// </summary>
+		/// <param name="attacker"></param>
+		/// <param name="damage"></param>
+		public void RegisterHit(ICombatEntity attacker, float damage)
+		{
+			var effectiveAttacker = ResolveEffectiveAttacker(attacker);
+
+			lock (_hitLock)
+			{
+				if (!_damageTaken.TryGetValue(effectiveAttacker.Handle, out var totalDamage))
+					totalDamage = 0;
+
+				if (!_hitsTaken.TryGetValue(effectiveAttacker.Handle, out var totalHits))
+					totalHits = 0;
+
+				var totalRecorded = _damageTaken.Values.Sum();
+				var remaining = Math.Max(0, this.Entity.MaxHp - totalRecorded);
+				var cappedDamage = Math.Min(damage, remaining);
+
+				_damageTaken[effectiveAttacker.Handle] = totalDamage + cappedDamage;
+				_hitsTaken[effectiveAttacker.Handle] = totalHits + 1;
+			}
+		}
+
+		/// <summary>
+		/// Resolves the owner of an attacker
+		/// </summary>
+		/// <param name="attacker"></param>
+		/// <returns></returns>
+		private static ICombatEntity ResolveEffectiveAttacker(ICombatEntity attacker)
+		{
+			if (attacker == null)
+				return null;
+
+			if (attacker.Components.Get<AiComponent>()?.Script.GetMaster() is Character aiMaster)
+				return aiMaster;
+
+			if (attacker is Summon summon && summon.Owner is Character summonOwner)
+				return summonOwner;
+
+			if (attacker is Companion companion && companion.Owner is Character companionOwner)
+				return companionOwner;
+
+			return attacker;
+		}
+
+		/// <summary>
+		/// Returns the attacker that has dealt the most damage to this
+		/// entity and is still nearby and alive.
+		/// </summary>
+		/// <returns></returns>
+		public ICombatEntity GetTopAttackerByDamage()
+		{
+			int[] handles;
+
+			lock (_hitLock)
+			{
+				handles = _damageTaken.OrderByDescending(a => a.Value)
+					.Select(kv => kv.Key)
+					.ToArray();
+			}
+
+			foreach (var handle in handles)
+			{
+				if (!this.Entity.Map.TryGetCombatEntity(handle, out var attacker))
+					continue;
+				if (attacker.IsDead)
+					continue;
+				return attacker;
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Returns the top N attackers by damage dealt, ordered from highest to lowest.
+		/// Only returns attackers that are still nearby and alive.
+		/// </summary>
+		/// <param name="count">Maximum number of attackers to return.</param>
+		/// <returns>List of tuples containing the attacker and their total damage dealt.</returns>
+		public List<(ICombatEntity Attacker, float Damage)> GetTopAttackersByDamage(int count)
+		{
+			KeyValuePair<int, float>[] snapshot;
+
+			lock (_hitLock)
+				snapshot = _damageTaken.OrderByDescending(a => a.Value).ToArray();
+
+			var result = new List<(ICombatEntity, float)>();
+
+			foreach (var kv in snapshot)
+			{
+				if (result.Count >= count)
+					break;
+
+				if (!this.Entity.Map.TryGetCombatEntity(kv.Key, out var attacker))
+					continue;
+
+				if (attacker.IsDead)
+					continue;
+
+				result.Add((attacker, kv.Value));
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Returns the attacker that has hit this entity the most and
+		/// is still nearby and alive.
+		/// </summary>
+		/// <returns></returns>
+		public ICombatEntity GetTopAttackerByHits()
+		{
+			int[] handles;
+
+			lock (_hitLock)
+			{
+				handles = _hitsTaken.OrderByDescending(a => a.Value)
+					.Select(kv => kv.Key)
+					.ToArray();
+			}
+
+			foreach (var handle in handles)
+			{
+				if (!this.Entity.Map.TryGetCombatEntity(handle, out var attacker))
+					continue;
+				if (attacker.IsDead)
+					continue;
+				return attacker;
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Sets the target to be casting a specific skill.
+		/// </summary>
+		/// <param name="casting"></param>
+		/// <param name="skill"></param>
+
+		public void SetCasting(bool casting, Skill skill)
+		{
+			this._isCasting = casting;
+
+			if (casting)
+			{
+				this._castingSkill = skill;
+				this.NotifyBuffsOnCastStart(skill);
+			}
+			else
+			{
+				this._castingSkill = null;
+			}
+		}
+
+		/// <summary>
+		/// Notifies active buffs that implement IBuffOnCastStartHandler.
+		/// </summary>
+		/// <param name="skill"></param>
+		private void NotifyBuffsOnCastStart(Skill skill)
+		{
+			if (!this.Entity.Components.TryGet<BuffComponent>(out var buffs))
+				return;
+
+			foreach (var buff in buffs.GetList())
+			{
+				if (buff.Handler is IBuffOnCastStartHandler castHandler)
+					castHandler.OnCastStart(buff, this.Entity, skill);
+			}
+		}
+
+		/// <summary>
+		/// Gets if the target is casting any skill.
+		/// Return via out the skill being casted.
+		/// </summary>
+		/// <returns></returns>
+		public bool IsCasting()
+		{
+			return this._isCasting;
+		}
+
+		/// <summary>
+		/// Gets if the target is casting the given skill.
+		/// </summary>
+		/// <returns></returns>
+		public bool IsCastingSkill(Skill skill)
+		{
+			if (this._isCasting && this._castingSkill == skill)
+				return true;
+
+			return false;
+		}
+
+		/// <summary>
+		/// Returns true if entity is casting and can move while
+		/// casting.
+		/// </summary>
+		/// <returns></returns>
+		public bool IsMoveableCasting()
+		{
+			if (this._isCasting && this._castingSkill.Data.EnableCastMove)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Returns true if entity is casting and can rotate while
+		/// casting.
+		/// </summary>
+		/// <returns></returns>
+		public bool IsRotatableCasting()
+		{
+			if (this._isCasting && !this._castingSkill.Data.EnableCastRotate)
+				return false;
+
+			return true;
+		}
+
+		/// <summary>
+		/// Attempts to interrupt the currently casting skill taking into
+		/// consideration if it has interruptible cast time or not.
+		/// Returns true if the casting was interrupted.
+		/// </summary>
+		/// <returns></returns>
+		public bool TryInterruptCasting(out Skill skill)
+		{
+			skill = this._castingSkill;
+
+			if (!this.IsCastingSkill(skill))
+				return false;
+
+			if (!skill.IsCastInterruptible)
+				return false;
+
+			this.InterruptCasting();
+
+			return true;
+		}
+
+		/// <summary>
+		/// Interrupts the currently casting skill, regardless if it's
+		/// cast time can naturally be interrupted or not. This is useful when
+		/// applying debuffs such as stun or freeze.
+		/// </summary>
+		public void InterruptCasting()
+		{
+			var skill = this._castingSkill;
+
+			skill?.Cancel();
+
+			this.Entity.SetCastingState(false, skill);
+			Send.ZC_NORMAL.CancelDynamicCast(this.Entity);
+			// TODO: Additional Testing.
+			// These packets might not be needed, it worked fine just sending CancelDynamicCast.
+			// But might be needed with other players around to not freeze in casting animation.
+			Send.ZC_SKILL_CAST_CANCEL(this.Entity);
+			Send.ZC_SKILL_USE_CANCEL(this.Entity);
+			Send.ZC_SKILL_DISABLE(this.Entity);
+		}
+
+		public void AddTarget(ICombatEntity target)
+		{
+			lock (_targets)
+				_targets.Add(target.Handle);
+		}
+
+		public void ClearTargets()
+		{
+			lock (_targets)
+				_targets.Clear();
+		}
+
+		/// <summary>
+		/// Clears all combat tracking data (damage taken, hits, targets).
+		/// Used during monster cleanup to release references.
+		/// </summary>
+		public void ClearTracking()
+		{
+			lock (_hitLock)
+			{
+				_damageTaken.Clear();
+				_hitsTaken.Clear();
+			}
+			lock (_targets)
+			{
+				_targets.Clear();
+			}
+		}
+
+		public ICombatEntity[] GetTargets()
+		{
+			int[] handles;
+
+			lock (_targets)
+				handles = _targets.ToArray();
+
+			var results = new List<ICombatEntity>();
+			foreach (var targetHandle in handles)
+			{
+				if (this.Entity.Map.TryGetCombatEntity(targetHandle, out var entity))
+					results.Add(entity);
+			}
+
+			return results.ToArray();
+		}
+
+		public ICombatEntity GetRandomTarget()
+		{
+			int handle;
+
+			lock (_targets)
+				handle = _targets.Random();
+
+			if (this.Entity.Map.TryGetCombatEntity(handle, out var entity))
+				return entity;
+
+			return null;
+		}
+
+	}
+}

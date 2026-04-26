@@ -1,0 +1,22 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_PARTY_LIST.bt
+//   Authors: Salman T. Khan
+//   Version: i339932
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int64 l1; // 0
+PartyType partyType; // 0 = Party, 1 = Guild
+int64 partyId;
+byte count;
+
+PartyMember party[count];

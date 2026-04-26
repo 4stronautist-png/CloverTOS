@@ -1,0 +1,25 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_DIALOG_SELECT.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i337645
+//   Purpose: Shows a dialog message and options to choose from
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i171032: b1 was added
+//   - i171032: b2 and s1 was added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int handle;
+byte count;
+byte b1; // 1
+byte b2; // 1
+short s1; // 0
+lpString strings[count] <optimize=false>;

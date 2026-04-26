@@ -1,0 +1,163 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_PROPERTY_COMPARE.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i339415
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+//#define PROPERTY_NAMES
+#include "inc/common.bt"
+
+typedef struct
+{
+    lpString optionName;
+    byte b1;
+    switch(b1)
+    {
+        case 0:
+            int optionValue;
+            break;
+        case 1:
+            lpString optionValue;
+            break;
+    }
+}
+SealOption <optimize=false>;
+
+typedef struct
+{
+    lpString str1;
+    lpString str1;
+    int i1;
+}
+GemInfoUnk1 <optimize=false>;
+
+typedef struct
+{
+    short index;
+    int64 objectId;
+    int i1;
+    int i2;
+    int itemClassId;
+    int i4;
+    int i5;
+    
+    int gemInfoUnk1Count;
+    GemInfoUnk1 gemInfoUnk1[gemInfoUnk1Count];
+}
+GemInfo <optimize=false>;
+
+typedef struct
+{
+    int itemId;
+    short propertiesSize;
+    short amount;
+    int64 worldId;
+    int slot;
+    int i1;
+    short s1;
+
+    if (propertiesSize > 0)
+    {
+        getProperties(propertiesSize);
+
+        short sealOptionsSize;
+        if (sealOptionsSize > 0)
+            SealOption sealOptions[sealOptionsSize];
+
+        int64 worldId2;
+
+        short gemCount;
+        if (gemCount > 0)
+            // All gems appear to get sent twice?
+            GemInfo data[gemCount * 2];
+    }
+}
+EquipItem2 <read=readEquipItem2, optimize=false>;
+
+string readEquipItem2(EquipItem2 &v)
+{
+    local string result;
+    SPrintf(result, "%d", v.itemId);
+    return result;
+}
+
+typedef struct (int count)
+{
+    EquipItem2 items[count];
+}
+EquipItemGroup <optimize=false>;
+
+typedef struct
+{
+    short jobId;
+    short s1;
+    int i1;
+    int i2;
+    int i3;
+    int i4;
+    int i5;
+    int i6;
+    int i7;
+    int i8;
+    int i9;
+}
+JobData <optimize=false>;
+
+ServerHeaderDynamic header;
+
+int handle;
+char name[65];
+int64 characterId;
+int64 accountId;
+int i3;
+byte openWindow;
+byte addLike;
+int adventurerIndex; // -1 if Index = 0
+int adventurerRank; // -1 if unranked
+int achievementCount;
+int achievements;
+
+char teamName[64];
+char name2[65];
+byte b1;
+short jobId;
+int i2;
+int jobLevel;
+short gender;
+short hair;
+int visualEquipIds[5];
+int mapId;
+int level;
+uint skinColor <format=hex>;
+short jobIds[4];
+int64 l1;
+
+short propertySize;
+short etcPropertySize;
+
+APPEARANCE_PC appearance;
+
+if (propertySize > 0)
+    PropertyGroup properties(propertySize);
+if (etcPropertySize > 0)
+    PropertyGroup etcProperties(propertySize);
+
+byte b2;
+int i4;
+int i5;
+
+EquipItemGroup items(EquipSlotCount);
+
+short jobCount;
+if (jobCount > 0)
+    JobData data[jobCount];
+
+if (achievementCount > 0)
+    int achievementIds[achievementCount];

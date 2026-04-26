@@ -1,0 +1,34 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_SKILL_MELEE_GROUND
+//   Authors: Salman T. Khan
+//   Version: i336041
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int skillId;
+int casterHandle;
+direction dir;
+int i2;
+float shootTime;
+float f2;
+byte castMove;
+byte b2;
+short s1;
+int forceId;
+float f5;
+int targetHandle;
+position pos;
+short hitCount;
+
+if (hitCount > 0)
+    SkillHitInfo hits[hitCount];

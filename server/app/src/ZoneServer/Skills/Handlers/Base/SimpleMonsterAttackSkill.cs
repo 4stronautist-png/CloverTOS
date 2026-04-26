@@ -1,0 +1,199 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Melia.Shared.Data.Database;
+using Melia.Shared.Game.Const;
+using Melia.Zone.Network;
+using Melia.Zone.Skills.Combat;
+using Melia.Zone.Skills.SplashAreas;
+using Melia.Zone.World.Actors;
+using static Melia.Zone.Skills.SkillUseFunctions;
+
+namespace Melia.Zone.Skills.Handlers.Base
+{
+	/// <summary>
+	/// Base class for simple monster attack skills.
+	/// </summary>
+	public class SimpleMonsterAttackSkill : ITargetSkillHandler
+	{
+		/// <summary>
+		/// Uses skill on target.
+		/// </summary>
+		/// <param name="skill"></param>
+		/// <param name="caster"></param>
+		/// <param name="target"></param>
+		public virtual void Handle(Skill skill, ICombatEntity caster, ICombatEntity target)
+		{
+			skill.Run(this.Attack(skill, caster, target));
+		}
+
+		/// <summary>
+		/// Executes the actual attack after a potential delay.
+		/// </summary>
+		/// <param name="skill"></param>
+		/// <param name="caster"></param>
+		protected virtual async Task Attack(Skill skill, ICombatEntity caster, ICombatEntity target)
+		{
+			if (!caster.TrySpendSp(skill))
+				return;
+
+			skill.IncreaseOverheat();
+
+			var splashArea = this.GetSplashArea(skill, caster, target);
+			var aniTime = this.GetAniTime(skill);
+			var hitDelay = this.GetHitDelay(skill);
+			var skillHitDelay = skill.Properties.HitDelay;
+
+			// Adjust delays based on skill speed rate. The way the speed rate
+			// actually works is currently somewhat guessed and is mostly based
+			// on research done on dagger attacks by players. For more info,
+			// see MeleeGroundSkillHandler.
+			aniTime /= skill.Properties.GetFloat(PropertyName.SklSpdRate);
+			hitDelay /= skill.Properties.GetFloat(PropertyName.SklSpdRate);
+
+			Send.ZC_SKILL_MELEE_GROUND(caster, skill, target.Position, null);
+
+			// Some skills are running on a timer, such as Onion_Attack1.
+			// These skills get initiated, but the hit info is only sent
+			// after a certain amount of time passed. This allows the
+			// target to move out of harms way before the skill hits,
+			// such as with the poison cloud in the Kepa attack skill.
+
+			Debug.ShowShape(caster.Map, splashArea, edgePoints: false, duration: aniTime);
+
+			await skill.Wait(hitDelay);
+
+			if (!caster.CanFight())
+			{
+				Send.ZC_SKILL_DISABLE(caster);
+				return;
+			}
+
+			var targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
+			var hits = new List<SkillHitInfo>();
+
+			foreach (var t in targets.LimitBySDR(caster, skill))
+			{
+				var skillHitResult = SCR_SkillHit(caster, t, skill);
+				t.TakeDamage(skillHitResult.Damage, caster);
+
+				var skillHit = new SkillHitInfo(caster, t, skill, skillHitResult, hitDelay, skillHitDelay);
+				hits.Add(skillHit);
+
+				this.OnHit(caster, t, skill, skillHitResult);
+			}
+
+			Send.ZC_SKILL_HIT_INFO(caster, hits);
+		}
+
+		public async Task SkillHitInfo(Skill skill, ICombatEntity caster, ISplashArea splashArea, TimeSpan aniTime)
+		{
+			var hitDelay = this.GetHitDelay(skill);
+
+			if (aniTime > TimeSpan.Zero)
+				await skill.Wait(aniTime);
+
+			if (!caster.CanFight())
+				return;
+
+			var targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
+			var skillHitDelay = skill.Properties.HitDelay;
+			var hits = new List<SkillHitInfo>();
+
+			foreach (var target in targets.LimitBySDR(caster, skill))
+			{
+				var skillHitResult = SCR_SkillHit(caster, target, skill);
+				target.TakeDamage(skillHitResult.Damage, caster);
+
+				var skillHit = new SkillHitInfo(caster, target, skill, skillHitResult, hitDelay, skillHitDelay);
+				hits.Add(skillHit);
+
+				this.OnHit(caster, target, skill, skillHitResult);
+			}
+
+			Send.ZC_SKILL_HIT_INFO(caster, hits);
+		}
+
+		/// <summary>
+		/// Returns the hit delay, defining the time until the hit
+		/// is executed. This adds an actual wait time in the skill
+		/// processing.
+		/// </summary>
+		/// <param name="skill"></param>
+		/// <returns></returns>
+		protected virtual TimeSpan GetHitDelay(Skill skill)
+		{
+			return skill.Properties.HitDelay;
+		}
+
+		/// <summary>
+		/// Returns the delay until the damage is dealt visually.
+		/// </summary>
+		/// <param name="skill"></param>
+		/// <returns></returns>
+		protected virtual TimeSpan GetAniTime(Skill skill)
+		{
+			var hitTime = skill.Data.HitTime.First();
+			var skillHitDelay = skill.Properties.HitDelay;
+			var aniTime = hitTime + skillHitDelay;
+
+			return aniTime;
+		}
+
+		/// <summary>
+		/// Returns the splash area to use to find targets.
+		/// </summary>
+		/// <param name="skill"></param>
+		/// <param name="caster"></param>
+		/// <param name="target"></param>
+		/// <returns></returns>
+		protected virtual ISplashArea GetSplashArea(Skill skill, ICombatEntity caster, ICombatEntity target)
+		{
+			var originPos = caster.Position;
+			var direction = caster.Position.GetDirection(target.Position);
+
+			ISplashArea splashArea;
+			switch (skill.Data.SplashType)
+			{
+				default:
+				case SplashType.Square:
+				{
+					var height = skill.Properties.GetFloat(PropertyName.SplHeight);
+					var width = skill.Properties.GetFloat(PropertyName.SplRange);
+
+					splashArea = new Square(originPos, direction, height, width);
+					break;
+				}
+				case SplashType.Circle:
+				{
+					var radius = skill.Properties.GetFloat(PropertyName.SplHeight);
+
+					splashArea = new Circle(originPos, radius);
+					break;
+				}
+				case SplashType.Fan:
+				{
+					var height = skill.Properties.GetFloat(PropertyName.SplHeight);
+					var angle = skill.Properties.GetFloat(PropertyName.SplAngle);
+
+					splashArea = new Fan(originPos, direction, height, angle);
+					break;
+				}
+			}
+
+			return splashArea;
+		}
+
+		/// <summary>
+		/// Called for each hit the skill does on a target.
+		/// </summary>
+		/// <param name="caster"></param>
+		/// <param name="target"></param>
+		/// <param name="skill"></param>
+		/// <param name="hitResult"></param>
+		protected virtual void OnHit(ICombatEntity caster, ICombatEntity target, Skill skill, SkillHitResult hitResult)
+		{
+		}
+	}
+}

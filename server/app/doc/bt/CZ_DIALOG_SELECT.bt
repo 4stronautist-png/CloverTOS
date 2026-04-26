@@ -1,0 +1,18 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_DIALOG_SELECT
+//   Authors: exec
+//   Version: i171032
+//   Purpose: Resumes dialog, selecting the given option
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+byte selectedOption;

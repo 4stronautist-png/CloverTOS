@@ -1,0 +1,21 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_HEAD_ROTATE.bt
+//   Authors: exec
+//   Version: i403202
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i403202: b1 added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+direction dir;
+byte b1;

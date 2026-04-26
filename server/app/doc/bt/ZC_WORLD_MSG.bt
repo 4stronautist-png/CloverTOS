@@ -1,0 +1,25 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_WORLD_MSG.bt
+//   Authors: Salman T. Khan
+//   Version: i337645
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int i1;
+char name[64]; // Bellcross
+// Or could be character Id?
+//int64 l1; // 300656300755705
+int achievementId; // 101113
+int achievementPointId; // 70002
+int achievementPointValue; // 2
+byte b1; // 0

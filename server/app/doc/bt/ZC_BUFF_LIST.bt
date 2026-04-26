@@ -1,0 +1,20 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_BUFF_LIST.bt
+//   Authors: Salman T. Khan
+//   Version: i337645
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int handle;
+byte count;
+if (count > 0)
+    BuffListData buffs[count];

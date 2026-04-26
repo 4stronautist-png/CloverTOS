@@ -1,0 +1,37 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_TRICK_PACKET.bt
+//   Authors: exec
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int i1;
+int i2;
+
+local int packetSize = header.size-sizeof(header)-sizeof(int)*2;
+// packets inside a packet >_>
+if (packetSize > 0)
+{
+    ServerHeaderFixed header2;
+    switch(header2.op)
+    {
+        case 0xCF8:
+            int characterHandle;
+            int itemMonsterHandle;
+            int amount;
+            break;
+        default:
+            byte packets[packetSize-10];
+            //ServerHeaderDynamic header2;
+    }
+}

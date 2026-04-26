@@ -1,0 +1,53 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Melia.Shared.Data.Database;
+using Melia.Shared.Game.Const;
+using Melia.Shared.L10N;
+using Melia.Shared.World;
+using Melia.Zone.Network;
+using Melia.Zone.Skills.Combat;
+using Melia.Zone.Skills.Handlers.Base;
+using Melia.Zone.World.Actors;
+using static Melia.Zone.Skills.Helpers.SkillDamageHelper;
+using static Melia.Zone.Skills.Helpers.SkillResultHelper;
+
+namespace Melia.Zone.Skills.Handlers.Mon
+{
+	[SkillHandler(SkillId.Mon_Shardstatue_Skill_1)]
+	public class Mon_Shardstatue_Skill_1 : ITargetSkillHandler
+	{
+		protected TimeSpan AniTime { get; } = TimeSpan.FromMilliseconds(750);
+		public void Handle(Skill skill, ICombatEntity caster, ICombatEntity target)
+		{
+			if (!caster.TrySpendSp(skill))
+			{
+				caster.ServerMessage(Localization.Get("Not enough SP."));
+				return;
+			}
+			skill.IncreaseOverheat();
+			caster.SetAttackState(true);
+
+			var originPos = caster.Position;
+			var hitDelay = 550;
+			var aniTime = 750;
+			var leadPos = GetLeadPosition(target, hitDelay, caster);
+			caster.TurnTowards(leadPos);
+			var farPos = originPos.GetNearestPositionWithinDistance(leadPos, skill.Properties[PropertyName.MaxR]);
+			var forceId = ForceId.GetNew();
+			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, forceId, null);
+
+			skill.Run(this.HandleSkill(caster, target, skill, originPos, farPos, hitDelay, aniTime));
+		}
+
+		private async Task HandleSkill(ICombatEntity caster, ICombatEntity target, Skill skill, Position originPos, Position farPos, int hitDelay, int aniTime)
+		{
+			var splashParam = skill.GetSplashParameters(caster, originPos, farPos, length: 50, width: 30, angle: 20f);
+			var splashArea = skill.GetSplashArea(SplashType.Circle, splashParam);
+			var hits = new List<SkillHitInfo>();
+			await SkillAttack(caster, skill, splashArea, hitDelay, aniTime, hits: hits);
+			SkillResultTargetBuff(caster, skill, BuffId.UC_curse, 1, 0f, 9000f, 1, 400, -1, hits);
+		}
+	}
+
+}

@@ -1,0 +1,22 @@
+//------------------------------------------------
+//--- 010 Editor v12.0.1 Binary Template
+//
+//  File: ZC_FLY_OPTION.bt
+//   Authors: Salman T. Khan
+//   Version: i346841
+//   Purpose: Flying Companions Related Packet?
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int   actorHandle;
+byte  useLastValidFloor;  // useLastValidFloorHeight
+byte  useClientAnim;      // useClientAnim
+byte  allowOtherProcess;  // useOtherVerticalProcess
+byte  deferUntilSpawned;  // playAfterBorn

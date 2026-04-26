@@ -1,0 +1,25 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_TO_SOMEWHERE_CLIENT
+//   Authors: Salman T. Khan
+//   Version: i336041
+//   Purpose: Could be like a trick packet or a packet within a packet
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int64 l1;
+int i1;
+int i2;
+lpString teamName;
+if (!checkCompression())
+{
+    ServerHeaderDynamic header2;
+}

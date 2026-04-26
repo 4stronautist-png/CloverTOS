@@ -1,0 +1,18 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: BC_COMMANDER_CREATE.bt
+//   Authors: exec, celophi
+//   Version: i170175
+//   Purpose: Sends the client a newly created character.
+//  Category:
+// File Mask:
+//  ID Bytes:
+//   History:
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+APPEARANCE_BARRACK_PC abpc;

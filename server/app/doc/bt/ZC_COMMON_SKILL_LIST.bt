@@ -1,0 +1,21 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_COMMON_SKILL_LIST.bt
+//   Authors: Salman T. Khan
+//   Version: i336041
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+int count;
+
+if (!checkCompression()) {
+    int skill[count];
+    byte b[16];
+}

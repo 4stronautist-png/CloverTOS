@@ -1,0 +1,21 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_UPDATE_SHIELD.bt
+//   Authors: celophi
+//   Version: i171140
+//   Purpose: Updates an actor's shield value.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//          - Shield at somepoint was a short, then an int, now an int64 with a byte at the end.
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+int64 shield;
+byte b1;

@@ -1,0 +1,20 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_MON_STAMINA.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i336041
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int fromHandle;
+int toHandle;
+int customScriptId; // Sent back via CZ_CUSTOM_SCP
+int stamina;

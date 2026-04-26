@@ -1,0 +1,19 @@
+//------------------------------------------------
+//--- 010 Editor v14.0.1 Binary Template
+//
+//      File: CZ_GUARD.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i387071
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+byte active;
+direction dir;

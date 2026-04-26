@@ -1,0 +1,50 @@
+//------------------------------------------------
+//--- 010 Editor v12.0 Binary Template
+//
+//      File: SessionObject.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i339427
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef struct
+{
+    int sessionId;
+    int i2;
+    int64 sessionObjectId;
+    float f1;
+    short propertySize;
+    short s1;
+    if(propertySize > 0)
+        getProperties(propertySize - 2);
+}
+SessionObject <optimize=false, read=readSessionObject>;
+
+string readSessionObject(SessionObject &v)
+{
+    local string result;
+    SPrintf(result, "%Ld, %d, Properties Size: %d", v.sessionObjectId, v.sessionId, v.propertySize);
+    return result;
+}
+
+typedef struct
+{
+    int sessionId;
+    int i2;
+    //int64 objectId <format=hex>;
+    int64 objectId; // 72247
+    float param; // 46? (parameter?)
+    SessionProperties properties;
+    int questId;
+} AddSessionObject <read=readAddSessionObject, optimize=false>;
+
+string readAddSessionObject(AddSessionObject &v)
+{
+    string result;
+    SPrintf(result, "%LXh : %d", v.objectId, v.sessionId);
+    return result;
+}

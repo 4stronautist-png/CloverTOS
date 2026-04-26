@@ -1,0 +1,18 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_ENTER_HOOK.bt
+//   Authors: celophi
+//   Version: i171140
+//   Purpose: Notifies the client that the entity is entering a trigger event.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int monsterId; // 40120 = Statue of Goddess Vakarine, 20026 = HiddenTrigger6

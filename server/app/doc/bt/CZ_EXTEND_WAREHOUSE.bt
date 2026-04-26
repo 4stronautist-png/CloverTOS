@@ -1,0 +1,18 @@
+//------------------------------------------------
+//--- 010 Editor v13.0.1 Binary Template
+//
+//      File: CZ_EXTEND_WAREHOUSE.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i366809
+//   Purpose: Increase size of warehouse.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+byte warehouseType;

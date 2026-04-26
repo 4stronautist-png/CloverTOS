@@ -1,0 +1,27 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_UPDATED_MONSTERAPPEARANCE.bt
+//   Authors: exec
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+short size;
+int handle;
+MONSTER monster;
+int namesSize;
+lpString name;
+lpString uniqueName;
+lpString dialogName;
+lpString warpName;
+lpString str3;
+

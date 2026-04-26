@@ -1,0 +1,64 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: AppearancePc.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i218535
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i10671:  APPEARANCE_PC.i6~i7 were added
+//   - i11025:  APPEARANCE_PC.teamId was added
+//   - i170175: APPEARANCE_PC.i9 was added
+//   - i171032: APPEARANCE_PC.i9 was removed
+//   - i184075: APPEARANCE_PC.bin2 was added
+//   - i184075: APPEARANCE_BARRACK_PC.i6+7 were added
+//   - i186893: APPEARANCE_PC.bin2 was removed
+//   - i218535: APPEARANCE_BARRACK_PC.s1 was... moved? Or removed and a new one was added.
+//   - i373230: APPEARANCE_PC.wigVisible and l1 was added.
+//------------------------------------------------
+
+typedef struct
+{
+    char name[65];
+    char team[65];
+    byte bin[6];
+    int64 accountId;
+    short stance;   
+    short s1;
+    short job; //D1 07
+    short gender; //01
+    int level;
+    int visualJobId;
+    uint skinColor <format=hex>;
+    int chatBubbleId;
+    int equipIds[EquipSlotCount];
+    int ibin1[3];
+    int equipIds2[EquipSlotCount];
+    int ibin2[3];
+    short hair;
+
+    // Up until i171032 we had these as "pose" and "team id",
+    // but they actually contain the visible hats, so we either
+    // had them wrong, or they changed. This was first noticed in
+    // i170175.
+    //short pose;
+    //int teamId;
+    byte pose;
+    byte hat1Visible;
+    byte hat2Visible;
+    byte hat3Visible;
+    byte b3;
+    byte wigVisible;
+    byte subWeaponVisible;
+    int i2;
+    byte gap1[3];
+
+    if (LOG_DATE >= 20240709)
+    {
+        byte unk1[24];
+    }
+}
+APPEARANCE_PC;

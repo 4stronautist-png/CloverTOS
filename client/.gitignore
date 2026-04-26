@@ -1,0 +1,45 @@
+# SoulSocietyTOS lightweight client repository
+#
+# This repository intentionally stores only installer/configuration files.
+# Do not commit Tree of Savior proprietary game files copied from Steam.
+
+data/
+patch/
+system/
+release/*
+!release/.gitkeep
+!release/Start-SoulSocietyTOS.bat.example
+
+*.ipf
+*.exe
+*.dll
+*.cab
+*.avi
+*.jpg
+*.png
+*.log
+
+!patches/
+!patches/**
+patches/**/*.ipf
+patches/**/*.exe
+patches/**/*.dll
+patches/**/*.cab
+
+userdata/
+screenshot/
+log_Client/
+DisconnectLog/
+tempfiles/
+
+*.zip
+*.7z
+*.rar
+*.tmp
+*.bak
+*.backup
+
+.vs/
+.vscode/
+Thumbs.db
+Desktop.ini

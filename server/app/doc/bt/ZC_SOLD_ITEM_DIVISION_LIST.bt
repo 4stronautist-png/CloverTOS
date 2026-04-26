@@ -1,0 +1,58 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_SOLD_ITEM_DIVISION_LIST.bt
+//   Authors: Salman T. Khan
+//   Version: i339415
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+typedef struct
+{
+    int id;
+    int propertiesSize;
+    int64 worldId;
+    int amount;
+    int price;
+    int i1;
+    //short s1;
+    //short index;
+    int category;
+    if (propertiesSize > 0)
+    {
+        getProperties(propertiesSize);
+        if (worldId > 0)
+        {
+            short s1;
+            int64 worldId2;
+            short count;
+
+            if (count > 0)
+                SocketInfo socket[count];
+        }
+    }
+}
+Item2 <optimize=false,read=Item2Read>;
+
+string Item2Read(Item2 &v)
+{
+    local string result;
+    SPrintf(result, "%d : %d : %d ", v.id, v.amount, v.category);
+    return result;
+}
+
+ServerHeaderDynamic header;
+InventoryType type; // 1 = storage, 3 = items sold storage? 6 = team storage, 7 = guild storage
+int itemCount;
+byte b2; // true
+byte b3; // true
+byte b4; // true
+
+if (!checkCompression())
+    Item2 items[itemCount];

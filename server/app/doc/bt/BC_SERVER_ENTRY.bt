@@ -1,0 +1,21 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: BC_SERVER_ENTRY.bt
+//   Authors: exec
+//   Version: i11XXX
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+IP ip1;
+IP ip2;
+short port1;
+short port2;

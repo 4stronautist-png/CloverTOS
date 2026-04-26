@@ -1,0 +1,20 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_SORT_INV.bt
+//   Authors: exec
+//   Version: i339427
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i10622: order was added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+byte b1;
+byte order;

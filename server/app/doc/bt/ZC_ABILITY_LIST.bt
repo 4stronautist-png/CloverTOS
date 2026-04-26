@@ -1,0 +1,26 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_ABILITY_LIST
+//   Authors: exec, Salman T. Khan
+//   Version: i337645
+//   Purpose: List of abilities sent upon login.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//      - i337645: Added s1, b1, and i1 to Ability, removed handle and compression
+//------------------------------------------------
+
+//#define PROPERTY_NAMES
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+short s1;
+byte b1;
+//int handle;
+int abilityCount;
+
+Ability abilities[abilityCount];

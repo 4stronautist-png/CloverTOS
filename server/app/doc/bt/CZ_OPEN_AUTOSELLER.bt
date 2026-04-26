@@ -1,0 +1,26 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_OPEN_AUTOSELLER.bt
+//   Authors: Salman T. Khan, exec
+//   Version: i373766
+//   Purpose: Shop? Response is ZC_NORMAL SubOp 0x140
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+int type;
+int handle;
+int optionSelected;
+int i1;
+int64 unkObjectId;
+
+// The remaining data seems kind of random. Might
+// include a string and perhaps some other data.
+char unk1[48];

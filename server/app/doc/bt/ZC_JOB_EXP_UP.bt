@@ -1,0 +1,21 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_JOB_EXP_UP
+//   Authors: exec
+//   Version: i184075
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i184075: i1 was added
+//   - i336041: changed jobExp to int64 removed i1
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int64 characterId;
+int64 jobExp;

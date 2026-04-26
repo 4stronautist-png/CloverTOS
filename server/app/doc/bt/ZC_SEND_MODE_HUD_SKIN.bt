@@ -1,0 +1,19 @@
+//------------------------------------------------
+//--- 010 Editor v14.0beta1 Binary Template
+//
+//      File: ZC_SEND_MODE_HUD_SKIN.bt
+//   Authors: Salman T. Khan
+//   Version: i375407
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+int handle;
+byte mode;

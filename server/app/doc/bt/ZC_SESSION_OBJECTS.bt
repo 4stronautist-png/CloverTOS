@@ -1,0 +1,26 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_SESSION_OBJECTS
+//   Authors: exec
+//   Version: i336041
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i174236: b1 was added
+//   - i336041: i1 was added
+//------------------------------------------------
+
+//#define PROPERTY_NAMES
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+short count;
+byte b1;
+float f1; // no clue? 306740.6, 461984.3
+if (count > 0)
+    SessionObject objects[count];

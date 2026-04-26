@@ -1,0 +1,27 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: BC_LOGINOK.bt
+//   Authors: exec, celophi
+//   Version: i170175
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i10725:  i2 was added
+//   - i170175: l1 was added
+//   - i174236: bin1 was added
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderFixed header;
+
+short serverGroupId; // This is the GROUP_ID found in serverlist.xml.
+int64 accountId;
+char accountName[56]; // The account name reserves 56 bytes of space even though it doesn't use all of them.
+AccountPrivilege accountPrivileges;
+char sessionKey[64]; // Cached key used for tracking connections across servers.
+int integritySeed; // Random number used when calculating the checksum on client files to make bypassing the check harder.
+WorldId worldId; // Unique ID for this specific connection to the barrack server.

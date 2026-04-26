@@ -1,0 +1,746 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Melia.Zone.World.Actors.Characters;
+using Melia.Zone.World.Actors.CombatEntities.Components;
+using Melia.Zone.World.Actors.Monsters;
+using Melia.Zone.World.Actors.Pads;
+using Yggdrasil.Geometry;
+using Yggdrasil.Scheduling;
+using Yggdrasil.Util;
+
+namespace Melia.Zone.World.Actors.Components
+{
+	/// <summary>
+	/// A trigger component that controls events that occur when actors enter
+	/// or leave a specific area related to an actor.
+	/// </summary>
+	/// <remarks>
+	/// This component is currently primarily intended for usage with pads
+	/// and some features might not work with other actor types.
+	/// </remarks>
+	public class TriggerComponent : ActorComponent, IUpdateable
+	{
+		private readonly static TimeSpan DefaultUpdateInterval = TimeSpan.FromSeconds(1);
+
+		private readonly object _syncLock = new();
+
+		private List<IActor> _actorsInside = new();
+		private List<IActor> _actorsInsideBuffer = new();
+		private readonly HashSet<IActor> _actorsInsideSet = new();
+		private readonly HashSet<IActor> _nowInsideSet = new();
+		private readonly List<IActor> _tempEntered = new();
+		private readonly List<IActor> _tempLeft = new();
+		private readonly List<ICombatEntity> _attackableBuffer = new();
+		private readonly List<ICombatEntity> _alliedBuffer = new();
+		private int _actorCount = 0;
+		private int _maxActorCount = short.MaxValue;
+		private int _maxConcurrentUse = short.MaxValue;
+		private int _useCount;
+
+		private DateTime _creationTime;
+		private TimeSpan _updateTimer;
+		private TimeSpan _lifetimeTimer;
+		private bool _elapsedInitalized;
+
+		private int _activateCount = 0;
+
+		private bool _destroyed;
+
+		/// <summary>
+		/// Returns the trigger area.
+		/// </summary>
+		public IShapeF Area { get; set; }
+
+		/// <summary>
+		/// Gets or sets the interval in which the trigger's interval update event
+		/// is raised.
+		/// </summary>
+		/// <remarks>
+		/// Note that the updates are dependent on the world's update rate and
+		/// might not trigger in time if the interval is too short.
+		/// </remarks>
+		public TimeSpan UpdateInterval { get; set; } = DefaultUpdateInterval;
+
+		/// <summary>
+		/// Gets or sets the life time of the trigger. Once the trigger has
+		/// existed on a map for this amount of time, it will be destroyed
+		/// automatically.
+		/// </summary>
+		public TimeSpan LifeTime { get; set; } = TimeSpan.MaxValue;
+
+		/// <summary>
+		/// Returns the remaining life time of the trigger.
+		/// </summary>
+		public TimeSpan RemainingLifeTime => this.LifeTime != TimeSpan.MaxValue ? Math2.Max(TimeSpan.Zero, this.LifeTime - _lifetimeTimer) : TimeSpan.MaxValue;
+
+		/// <summary>
+		/// Returns the number of actors currently inside the trigger.
+		/// </summary>
+		public int ActorCount
+		{
+			get => _actorCount;
+			set => _actorCount = Math.Max(0, value);
+		}
+
+		/// <summary>
+		/// Returns the maximum number of actors that can be inside the trigger
+		/// at a time.
+		/// </summary>
+		/// <remarks>
+		/// The enter and leave events will not be raised if the trigger has
+		/// reached its maximum actor count. But as actors leave the trigger,
+		/// new ones will be considered again.
+		/// </remarks>
+		public int MaxActorCount
+		{
+			get => _maxActorCount;
+			set => _maxActorCount = Math.Max(0, value);
+		}
+
+		/// <summary>
+		/// Returns the numbers of times activated.
+		/// </summary>
+		public int ActivateCount
+		{
+			get => _activateCount;
+			set => _activateCount = Math.Max(0, value);
+		}
+
+		/// <summary>
+		/// Returns the maximum number of actors that can be inside the pad
+		/// at a time.
+		/// </summary>
+		/// <remarks>
+		/// The enter and leave events will not be raised if the pad has
+		/// reached its maximum actor count. But as actors leave the pad,
+		/// new ones will be considered again.
+		/// </remarks>
+		public int MaxConcurrentUseCount
+		{
+			get => _maxConcurrentUse;
+			set => _maxConcurrentUse = Math.Max(0, value);
+		}
+
+		/// <summary>
+		/// Returns true if the max actor count has been reached.
+		/// </summary>
+		public bool AtCapacity => this.ActivateCount >= this.MaxConcurrentUseCount || this.ActorCount >= this.MaxActorCount;
+
+		/// <summary>
+		/// Gets or sets the maximum number of "uses" for the trigger.
+		/// If the max count is reached, the trigger will be destroyed
+		/// automatically.
+		/// </summary>
+		/// <remarks>
+		/// What constitues a use is entirely dependent on the trigger's
+		/// subscribers and how they increase the use count. One example
+		/// might be a type of "safety wall" skill/pad, that increases
+		/// its use count every time an actor inside it is hit, destroying
+		/// it automatically after X hits.
+		/// </remarks>
+		public int MaxUseCount { get; set; } = short.MaxValue;
+
+		/// <summary>
+		/// Gets or sets which types of actors the component considers actors
+		/// that can trigger it. Only actors that are included in the filter
+		/// are valid candidates.
+		/// </summary>
+		public TriggerActorFilter Filter { get; set; } = TriggerActorFilter.CombatEntities;
+
+		/// <summary>
+		/// Event that is triggered when the actor added to a map.
+		/// </summary>
+		public event EventHandler<TriggerArgs> Created;
+
+		/// <summary>
+		/// Event that is triggered when the actor is removed from a map.
+		/// </summary>
+		public event EventHandler<TriggerArgs> Destroyed;
+
+		/// <summary>
+		/// Event that is triggered when an actor enters the trigger.
+		/// </summary>
+		public event EventHandler<TriggerActorArgs> Entered;
+
+		/// <summary>
+		/// Event that is triggered when an actor leaves the trigger.
+		/// </summary>
+		public event EventHandler<TriggerActorArgs> Left;
+
+		/// <summary>
+		/// Event that is triggered for actors inside the trigger in
+		/// regular intervals.
+		/// </summary>
+		public event EventHandler<TriggerArgs> Updated;
+
+		/// <summary>
+		/// Creates new instance for actor.
+		/// </summary>
+		/// <param name="actor"></param>
+		/// <param name="area"></param>
+		public TriggerComponent(IActor actor, IShapeF area) : base(actor)
+		{
+			this.Area = area;
+		}
+
+		/// <summary>
+		/// Returns a list of actors currently inside the trigger area.
+		/// </summary>
+		/// <returns></returns>
+		public List<IActor> GetActors()
+		{
+			lock (_syncLock)
+			{
+				var result = new List<IActor>();
+				var count = 0;
+				foreach (var a in _actorsInside)
+				{
+					if (count >= this.MaxActorCount)
+						break;
+					result.Add(a);
+					count++;
+				}
+				return result;
+			}
+		}
+
+		/// <summary>
+		/// Returns a list of actors currently inside the trigger area
+		/// that are of the given type.
+		/// </summary>
+		/// <typeparam name="TActor"></typeparam>
+		/// <returns></returns>
+		public List<TActor> GetActors<TActor>() where TActor : IActor
+		{
+			lock (_syncLock)
+			{
+				var result = new List<TActor>();
+				foreach (var a in _actorsInside)
+					if (a is TActor typed)
+						result.Add(typed);
+				return result;
+			}
+		}
+
+		/// <summary>
+		/// Returns a list of actors currently inside the trigger area
+		/// that can be attacked by the given actor.
+		/// </summary>
+		/// <remarks>
+		/// The returned list is reused between calls. Do not store
+		/// a reference to it — copy if you need to keep the data.
+		/// </remarks>
+		/// <param name="attacker"></param>
+		/// <returns></returns>
+		public List<ICombatEntity> GetAttackableEntities(ICombatEntity attacker)
+		{
+			lock (_syncLock)
+			{
+				_attackableBuffer.Clear();
+				foreach (var a in _actorsInside)
+					if (a is ICombatEntity ce && attacker.CanDamage(ce))
+						_attackableBuffer.Add(ce);
+				return _attackableBuffer;
+			}
+		}
+
+		/// <summary>
+		/// Returns a list of actors currently inside the trigger area
+		/// that are allied to the given actor.
+		/// </summary>
+		/// <remarks>
+		/// The returned list is reused between calls. Do not store
+		/// a reference to it — copy if you need to keep the data.
+		/// </remarks>
+		/// <param name="ally"></param>
+		/// <returns></returns>
+		public List<ICombatEntity> GetAlliedEntities(ICombatEntity ally)
+		{
+			lock (_syncLock)
+			{
+				_alliedBuffer.Clear();
+				foreach (var a in _actorsInside)
+					if (a is ICombatEntity target && target != ally && !target.IsDead && ally.IsAlly(target))
+						_alliedBuffer.Add(target);
+				return _alliedBuffer;
+			}
+		}
+
+		/// <summary>
+		/// Updates the component, triggering events.
+		/// </summary>
+		/// <param name="elapsed"></param>
+		public void Update(TimeSpan elapsed)
+		{
+			// Make sure the elapsed time is not the full update time if
+			// we run for the first time, since the component might not
+			// have been around for the full update interval, which would
+			// mess with the update time calculations. We probably want to
+			// standardize this in some say, since this is generally what
+			// we would want to know. TODO.
+			if (!_elapsedInitalized)
+			{
+				elapsed = Math2.Max(TimeSpan.Zero, DateTime.Now - _creationTime);
+				_elapsedInitalized = true;
+			}
+
+			// There are two approaches to checking actors inside a trigger.
+			// We can do it from the trigger, which means every trigger needs
+			// to check all actors, or we can do it from the actors (and their
+			// movement components for example), where every actor needs to
+			// check all triggers. Which one is more performant somewhat
+			// depends on the environment, though there will usually be
+			// less triggers than actors, so the latter should perform
+			// better. For simplicity we'll keep it here for the moment
+			// though.
+
+			if (this.Actor is Pad pad)
+			{
+				if (pad.IsDead)
+				{
+					pad.Destroy();
+					return;
+				}
+
+				if (pad.Creator is ICombatEntity creator && creator.IsDead)
+				{
+					pad.Destroy();
+					return;
+				}
+			}
+
+			// Advance the lifetime timer before firing events so that
+			// RemainingLifeTime is accurate when handlers read it.
+			if (this.LifeTime != TimeSpan.MaxValue)
+				_lifetimeTimer += elapsed;
+
+			this.Area.UpdatePosition(this.Actor.Position);
+
+			// Fill the back-buffer with current actors, reusing the list
+			this.Actor.Map.GetActorsIn<IActor>(this.Area, this.IsValidTriggerer, _actorsInsideBuffer);
+
+			List<IActor> enteredToDispatch = null;
+			List<IActor> leftToDispatch = null;
+
+			lock (_syncLock)
+			{
+				// Build set of current actors for O(1) lookup
+				_nowInsideSet.Clear();
+				foreach (var a in _actorsInsideBuffer)
+					_nowInsideSet.Add(a);
+
+				// Find entered actors (in now but not in previous)
+				_tempEntered.Clear();
+				foreach (var a in _nowInsideSet)
+					if (!_actorsInsideSet.Contains(a))
+						_tempEntered.Add(a);
+
+				// Find left actors (in previous but not in now)
+				_tempLeft.Clear();
+				foreach (var a in _actorsInsideSet)
+					if (!_nowInsideSet.Contains(a))
+						_tempLeft.Add(a);
+
+				if (_tempEntered.Count > 0)
+					enteredToDispatch = new List<IActor>(_tempEntered);
+				if (_tempLeft.Count > 0)
+					leftToDispatch = new List<IActor>(_tempLeft);
+
+				// Swap buffers: _actorsInsideBuffer becomes the current
+				// list, old _actorsInside becomes the next write target
+				var temp = _actorsInside;
+				_actorsInside = _actorsInsideBuffer;
+				_actorsInsideBuffer = temp;
+
+				_actorsInsideSet.Clear();
+				foreach (var a in _actorsInside)
+					_actorsInsideSet.Add(a);
+				this.ActorCount = _actorsInside.Count;
+			}
+
+			if (enteredToDispatch != null)
+			{
+				foreach (var actor in enteredToDispatch)
+					this.Entered?.Invoke(this, new TriggerActorArgs(TriggerType.Enter, this.Actor, actor));
+			}
+
+			if (leftToDispatch != null)
+			{
+				foreach (var actor in leftToDispatch)
+					this.Left?.Invoke(this, new TriggerActorArgs(TriggerType.Leave, this.Actor, actor));
+			}
+
+			this.UpdateTimers(elapsed);
+		}
+
+		/// <summary>
+		/// Updates the update and lifetime timers and triggers relevant
+		/// events.
+		/// </summary>
+		/// <param name="elapsed"></param>
+		private void UpdateTimers(TimeSpan elapsed)
+		{
+			_updateTimer += elapsed;
+
+			if (_updateTimer >= this.UpdateInterval)
+			{
+				this.Updated?.Invoke(this, new TriggerArgs(TriggerType.Update, this.Actor));
+				_updateTimer = TimeSpan.Zero;
+			}
+
+			if (this.LifeTime != TimeSpan.MaxValue)
+			{
+				if (_lifetimeTimer >= this.LifeTime)
+				{
+					this.DestroyOwner();
+					_lifetimeTimer = TimeSpan.Zero;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Returns true if the given actor is allowed to trigger the trigger.
+		/// </summary>
+		/// <param name="actor"></param>
+		/// <returns></returns>
+		private bool IsValidTriggerer(IActor actor)
+		{
+			if (!this.Filter.Has(TriggerActorFilter.Characters) && actor is Character) return false;
+			if (!this.Filter.Has(TriggerActorFilter.Mobs) && actor is Mob) return false;
+			if (!this.Filter.Has(TriggerActorFilter.Npcs) && actor is Npc) return false;
+			if (!this.Filter.Has(TriggerActorFilter.Items) && actor is ItemMonster) return false;
+
+			return true;
+		}
+
+		/// <summary>
+		/// Resets the lifetime timer back to zero, effectively refreshing
+		/// the trigger's remaining duration to its full LifeTime value.
+		/// Used by Chronomancer's Backmasking skill to reset pad durations.
+		/// </summary>
+		public void ResetLifeTime()
+		{
+			_lifetimeTimer = TimeSpan.Zero;
+		}
+
+		/// <summary>
+		/// Increases the trigger's use count and automatically destroys
+		/// the owner if the max use count is reached. Returns true if
+		/// the max use count was reached.
+		/// </summary>
+		public bool IncreaseUseCount()
+		{
+			_useCount++;
+
+			var usedUp = _useCount >= this.MaxUseCount;
+			if (usedUp)
+				this.DestroyOwner();
+
+			return usedUp;
+		}
+
+		/// <summary>
+		/// Destroys the component's owner, removing them from the world.
+		/// </summary>
+		private void DestroyOwner()
+		{
+			// TODO: Make more generic, so we don't need explicit conversions.
+
+			switch (this.Actor)
+			{
+				case Pad pad: pad.Destroy(); return;
+				case IMonster monster: monster.Map.RemoveMonster(monster); return;
+				case Character character: character.Map.RemoveCharacter(character); return;
+			}
+
+			throw new InvalidOperationException($"Unknown owner type '{this.Actor.GetType()}'.");
+		}
+
+		/// <summary>
+		/// Called when the actor was added to a map.
+		/// </summary>
+		internal void OnAddedToMap()
+		{
+			_destroyed = false;
+			_creationTime = DateTime.Now;
+
+			this.Created?.Invoke(this, new TriggerArgs(TriggerType.Create, this.Actor));
+		}
+
+		/// <summary>
+		/// Called when the actor is being removed from a map.
+		/// </summary>
+		internal void OnRemovingFromMap()
+		{
+			if (_destroyed)
+				return;
+
+			_destroyed = true;
+
+			foreach (var actor in this.GetActors())
+				this.Left?.Invoke(this, new TriggerActorArgs(TriggerType.Leave, this.Actor, actor));
+			this.Destroyed?.Invoke(this, new TriggerArgs(TriggerType.Destroy, this.Actor));
+
+			this.ClearEventHandlers();
+			_actorsInside.Clear();
+		}
+
+		/// <summary>
+		/// Clears all event handlers to prevent memory leaks.
+		/// Called when the trigger is being removed from the map.
+		/// </summary>
+		private void ClearEventHandlers()
+		{
+			this.Created = null;
+			this.Destroyed = null;
+			this.Entered = null;
+			this.Left = null;
+			this.Updated = null;
+		}
+
+		/// <summary>
+		/// Subscribes to a trigger event.
+		/// </summary>
+		/// <remarks>
+		/// Subscribe effectively does the same thing as subscribing to the
+		/// events directly, but it dynamically adjusts the event arguments
+		/// for easier and more flexible use.
+		/// </remarks>
+		/// <param name="type"></param>
+		/// <param name="handler"></param>
+		/// <exception cref="ArgumentException"></exception>
+		public void Subscribe(TriggerType type, EventHandler<TriggerArgs> handler)
+		{
+			switch (type)
+			{
+				case TriggerType.Create: this.Created += handler; break;
+				case TriggerType.Destroy: this.Destroyed += handler; break;
+				case TriggerType.Update: this.Updated += handler; break;
+				case TriggerType.Enter: this.Entered += ArgsToActorArgs(handler); break;
+				case TriggerType.Leave: this.Left += ArgsToActorArgs(handler); break;
+
+				default:
+					throw new ArgumentException($"Unknown trigger type '{type}'.");
+			}
+		}
+
+		/// <summary>
+		/// Subscribes to a trigger event.
+		/// </summary>
+		/// <remarks>
+		/// Subscribe effectively does the same thing as subscribing to the
+		/// events directly, but it dynamically adjusts the event arguments
+		/// for easier and more flexible use.
+		/// </remarks>
+		/// <param name="type"></param>
+		/// <param name="handler"></param>
+		/// <exception cref="ArgumentException"></exception>
+		public void Subscribe(TriggerType type, EventHandler<TriggerActorArgs> handler)
+		{
+			switch (type)
+			{
+				case TriggerType.Enter: this.Entered += handler; break;
+				case TriggerType.Leave: this.Left += handler; break;
+
+				case TriggerType.Create:
+				case TriggerType.Destroy:
+				case TriggerType.Update:
+					throw new ArgumentException("Event handler not supported for this trigger type.");
+
+				default:
+					throw new ArgumentException($"Unknown trigger type '{type}'.");
+			}
+		}
+
+		/// <summary>
+		/// Subscribes to a trigger event.
+		/// </summary>
+		/// <remarks>
+		/// Subscribe effectively does the same thing as subscribing to the
+		/// events directly, but it dynamically adjusts the event arguments
+		/// for easier and more flexible use.
+		/// </remarks>
+		/// <param name="type"></param>
+		/// <param name="handler"></param>
+		/// <exception cref="ArgumentException"></exception>
+		public void Subscribe(TriggerType type, EventHandler<PadTriggerArgs> handler)
+		{
+			switch (type)
+			{
+				case TriggerType.Create: this.Created += PadArgsToArgs(handler); break;
+				case TriggerType.Destroy: this.Destroyed += PadArgsToArgs(handler); break;
+				case TriggerType.Enter: this.Entered += PadArgsToActorArgs(handler); break;
+				case TriggerType.Leave: this.Left += PadArgsToActorArgs(handler); break;
+				case TriggerType.Update: this.Updated += PadArgsToArgs(handler); break;
+
+				default:
+					throw new ArgumentException($"Unknown trigger type '{type}'.");
+			}
+		}
+
+		/// <summary>
+		/// Subscribes to a trigger event.
+		/// </summary>
+		/// <remarks>
+		/// Subscribe effectively does the same thing as subscribing to the
+		/// events directly, but it dynamically adjusts the event arguments
+		/// for easier and more flexible use.
+		/// </remarks>
+		/// <param name="type"></param>
+		/// <param name="handler"></param>
+		/// <exception cref="ArgumentException"></exception>
+		public void Subscribe(TriggerType type, EventHandler<PadTriggerActorArgs> handler)
+		{
+			switch (type)
+			{
+				case TriggerType.Enter: this.Entered += PadActorArgsToActorArgs(handler); break;
+				case TriggerType.Leave: this.Left += PadActorArgsToActorArgs(handler); break;
+
+				case TriggerType.Create:
+				case TriggerType.Destroy:
+				case TriggerType.Update:
+					throw new ArgumentException("Event handler not supported for this trigger type.");
+
+				default:
+					throw new ArgumentException($"Unknown trigger type '{type}'.");
+			}
+		}
+
+		/// <summary>
+		/// Returns an event handler that downgrades an actor trigger event to 
+		/// one without actors.
+		/// </summary>
+		/// <param name="handler"></param>
+		/// <returns></returns>
+		private static EventHandler<TriggerActorArgs> ArgsToActorArgs(EventHandler<TriggerArgs> handler)
+			=> (sender, args) => handler(sender, new TriggerArgs(args.Type, args.Trigger));
+
+		/// <summary>
+		/// Returns an event handler that calls the given handler with appropriate
+		/// arguments, assuming the arguments could be gathered. If not, nothing
+		/// happens.
+		/// </summary>
+		/// <param name="handler"></param>
+		/// <returns></returns>
+		private static EventHandler<TriggerArgs> PadArgsToArgs(EventHandler<PadTriggerArgs> handler)
+		{
+			return (sender, args) =>
+			{
+				if (args.Trigger is not Pad pad)
+					return;
+
+				if (pad.Creator is not ICombatEntity creator)
+					return;
+
+				handler(sender, new PadTriggerArgs(args.Type, pad, creator, pad.Skill));
+			};
+		}
+
+		/// <summary>
+		/// Returns an event handler that calls the given handler with appropriate
+		/// arguments, assuming the arguments could be gathered. If not, nothing
+		/// happens.
+		/// </summary>
+		/// <param name="handler"></param>
+		/// <returns></returns>
+		private static EventHandler<TriggerActorArgs> PadArgsToActorArgs(EventHandler<PadTriggerArgs> handler)
+		{
+			return (sender, args) =>
+			{
+				if (args.Trigger is not Pad pad)
+					return;
+
+				if (pad.Creator is not ICombatEntity creator)
+					return;
+
+				var skill = pad.Skill;
+
+				handler(sender, new PadTriggerArgs(args.Type, pad, creator, skill));
+			};
+		}
+
+		/// <summary>
+		/// Returns an event handler that calls the given handler with appropriate
+		/// arguments, assuming the arguments could be gathered. If not, nothing
+		/// happens.
+		/// </summary>
+		/// <param name="handler"></param>
+		/// <returns></returns>
+		private static EventHandler<TriggerActorArgs> PadActorArgsToActorArgs(EventHandler<PadTriggerActorArgs> handler)
+		{
+			return (sender, args) =>
+			{
+				if (args.Trigger is not Pad pad)
+					return;
+
+				if (args.Initiator is not ICombatEntity initiator)
+					return;
+
+				if (pad.Creator is not ICombatEntity creator)
+					return;
+
+				var skill = pad.Skill;
+
+				handler(sender, new PadTriggerActorArgs(args.Type, pad, initiator, creator, skill));
+			};
+		}
+	}
+
+	/// <summary>
+	/// Used to specify which actors are allowed to trigger a trigger.
+	/// </summary>
+	public enum TriggerActorFilter : uint
+	{
+		/// <summary>
+		/// Matches player characters.
+		/// </summary>
+		Characters = 0x01,
+
+		/// <summary>
+		/// Matches combat-capable monsters.
+		/// </summary>
+		Mobs = 0x02,
+
+		/// <summary>
+		/// Matches friendly NPCs.
+		/// </summary>
+		Npcs = 0x04,
+
+		/// <summary>
+		/// Matches items lying on the ground.
+		/// </summary>
+		Items = 0x08,
+
+		/// <summary>
+		/// Matches combat entities, such as characters and mobs.
+		/// </summary>
+		CombatEntities = Characters | Mobs,
+
+		/// <summary>
+		/// Matches "monster-type" actors, which means everything that's
+		/// not a player.
+		/// </summary>
+		Monsters = Mobs | Npcs | Items,
+
+		/// <summary>
+		/// Matches all actors.
+		/// </summary>
+		All = 0xFFFFFFFF,
+	}
+
+	/// <summary>
+	/// Extensions for the trigger actor filter enum.
+	/// </summary>
+	public static class TriggerActorFilterExtension
+	{
+		/// <summary>
+		/// Returns true if the filter contains the given value.
+		/// </summary>
+		/// <param name="filter"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public static bool Has(this TriggerActorFilter filter, TriggerActorFilter value)
+			=> (filter & value) != 0;
+	}
+}

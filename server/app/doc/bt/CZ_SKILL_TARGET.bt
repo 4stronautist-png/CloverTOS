@@ -1,0 +1,21 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_SKILL_TARGET.bt
+//   Authors: exec
+//   Version: i373766
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+byte b1;
+int skillId;
+int targetHandle;
+short b2;

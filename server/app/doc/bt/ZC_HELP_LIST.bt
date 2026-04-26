@@ -1,0 +1,35 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_HELP_LIST.bt
+//   Authors: exec
+//   Version: i170175
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+typedef struct 
+{
+    int id;
+	byte b1; // whether it was shown already?
+}
+help <read=helpRead, optimize=false>;
+
+string helpRead(help &v)
+{
+    local string result;
+    SPrintf(result, "%d: %d", v.id, v.b1);
+    return result;
+}
+
+ServerHeaderDynamic header;
+
+int count;
+
+local int i;
+help entries[count];

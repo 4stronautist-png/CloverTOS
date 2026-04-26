@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Melia.Shared</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyTitle>Shared</AssemblyTitle>
+    <Company>Microsoft</Company>
+    <Product>Shared</Product>
+    <Copyright>Copyright © Microsoft 2015</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ExecTails.NetText" Version="1.0.1" />
+    <PackageReference Include="ExecTails.Yggdrasil" Version="1.7.4" />
+    <PackageReference Include="ExecTails.Yggdrasil.Data.JSON" Version="1.0.1" />
+    <PackageReference Include="ExecTails.Yggdrasil.Db.MySql" Version="1.1.2" />
+    <PackageReference Include="ExecTails.Yggdrasil.Scripting" Version="1.0.1" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.5" />
+    <PackageReference Include="MySqlConnector" Version="2.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+</Project>

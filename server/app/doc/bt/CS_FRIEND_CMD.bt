@@ -1,0 +1,22 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CS_FRIEND_CMD.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i373765
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ClientHeaderFixed header;
+
+int i1;
+short s2;
+int64 accountId;
+FriendState cmd; // Accept = 0, Decline = 1, Delete = 2
+int i2;

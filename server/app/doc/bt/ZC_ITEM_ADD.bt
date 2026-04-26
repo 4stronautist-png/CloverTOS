@@ -1,0 +1,51 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_ITEM_ADD.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i339427
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i336041: PropertySize shifted and i1;
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+enum <byte> InventoryAddType 
+{
+    NEW = 0,
+    BUY = 1,
+    SELL = 2,
+    PICKUP = 3,
+    NOTNEW = 4,
+};
+
+int64 objectId;
+int amount;
+int index;
+int category;
+int itemId;
+short propertiesSize;
+InventoryAddType addType;
+float notificationDelaySeconds;
+InventoryType invType;
+bool b1;
+bool b2;
+
+if(propertiesSize > 0)
+    getProperties(propertiesSize);
+
+if (objectId > 0)
+{
+    short s1;
+    int64 objectId2;
+    short count;
+
+    if (count > 0)
+        SocketInfo socket[count];
+}

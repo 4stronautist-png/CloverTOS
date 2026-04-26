@@ -1,0 +1,59 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_SEND_CASH_VALUE.bt
+//   Authors: exec, Salman T. Khan
+//   Version: i336041
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: i336041 - Added additional 4 bytes (int,float) between key and value (double).
+//			  i3xxxxx - Turn float into a double.
+//------------------------------------------------
+
+#include "inc/common.bt"
+
+typedef struct
+{
+    lpString key;
+    double value1;
+}
+KeyValueLpStrFloat <read=KeyValueLpStrFloatRead>;
+
+string KeyValueLpStrFloatRead(KeyValueLpStrFloat &v)
+{
+    local string result;
+    SPrintf(result, "%s : %d", v.key.text, v.value1);
+    return result;
+}
+
+typedef struct
+{
+    int key;
+    double value1;
+}
+KeyValueIntFloat <read=KeyValueIntFloatRead>;
+
+string KeyValueIntFloatRead(KeyValueIntFloat &v)
+{
+    local string result;
+    SPrintf(result, "%d : %d", v.key, v.value1);
+    return result;
+}
+
+ServerHeaderDynamic header;
+
+int count1;
+KeyValueLpStrFloat values1[count1] <optimize=false>;
+
+int count2;
+KeyValueLpStrFloat values2[count2] <optimize=false>;
+
+int count3;
+KeyValueLpStrFloat values3[count3] <optimize=false>;
+
+int count4;
+KeyValueIntFloat values4[count3] <optimize=false>;
+
+int i1; // 33

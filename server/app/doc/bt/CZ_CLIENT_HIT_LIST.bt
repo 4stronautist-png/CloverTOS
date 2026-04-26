@@ -1,0 +1,40 @@
+//--------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: CZ_CLIENT_HIT_LIST.bt
+//   Authors: exec
+//   Version: i373766
+//   Purpose: List of melee attack targets.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//   - i175075: f2 was added
+//------------------------------------------------
+
+#include "inc/common.bt";
+
+ClientHeaderDynamic header;
+
+int i1;
+int targetHandleCount;
+
+position attackerPos;
+
+// The "target" is the "area of affect" center for the attack.
+// For example, the position is equal to the attacker position,
+// plus 40 in the direction the character is facing when
+// striking at nothing with an Old Gladius.
+// Damage is presumably done to enemies in a radius around that
+// center position.
+position targetPos;
+direction targetDir;
+
+int skillId;
+byte b1;
+float f3;
+float f1;
+float f2;
+
+if (targetHandleCount > 0)
+    int targetHandles[targetHandleCount];

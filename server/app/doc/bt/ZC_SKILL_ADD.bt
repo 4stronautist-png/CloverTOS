@@ -1,0 +1,32 @@
+//------------------------------------------------
+//--- 010 Editor v8.0 Binary Template
+//
+//      File: ZC_SKILL_ADD.bt
+//   Authors: celophi
+//   Version: i170175
+//   Purpose: Adds a single skill to the character.
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+//#define PROPERTY_NAMES
+
+#include "inc/common.bt"
+
+ServerHeaderDynamic header;
+
+int64 characterId;
+byte registerQuickSkill;
+byte getFromSkillList;
+int64 l1;
+int64 objectId;
+int skillId;
+short propertiesSize;
+short reserved;
+int i2;
+int i3;
+
+if (propertiesSize > 0)
+    getProperties(propertiesSize);

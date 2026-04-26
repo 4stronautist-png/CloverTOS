@@ -1,0 +1,28 @@
+//------------------------------------------------
+//--- 010 Editor v11.0.1 Binary Template
+//
+//      File: ZC_COOLDOWN_LIST.bt
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+#include "inc/common.bt"
+
+typedef struct
+{
+    int cooldownId;
+    int remaining;
+    int duration;
+}
+Cooldown <optimize=false>;
+
+ServerHeaderDynamic header;
+
+int64 characterId;
+int count;
+if (count > 0)
+    Cooldown cooldowns[count];

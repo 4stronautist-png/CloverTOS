@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Melia.Zone</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyTitle>ZoneServer</AssemblyTitle>
+    <Product>ZoneServer</Product>
+    <Copyright>Copyright © 2023</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DotRecast.Detour" Version="2025.2.1" />
+    <PackageReference Include="DotRecast.Recast" Version="2025.2.1" />
+    <PackageReference Include="DotRecast.Recast.Toolset" Version="2025.2.1" />
+    <PackageReference Include="ExecTails.Yggdrasil" Version="1.7.4" />
+    <PackageReference Include="ExecTails.Yggdrasil.Ai" Version="1.0.1" />
+    <PackageReference Include="ExecTails.Yggdrasil.Data.JSON" Version="1.0.1" />
+    <PackageReference Include="ExecTails.Yggdrasil.Db.MySql" Version="1.1.2" />
+    <PackageReference Include="ExecTails.Yggdrasil.Scripting" Version="1.0.1" />
+    <PackageReference Include="ExecTails.Yggdrasil.Structures" Version="1.0.1" />
+    <PackageReference Include="geometry4Sharp" Version="1.0.0" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
+  </ItemGroup>
+</Project>

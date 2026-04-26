@@ -1,0 +1,205 @@
+﻿using System;
+using Melia.Shared.Versioning;
+using Yggdrasil.Logging;
+using Yggdrasil.Network.Framing;
+
+namespace Melia.Shared.Network
+{
+	public class TosFramer : IMessageFramer
+	{
+		public const int DynamicPacketSize = 0;
+
+		private readonly byte[] _headerBuffer;
+		private byte[] _messageBuffer;
+		private int _bytesReceived;
+		private readonly int _headerLength;
+
+		/// <summary>
+		/// Maximum size of messages.
+		/// </summary>
+		public int MaxMessageSize { get; }
+
+		/// <summary>
+		/// Called every time ReceiveData got a full message.
+		/// </summary>
+		public event Action<byte[]> MessageReceived;
+
+		/// <summary>
+		/// Creates new instance.
+		/// </summary>
+		/// <param name="maxMessageSize">Maximum size of messages</param>
+		public TosFramer(int maxMessageSize)
+		{
+			this.MaxMessageSize = maxMessageSize;
+			_headerBuffer = new byte[4];
+			_headerLength = 2;
+		}
+
+		/// <summary>
+		/// Wraps message in frame.
+		/// </summary>
+		/// <param name="message"></param>
+		/// <returns></returns>
+		public byte[] Frame(byte[] message)
+		{
+			throw new NotSupportedException();
+		}
+
+		/// <summary>
+		/// Calculates the size of the packet when framed.
+		/// </summary>
+		/// <param name="packet"></param>
+		/// <returns></returns>
+		/// <exception cref="ArgumentException"></exception>
+		public void GetPacketSize(Packet packet, out int tableSize, out int packetSize)
+		{
+			var op = packet.Op;
+
+			// Get size from table
+			tableSize = OpTable.GetSize(op);
+			if (tableSize == -1)
+				throw new ArgumentException("Size for op '" + op.ToString("X4") + "' unknown.");
+
+			// Prior to i174236 packet headers sent from the server to the
+			// client were 4 bytes shorter, as they didn't have the part
+			// that we call "checksum". Now they all have it. Should this
+			// change again at some point, the respective sizeof(int)s need
+			// to be removed again.
+
+			// Calculate length
+			//var fixHeaderSize = (sizeof(short) + sizeof(int) + sizeof(int) + packet.Length);
+			//var dynHeaderSize = (sizeof(short) + sizeof(int) + sizeof(int) + sizeof(short) + packet.Length);
+			//var size = (tableSize == DynamicPacketSize ? dynHeaderSize : tableSize);
+
+			// Check table length
+			if (tableSize == DynamicPacketSize)
+			{
+				var dynHeaderSize = (Versions.Client >= 174236) ?
+					sizeof(short) + sizeof(int) + sizeof(int) + sizeof(short) :
+					sizeof(short) + sizeof(int) + sizeof(short);
+				packetSize = dynHeaderSize + packet.Length;
+			}
+			else
+			{
+				var fixHeaderSize = (Versions.Client >= 174236) ?
+					sizeof(short) + sizeof(int) + sizeof(int) :
+					sizeof(short) + sizeof(int);
+				packetSize = fixHeaderSize + packet.Length;
+
+				// If the packet is bigger than the table size, we'd have
+				// to truncate it, messing up the network stream, so let's
+				// rather not do that.
+				if (packetSize > tableSize)
+				{
+					Log.Warning("Packet is bigger than specified in the packet size table. (op: {3} ({0:X4}), size: {1}, expected: {2})", op, packetSize, tableSize, OpTable.GetName(op));
+					throw new ArgumentException("Packet is bigger than specified in the packet size table. (op: {3} ({0:X4}), size: {1}, expected: {2})");
+				}
+
+				// If the packet is smaller than the table size we might
+				// run into issues with the data, but if just pad it with
+				// zeros we can at least still send it and don't have to
+				// terminate the connection.
+				if (packetSize < tableSize)
+				{
+					Log.Warning("Packet size doesn't match packet table size. (op: {3} ({0:X4}), size: {1}, expected: {2})", op, packetSize, tableSize, OpTable.GetName(op));
+					packetSize = tableSize;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Wraps packet body in frame and writes it to buffer.
+		/// </summary>
+		/// <param name="packet"></param>
+		/// <param name="tableSize"></param>
+		/// <param name="packetSize"></param>
+		/// <param name="buffer"></param>
+		public void Frame(Packet packet, int tableSize, int packetSize, byte[] buffer)
+		{
+			var op = packet.Op;
+
+			// Write op (short, little-endian) without BitConverter allocation
+			buffer[0] = (byte)(op & 0xFF);
+			buffer[1] = (byte)((op >> 8) & 0xFF);
+
+			// Write checksum (-1 as int, little-endian)
+			buffer[2] = 0xFF;
+			buffer[3] = 0xFF;
+			buffer[4] = 0xFF;
+			buffer[5] = 0xFF;
+
+			var offset = (Versions.Client >= 174236) ?
+				sizeof(short) + sizeof(int) + sizeof(int) :
+				sizeof(short) + sizeof(int);
+			if (tableSize == 0)
+			{
+				// Write packetSize (short, little-endian)
+				buffer[offset] = (byte)(packetSize & 0xFF);
+				buffer[offset + 1] = (byte)((packetSize >> 8) & 0xFF);
+				offset += sizeof(short);
+			}
+
+			packet.Build(ref buffer, offset);
+		}
+
+		/// <summary>
+		/// Receives data and calls MessageReceived every time a full message
+		/// has arrived.
+		/// </summary>
+		/// <param name="data">Buffer to read from.</param>
+		/// <param name="length">Length of actual information in data.</param>
+		/// <exception cref="InvalidMessageSizeException">
+		/// Thrown if a message has an invalid size. Should this occur,
+		/// the connection should be terminated, because it's not save to
+		/// keep receiving anymore.
+		/// </exception>
+		public void ReceiveData(byte[] data, int length)
+		{
+			var bytesAvailable = length;
+			if (bytesAvailable == 0)
+				return;
+
+			for (var i = 0; i < bytesAvailable;)
+			{
+				if (_messageBuffer == null)
+				{
+					_headerBuffer[_bytesReceived] = data[i];
+					_bytesReceived += 1;
+					i += 1;
+
+					// Read header once we got enough bytes and prepare
+					// to read the message
+					if (_bytesReceived == _headerLength)
+					{
+						var messageSize = BitConverter.ToUInt16(_headerBuffer, 0);
+
+						if (messageSize < 0 || messageSize > this.MaxMessageSize)
+							throw new InvalidMessageSizeException("Invalid size (" + messageSize + ").");
+
+						_messageBuffer = new byte[messageSize];
+						_bytesReceived = 0;
+					}
+				}
+
+				if (_messageBuffer != null)
+				{
+					// Read as many bytes as we can into the message buffer
+					var read = Math.Min(_messageBuffer.Length - _bytesReceived, bytesAvailable - i);
+					Buffer.BlockCopy(data, i, _messageBuffer, _bytesReceived, read);
+
+					_bytesReceived += read;
+					i += read;
+
+					// Send message once we got all bytes
+					if (_bytesReceived == _messageBuffer.Length)
+					{
+						this.MessageReceived?.Invoke(_messageBuffer);
+
+						_messageBuffer = null;
+						_bytesReceived = 0;
+					}
+				}
+			}
+		}
+	}
+}

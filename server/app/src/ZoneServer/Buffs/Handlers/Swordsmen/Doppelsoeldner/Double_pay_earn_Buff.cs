@@ -1,0 +1,50 @@
+﻿using Melia.Shared.Game.Const;
+using Melia.Zone.Buffs.Base;
+using Melia.Zone.Scripting.ScriptableEvents;
+using Melia.Zone.Skills;
+using Melia.Zone.Skills.Combat;
+using Melia.Zone.World.Actors;
+
+namespace Melia.Zone.Buffs.Handlers.Swordsmen.Doppelsoeldner
+{
+	/// <summary>
+	/// Handler for the Double Pay Earn buff, which increases the item
+	/// drop rate, but also the damage you take.
+	/// </summary>
+	[BuffHandler(BuffId.Double_pay_earn_Buff)]
+	public class Double_pay_earn_Buff : BuffHandler
+	{
+		private const float LootingChanceBonusPerLevel = 3;
+
+		public override void OnActivate(Buff buff, ActivationType activationType)
+		{
+			var bonus = this.GetLootingChanceBonus(buff);
+
+			AddPropertyModifier(buff, buff.Target, PropertyName.LootingChance_BM, bonus);
+		}
+
+		public override void OnEnd(Buff buff)
+		{
+			RemovePropertyModifier(buff, buff.Target, PropertyName.LootingChance_BM);
+		}
+
+		private float GetLootingChanceBonus(Buff buff)
+		{
+			var skillLevel = buff.NumArg1;
+			var percentPerLevel = LootingChanceBonusPerLevel;
+
+			// The bonus is a value in tens, so a 3% bonus requires a value of 30.
+			return percentPerLevel * skillLevel * 10;
+		}
+
+		[CombatCalcModifier(CombatCalcPhase.BeforeCalc, BuffId.Double_pay_earn_Buff)]
+		public void OnBeforeCalc(ICombatEntity attacker, ICombatEntity target, Skill skill, SkillModifier modifier, SkillHitResult skillHitResult)
+		{
+			if (!target.TryGetBuff(BuffId.Double_pay_earn_Buff, out var buff))
+				return;
+
+			// Add 100% damage via multiplier
+			modifier.DamageMultiplier += 1;
+		}
+	}
+}

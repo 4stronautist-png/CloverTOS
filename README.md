@@ -1,0 +1,93 @@
+# CloverTOS
+
+Monorepo do ambiente local do CloverTOS.
+
+Este repositório empacota:
+
+- `server/`: o código-fonte do servidor Clover atual, bootstrap Docker, compose e dump do banco `clover_local`.
+- `client/`: instalador leve e launcher do cliente CloverTOS para Windows.
+
+## Estrutura
+
+- `server/app`
+  - código-fonte do servidor Clover baseado no estado atual que está rodando localmente
+- `server/docker`
+  - `Dockerfile`
+  - `docker-compose.yml`
+  - `entrypoint.sh`
+  - `db/init/20-clover_local.sql.gz`
+- `server/scripts`
+  - `up.sh`
+  - `down.sh`
+  - `logs.sh`
+- `client/tools`
+  - `Install-CloverTOS-Local.ps1`
+  - `Start-CloverTOS-Client.ps1`
+
+## Subindo o server no WSL
+
+No WSL:
+
+```bash
+cd server/scripts
+./up.sh
+```
+
+Para parar:
+
+```bash
+cd server/scripts
+./down.sh
+```
+
+Para acompanhar logs:
+
+```bash
+cd server/scripts
+./logs.sh
+```
+
+O compose sobe:
+
+- MariaDB
+- BarracksServer
+- ZoneServer1
+- ZoneServer2
+- SocialServer1
+- SocialServer2
+- WebServer
+
+Portas expostas:
+
+- `18080` -> web/patch/register
+- `2000` -> barracks
+- `7001`, `7002` -> zone
+- `9001`, `9002` -> social
+
+## Instalando o cliente no Windows
+
+Este repositório nao inclui os binários proprietários completos do Tree of Savior. Em vez disso, o instalador reutiliza a instalação oficial já existente no Windows e cria uma cópia local configurada para o CloverTOS.
+
+No Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\client\tools\Install-CloverTOS-Local.ps1
+```
+
+Depois, para abrir o jogo:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\client\tools\Start-CloverTOS-Client.ps1
+```
+
+Ou diretamente:
+
+```txt
+C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
+```
+
+## Observações
+
+- O dump do banco representa o estado atual do `clover_local` no momento do empacotamento.
+- Na primeira subida do compose, o banco é restaurado automaticamente.
+- Em subidas seguintes, o volume do MariaDB preserva o estado salvo.
