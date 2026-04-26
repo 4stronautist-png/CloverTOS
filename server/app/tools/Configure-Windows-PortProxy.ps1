@@ -1,8 +1,9 @@
 param(
     [string]$Distro = "Ubuntu-20.04",
-    [string]$ListenAddress = "0.0.0.0",
+    [string[]]$ListenAddresses = @("127.0.0.1"),
     [int[]]$Ports = @(2000, 7001, 7002, 8080, 9001, 9002),
-    [int]$ExternalWebPort = 18080
+    [int]$ExternalWebPort = 18080,
+    [switch]$ExposeLan
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,16 +27,29 @@ if (-not $wslIp) {
 
 Write-Host "WSL IP: $wslIp" -ForegroundColor Green
 
-Write-Host "Configurando portproxy TCP..." -ForegroundColor Cyan
-foreach ($port in $Ports) {
-    & netsh interface portproxy delete v4tov4 listenaddress=$ListenAddress listenport=$port | Out-Null
-    & netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$port connectaddress=$wslIp connectport=$port | Out-Null
-    Write-Host "  ${ListenAddress}:${port} -> ${wslIp}:${port}"
+if ($ExposeLan -and -not ($ListenAddresses -contains "0.0.0.0")) {
+    $ListenAddresses += "0.0.0.0"
 }
 
-& netsh interface portproxy delete v4tov4 listenaddress=$ListenAddress listenport=$ExternalWebPort | Out-Null
-& netsh interface portproxy add v4tov4 listenaddress=$ListenAddress listenport=$ExternalWebPort connectaddress=$wslIp connectport=8080 | Out-Null
-Write-Host "  ${ListenAddress}:${ExternalWebPort} -> ${wslIp}:8080"
+Write-Host "Configurando portproxy TCP..." -ForegroundColor Cyan
+$cleanupAddresses = @("127.0.0.1", "0.0.0.0") + $ListenAddresses | Select-Object -Unique
+foreach ($cleanupAddress in $cleanupAddresses) {
+    foreach ($port in $Ports) {
+        & netsh interface portproxy delete v4tov4 listenaddress=$cleanupAddress listenport=$port | Out-Null
+    }
+
+    & netsh interface portproxy delete v4tov4 listenaddress=$cleanupAddress listenport=$ExternalWebPort | Out-Null
+}
+
+foreach ($listenAddress in $ListenAddresses) {
+    foreach ($port in $Ports) {
+        & netsh interface portproxy add v4tov4 listenaddress=$listenAddress listenport=$port connectaddress=$wslIp connectport=$port | Out-Null
+        Write-Host "  ${listenAddress}:${port} -> ${wslIp}:${port}"
+    }
+
+    & netsh interface portproxy add v4tov4 listenaddress=$listenAddress listenport=$ExternalWebPort connectaddress=$wslIp connectport=8080 | Out-Null
+    Write-Host "  ${listenAddress}:${ExternalWebPort} -> ${wslIp}:8080"
+}
 
 Write-Host "Configurando Windows Firewall..." -ForegroundColor Cyan
 $ruleName = "CloverTOS Melia TCP"

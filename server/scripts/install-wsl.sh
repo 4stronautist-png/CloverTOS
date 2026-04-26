@@ -191,8 +191,32 @@ configure_windows_portproxy() {
 	fi
 
 	log "Configurando portproxy/firewall do Windows"
-	powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$APP_DIR/tools/Configure-Windows-PortProxy.ps1")\" -ExternalWebPort ${PUBLIC_WEB_PORT}'" >/dev/null 2>&1 || true
+	local distro_name
+	distro_name="${WSL_DISTRO_NAME:-Ubuntu-20.04}"
+	powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$APP_DIR/tools/Configure-Windows-PortProxy.ps1")\" -Distro \"${distro_name}\" -ExternalWebPort ${PUBLIC_WEB_PORT}'" >/dev/null 2>&1 || true
 	ok "Portproxy solicitado ao Windows"
+}
+
+verify_windows_localhost() {
+	if ! command -v powershell.exe >/dev/null 2>&1; then
+		return
+	fi
+
+	log "Validando localhost do Windows"
+
+	if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri 'http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml'; if (\$r.Content -notmatch 'Server0_IP=\"127\.0\.0\.1\"') { throw 'serverlist nao aponta para 127.0.0.1' }" >/dev/null 2>&1; then
+		ok "Windows acessa serverlist em 127.0.0.1:${PUBLIC_WEB_PORT}"
+	else
+		echo "[WARN] Windows ainda nao acessou http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
+		echo "[WARN] Rode no PowerShell como administrador:"
+		echo "[WARN] powershell -ExecutionPolicy Bypass -File .\\server\\app\\tools\\Configure-Windows-PortProxy.ps1"
+	fi
+
+	if powershell.exe -NoProfile -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 2000 -InformationLevel Quiet)) { exit 1 }" >/dev/null 2>&1; then
+		ok "Windows acessa Barracks em 127.0.0.1:2000"
+	else
+		echo "[WARN] Windows ainda nao acessou o Barracks em 127.0.0.1:2000"
+	fi
 }
 
 create_default_account() {
@@ -243,6 +267,7 @@ if [ "$START_AFTER_INSTALL" -eq 1 ]; then
 	cd "$APP_DIR"
 	DB_NAME="$DB_NAME" DB_USER="$DB_USER" DB_PASS="$DB_PASS" GROUP_ID="$GROUP_ID" PUBLIC_HOST="$PUBLIC_HOST" PUBLIC_WEB_PORT="$PUBLIC_WEB_PORT" ./start-server.sh
 	create_default_account
+	verify_windows_localhost
 else
 	ok "Instalacao concluida sem iniciar o servidor"
 fi

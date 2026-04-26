@@ -50,9 +50,10 @@ get_wsl_ip() {
 
 windows_portproxy_target() {
     local port=$1
+    local listen_address=${2:-127.0.0.1}
     powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null \
         | tr -d '\r' \
-        | awk -v port="$port" '$1 == "0.0.0.0" && $2 == port { print $3; exit }'
+        | awk -v address="$listen_address" -v port="$port" '$1 == address && $2 == port { print $3; exit }'
 }
 
 ensure_server_config() {
@@ -135,7 +136,7 @@ ensure_windows_portproxy() {
     log_info "Verificando portproxy do Windows..."
     for port in "${MELIA_PORTS[@]}" "$PUBLIC_WEB_PORT"; do
         local target
-        target=$(windows_portproxy_target "$port" || true)
+        target=$(windows_portproxy_target "$port" "127.0.0.1" || true)
         if [ "$target" != "$wsl_ip" ]; then
             stale=1
             log_warning "Portproxy $port aponta para '${target:-nenhum}', esperado $wsl_ip."
@@ -148,7 +149,9 @@ ensure_windows_portproxy() {
     fi
 
     log_warning "Atualizando portproxy do Windows..."
-    powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$WINDOWS_PORTPROXY_SCRIPT")\"'" >/dev/null 2>&1 || true
+    local distro_name
+    distro_name="${WSL_DISTRO_NAME:-Ubuntu-20.04}"
+    powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$WINDOWS_PORTPROXY_SCRIPT")\" -Distro \"${distro_name}\" -ExternalWebPort ${PUBLIC_WEB_PORT}'" >/dev/null 2>&1 || true
     sleep 2
 }
 
@@ -211,6 +214,36 @@ verify_http_endpoint() {
     fi
     log_error "Endpoint nao respondeu corretamente: $url"
     return 1
+}
+
+verify_windows_client_connectivity() {
+    if ! command -v powershell.exe >/dev/null 2>&1; then
+        log_warning "powershell.exe nao encontrado no WSL; pulando validacao do localhost do Windows."
+        return 0
+    fi
+
+    log_info "Validando conectividade do cliente Windows em 127.0.0.1..."
+
+    if ! powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri 'http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml'; if (\$r.Content -notmatch 'Server0_IP=\"127\.0\.0\.1\"') { throw 'serverlist nao aponta para 127.0.0.1' }" >/dev/null 2>&1; then
+        log_warning "Windows nao acessou o WebServer em 127.0.0.1:${PUBLIC_WEB_PORT}. Tentando reconfigurar portproxy..."
+        ensure_windows_portproxy
+        sleep 2
+    fi
+
+    if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri 'http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml'; if (\$r.Content -notmatch 'Server0_IP=\"127\.0\.0\.1\"') { throw 'serverlist nao aponta para 127.0.0.1' }" >/dev/null 2>&1; then
+        log_success "Cliente Windows consegue acessar serverlist em 127.0.0.1:${PUBLIC_WEB_PORT}"
+    else
+        log_error "Cliente Windows nao consegue acessar http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
+        log_error "Rode como administrador: powershell -ExecutionPolicy Bypass -File .\\server\\app\\tools\\Configure-Windows-PortProxy.ps1"
+        return 1
+    fi
+
+    if powershell.exe -NoProfile -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 2000 -InformationLevel Quiet)) { exit 1 }" >/dev/null 2>&1; then
+        log_success "Cliente Windows consegue acessar Barracks em 127.0.0.1:2000"
+    else
+        log_error "Cliente Windows nao consegue acessar Barracks em 127.0.0.1:2000"
+        return 1
+    fi
 }
 
 start_server() {
@@ -308,6 +341,12 @@ for port in 2000 7001 7002 8080 9001 9002; do
 done
 
 if verify_http_endpoint "http://127.0.0.1:8080/toslive/patch/serverlist.xml"; then
+    :
+else
+    final_check_failed=1
+fi
+
+if verify_windows_client_connectivity; then
     :
 else
     final_check_failed=1
