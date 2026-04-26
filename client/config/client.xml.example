@@ -2,7 +2,7 @@
 <client>
 <General Width="1280" Height="720" WindowMode="1" UseSteamClient="NO" />
 <Display Shadow="3" AntiAliasing="0" VSync="0" FullScreenBloom="0" SSAO="0" />
-<GameOption ServerListURL="http://127.0.0.1:18080/toslive/patch/serverlist.xml" StaticConfigURL="http://127.0.0.1:18080/toslive/patch/" NewAccountURL="http://127.0.0.1:18080/register/index.html" PaymentURL="http://127.0.0.1:18080/toslive/patch/" LoadingImgURL="http://127.0.0.1:18080/toslive/patch/" LoadingImgCount="10"/>
+<GameOption ServerListURL="http://127.0.0.1:8080/toslive/patch/serverlist.xml" StaticConfigURL="http://127.0.0.1:8080/toslive/patch/" NewAccountURL="http://127.0.0.1:8080/register/index.html" PaymentURL="http://127.0.0.1:8080/toslive/patch/" LoadingImgURL="http://127.0.0.1:8080/toslive/patch/" LoadingImgCount="10"/>
 <Locale ServiceNation="GLOBAL" Dictionary="YES" DefaultLanguage="English" />
 <Security CheatCheck="NO" GameGuard="NO" XignCode="NO" />
 </client>

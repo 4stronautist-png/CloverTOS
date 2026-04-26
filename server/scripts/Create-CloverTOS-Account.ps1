@@ -2,7 +2,7 @@ param(
     [string]$Username = "clover",
     [string]$Password = "clover123",
     [string]$HostName = "127.0.0.1",
-    [int]$WebPort = 18080
+    [int]$WebPort = 8080
 )
 
 $ErrorActionPreference = "Stop"

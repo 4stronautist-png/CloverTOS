@@ -1,7 +1,7 @@
 param(
     [string]$Destination = "C:\CloverTOS-Local",
     [string]$HostName = "127.0.0.1",
-    [int]$WebPort = 18080,
+    [int]$WebPort = 8080,
     [int]$BarracksPort = 2000,
     [int]$GroupId = 1001,
     [string]$ServerName = "Clover",

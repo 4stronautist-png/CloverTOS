@@ -88,7 +88,7 @@ powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -
 
 ## Portas
 
-- `18080` no Windows -> `8080` no WSL para web/patch/register.
+- `8080` -> web/patch/register.
 - `2000` -> Barracks.
 - `7001`, `7002` -> Zone.
 - `9001`, `9002` -> Social.
@@ -96,7 +96,7 @@ powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -
 ServerListURL esperado:
 
 ```txt
-http://127.0.0.1:18080/toslive/patch/serverlist.xml
+http://127.0.0.1:8080/toslive/patch/serverlist.xml
 ```
 
 ## Conta padrao

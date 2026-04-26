@@ -23,5 +23,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\Start-CloverTOS-Client.ps1
 
 - server name: `Clover`
 - service nation: `GLOBAL`
-- web URL: `http://127.0.0.1:18080/toslive/patch/`
-- register URL: `http://127.0.0.1:18080/register/index.html`
+- web URL: `http://127.0.0.1:8080/toslive/patch/`
+- register URL: `http://127.0.0.1:8080/register/index.html`

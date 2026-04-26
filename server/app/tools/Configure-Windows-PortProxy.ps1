@@ -2,7 +2,7 @@ param(
     [string]$Distro = "Ubuntu-20.04",
     [string[]]$ListenAddresses = @("127.0.0.1"),
     [int[]]$Ports = @(2000, 7001, 7002, 8080, 9001, 9002),
-    [int]$ExternalWebPort = 18080,
+    [int]$ExternalWebPort = 8080,
     [switch]$ExposeLan
 )
 
@@ -47,8 +47,10 @@ foreach ($listenAddress in $ListenAddresses) {
         Write-Host "  ${listenAddress}:${port} -> ${wslIp}:${port}"
     }
 
-    & netsh interface portproxy add v4tov4 listenaddress=$listenAddress listenport=$ExternalWebPort connectaddress=$wslIp connectport=8080 | Out-Null
-    Write-Host "  ${listenAddress}:${ExternalWebPort} -> ${wslIp}:8080"
+    if ($Ports -notcontains $ExternalWebPort) {
+        & netsh interface portproxy add v4tov4 listenaddress=$listenAddress listenport=$ExternalWebPort connectaddress=$wslIp connectport=8080 | Out-Null
+        Write-Host "  ${listenAddress}:${ExternalWebPort} -> ${wslIp}:8080"
+    }
 }
 
 Write-Host "Configurando Windows Firewall..." -ForegroundColor Cyan
@@ -57,7 +59,9 @@ $ruleName = "CloverTOS Melia TCP"
 foreach ($port in $Ports) {
     & netsh advfirewall firewall add rule name="$ruleName" dir=in action=allow protocol=TCP localport=$port | Out-Null
 }
-& netsh advfirewall firewall add rule name="$ruleName" dir=in action=allow protocol=TCP localport=$ExternalWebPort | Out-Null
+if ($Ports -notcontains $ExternalWebPort) {
+    & netsh advfirewall firewall add rule name="$ruleName" dir=in action=allow protocol=TCP localport=$ExternalWebPort | Out-Null
+}
 
 Write-Host ""
 Write-Host "Portproxy ativo:" -ForegroundColor Green

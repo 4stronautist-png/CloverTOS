@@ -25,7 +25,7 @@ powershell -ExecutionPolicy Bypass -File .\client\tools\Start-CloverTOS-Client.p
 
 ## Endpoints padrão
 
-- patch/web: `http://127.0.0.1:18080/toslive/patch/serverlist.xml`
+- patch/web: `http://127.0.0.1:8080/toslive/patch/serverlist.xml`
 - barracks: `127.0.0.1:2000`
 
 ## Observação
