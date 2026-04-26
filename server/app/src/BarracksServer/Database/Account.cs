@@ -182,23 +182,16 @@ namespace Melia.Barracks.Database
 		/// Adds character to account object and assigns index and team name.
 		/// </summary>
 		/// <param name="character"></param>
-		private bool AddCharacter(Character character)
+		private void AddCharacter(Character character)
 		{
 			lock (_characters)
 			{
-				var indexChanged = false;
-				var indexIsValid = character.Index != 0 && !_characters.Any(a => a.Index == character.Index);
-
-				if (!indexIsValid)
+				for (byte i = 1; i <= byte.MaxValue; ++i)
 				{
-					for (byte i = 1; i <= byte.MaxValue; ++i)
+					if (!_characters.Any(a => a.Index == i))
 					{
-						if (!_characters.Any(a => a.Index == i))
-						{
-							character.Index = i;
-							indexChanged = true;
-							break;
-						}
+						character.Index = i;
+						break;
 					}
 				}
 
@@ -206,7 +199,6 @@ namespace Melia.Barracks.Database
 				character.TeamName = this.TeamName;
 
 				_characters.Add(character);
-				return indexChanged;
 			}
 		}
 
@@ -277,8 +269,8 @@ namespace Melia.Barracks.Database
 			var characters = BarracksServer.Instance.Database.GetCharacters(account.Id);
 			foreach (var character in characters)
 			{
-				if (account.AddCharacter(character))
-					BarracksServer.Instance.Database.SaveCharacter(character);
+				account.AddCharacter(character);
+				BarracksServer.Instance.Database.SaveCharacter(character);
 			}
 
 			var companions = BarracksServer.Instance.Database.GetCompanions(account.Id);
