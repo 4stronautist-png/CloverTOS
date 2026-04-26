@@ -20,6 +20,7 @@ Este repositório empacota:
   - `up.sh`
   - `down.sh`
   - `logs.sh`
+  - `Manage-CloverTOS.ps1`
 - `client/tools`
   - `Install-CloverTOS-Local.ps1`
   - `Start-CloverTOS-Client.ps1`
@@ -45,6 +46,32 @@ Para acompanhar logs:
 ```bash
 cd server/scripts
 ./logs.sh
+```
+
+## Subindo o server pelo PowerShell
+
+No Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action up
+```
+
+Para parar:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action down
+```
+
+Para acompanhar logs:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action logs
+```
+
+Para ver containers:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Manage-CloverTOS.ps1 -Action ps
 ```
 
 O compose sobe:
