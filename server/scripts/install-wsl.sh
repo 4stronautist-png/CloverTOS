@@ -155,6 +155,118 @@ EOF
 	ok "Configuracao do servidor pronta"
 }
 
+ensure_generated_user_files() {
+	log "Garantindo estrutura user/ gerada"
+
+	mkdir -p "$APP_DIR/user/scripts/zone" "$APP_DIR/user/web/register"
+
+	if [ ! -f "$APP_DIR/user/scripts/zone/ScriptsZoneUser.csproj" ]; then
+		cat > "$APP_DIR/user/scripts/zone/ScriptsZoneUser.csproj" <<'EOF'
+<Project>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<OutputPath>..\..\..\user\tmp\build\scripts\zone_user\bin\</OutputPath>
+		<BaseIntermediateOutputPath>..\..\..\user\tmp\build\scripts\zone_user\obj\</BaseIntermediateOutputPath>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+		<OutputPath>..\..\..\user\tmp\build\scripts\zone_user\bin\</OutputPath>
+		<BaseIntermediateOutputPath>..\..\..\user\tmp\build\scripts\zone_user\obj\</BaseIntermediateOutputPath>
+	</PropertyGroup>
+	<Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<OutputType>Library</OutputType>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+	<Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\src\ZoneServer\ZoneServer.csproj" />
+		<ProjectReference Include="..\..\..\src\Shared\Shared.csproj" />
+	</ItemGroup>
+</Project>
+EOF
+	fi
+
+	if [ ! -f "$APP_DIR/user/scripts/zone/scripts_custom.txt" ]; then
+		cat > "$APP_DIR/user/scripts/zone/scripts_custom.txt" <<'EOF'
+// CloverTOS
+// Add custom user zone scripts here, one relative path per line.
+//---------------------------------------------------------------------------
+EOF
+	fi
+
+	if [ ! -f "$APP_DIR/user/scripts/zone/scripts_content.txt" ]; then
+		cat > "$APP_DIR/user/scripts/zone/scripts_content.txt" <<'EOF'
+// CloverTOS
+// Add custom user content scripts here, one relative path per line.
+//---------------------------------------------------------------------------
+EOF
+	fi
+
+	if [ ! -f "$APP_DIR/user/scripts/zone/.editorconfig" ]; then
+		cat > "$APP_DIR/user/scripts/zone/.editorconfig" <<'EOF'
+root = false
+
+[*.cs]
+indent_style = tab
+indent_size = 4
+EOF
+	fi
+
+	if [ ! -f "$APP_DIR/user/web/register/index.html" ]; then
+		cat > "$APP_DIR/user/web/register/index.html" <<'EOF'
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>CloverTOS Account</title>
+	<style>
+		body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: Segoe UI, sans-serif; background: #111820; color: #eef4fb; }
+		main { width: min(420px, calc(100vw - 32px)); border: 1px solid #314255; background: #1b2530; padding: 28px; }
+		label { display: block; margin-top: 12px; color: #a7b6c8; }
+		input, button { width: 100%; box-sizing: border-box; padding: 12px; margin-top: 6px; }
+		button { margin-top: 18px; border: 0; background: #4fd1a5; font-weight: 700; cursor: pointer; }
+		#status { min-height: 22px; margin-top: 14px; }
+	</style>
+</head>
+<body>
+	<main>
+		<h1>Create CloverTOS Account</h1>
+		<form id="form">
+			<label>Username<input id="username" minlength="4" required></label>
+			<label>Password<input id="password1" type="password" minlength="6" required></label>
+			<label>Confirm password<input id="password2" type="password" minlength="6" required></label>
+			<button type="submit">Create account</button>
+			<div id="status"></div>
+		</form>
+	</main>
+	<script>
+		const form = document.getElementById('form');
+		const status = document.getElementById('status');
+		form.addEventListener('submit', async event => {
+			event.preventDefault();
+			const body = {
+				username: username.value.trim(),
+				password1: password1.value,
+				password2: password2.value
+			};
+			const response = await fetch('/api/account/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+			const data = await response.json().catch(() => ({}));
+			status.textContent = response.ok ? 'Account created. You can log in now.' : (data.error || 'Failed to create account.');
+		});
+	</script>
+</body>
+</html>
+EOF
+	fi
+
+	ok "Estrutura user/ pronta"
+}
+
 install_packages() {
 	log "Instalando dependencias do Ubuntu WSL"
 
@@ -259,6 +371,7 @@ install_dotnet
 start_mariadb
 configure_database
 write_server_config
+ensure_generated_user_files
 build_server
 configure_windows_portproxy
 
