@@ -1,6 +1,9 @@
 param(
     [ValidateSet("up", "down", "logs", "ps")]
     [string]$Action = "up",
+    [string]$PublicHost = "127.0.0.1",
+    [string]$ServerName = "Clover",
+    [int]$GroupId = 1001,
     [switch]$RemoveVolumes
 )
 
@@ -17,42 +20,45 @@ function Write-Ok($Message) {
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $serverDir = Split-Path -Parent $scriptDir
-$repoRoot = Split-Path -Parent $serverDir
-$wslRepoRoot = $repoRoot -replace '^\\\\wsl\.localhost\\Ubuntu-20\.04', ''
-$wslRepoRoot = $wslRepoRoot -replace '\\', '/'
-$composeFile = "$wslRepoRoot/server/docker/docker-compose.yml"
+$composeFile = Join-Path $serverDir "docker\docker-compose.yml"
 
-function Invoke-WslBash {
-    param([string]$Command)
+function Invoke-DockerCompose {
+    param([string[]]$Arguments)
 
-    & wsl.exe -d Ubuntu-20.04 -u z3ck -- bash -lc $Command
+    & docker @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Comando WSL falhou com codigo $LASTEXITCODE"
+        throw "Docker falhou com codigo $LASTEXITCODE"
     }
 }
 
 Write-Step "Executando acao '$Action' para o CloverTOS"
 
+$env:PUBLIC_HOST = $PublicHost
+$env:SERVER_NAME = $ServerName
+$env:GROUP_ID = "$GroupId"
+
 switch ($Action) {
     "up" {
-        Invoke-WslBash "mkdir -p '$wslRepoRoot/server/runtime/logs' && docker compose -f '$composeFile' up -d --build && docker compose -f '$composeFile' ps"
+        New-Item -ItemType Directory -Force -Path (Join-Path $serverDir "runtime\logs") | Out-Null
+        Invoke-DockerCompose @("compose", "-f", $composeFile, "up", "-d", "--build")
+        Invoke-DockerCompose @("compose", "-f", $composeFile, "ps")
         Write-Ok "Ambiente CloverTOS iniciado"
     }
     "down" {
         if ($RemoveVolumes) {
-            Invoke-WslBash "docker compose -f '$composeFile' down -v"
+            Invoke-DockerCompose @("compose", "-f", $composeFile, "down", "-v")
             Write-Ok "Ambiente CloverTOS parado e volumes removidos"
         }
         else {
-            Invoke-WslBash "docker compose -f '$composeFile' down"
+            Invoke-DockerCompose @("compose", "-f", $composeFile, "down")
             Write-Ok "Ambiente CloverTOS parado"
         }
     }
     "logs" {
-        & wsl.exe -d Ubuntu-20.04 -u z3ck -- bash -lc "docker compose -f '$composeFile' logs -f"
+        & docker compose -f $composeFile logs -f
         exit $LASTEXITCODE
     }
     "ps" {
-        Invoke-WslBash "docker compose -f '$composeFile' ps"
+        Invoke-DockerCompose @("compose", "-f", $composeFile, "ps")
     }
 }

@@ -32,11 +32,11 @@ services:
       DB_USER: melia
       DB_PASS: melia123
       DB_NAME: clover_local
-      SERVER_NAME: Clover
-      SERVER_NATION: GLOBAL
-      GROUP_ID: 1001
-      PUBLIC_HOST: 127.0.0.1
-      INTER_HOST: 127.0.0.1
+      SERVER_NAME: ${SERVER_NAME:-Clover}
+      SERVER_NATION: ${SERVER_NATION:-GLOBAL}
+      GROUP_ID: ${GROUP_ID:-1001}
+      PUBLIC_HOST: ${PUBLIC_HOST:-127.0.0.1}
+      INTER_HOST: ${INTER_HOST:-127.0.0.1}
     ports:
       - "18080:8080"
       - "2000:2000"

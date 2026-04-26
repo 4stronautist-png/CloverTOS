@@ -113,6 +113,32 @@ Ou diretamente:
 C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
 ```
 
+## Instalacao completa em outro PC
+
+No Windows PowerShell, execute dentro da pasta do CloverTOS:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install-CloverTOS-Full.ps1 -StartClient
+```
+
+O script verifica Git e Docker Desktop, clona/atualiza o repositorio quando necessario, sobe MariaDB + servidores via Docker Compose, instala o cliente local a partir do Tree of Savior da Steam, cria a conta local padrao `clover / clover123`, e deixa o launcher em:
+
+```txt
+C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
+```
+
+Para informar a pasta do Tree of Savior manualmente:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install-CloverTOS-Full.ps1 -SteamTosPath "C:\Program Files (x86)\Steam\steamapps\common\TreeOfSavior" -StartClient
+```
+
+Tambem e possivel criar conta depois:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\server\scripts\Create-CloverTOS-Account.ps1 -Username meuuser -Password minhasenha
+```
+
 ## Observações
 
 - O dump do banco representa o estado atual do `clover_local` no momento do empacotamento.
