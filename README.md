@@ -34,7 +34,7 @@ O instalador do WSL faz:
 - escreve `server/app/user/conf/database.conf`;
 - escreve `server/app/user/db/servers.txt`;
 - compila `server/app/Melia.sln`;
-- configura portproxy/firewall do Windows quando possivel;
+- valida localhost do Windows em `127.0.0.1` sem portproxy;
 - sobe Barracks, Zone 1/2, Social 1/2 e WebServer;
 - cria/verifica a conta padrao `clover / clover123`.
 

@@ -297,18 +297,6 @@ build_server() {
 	ok "Build concluido"
 }
 
-configure_windows_portproxy() {
-	if ! command -v powershell.exe >/dev/null 2>&1; then
-		return
-	fi
-
-	log "Configurando portproxy/firewall do Windows"
-	local distro_name
-	distro_name="${WSL_DISTRO_NAME:-Ubuntu-20.04}"
-	powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$APP_DIR/tools/Configure-Windows-PortProxy.ps1")\" -Distro \"${distro_name}\" -ExternalWebPort ${PUBLIC_WEB_PORT}'" >/dev/null 2>&1 || true
-	ok "Portproxy solicitado ao Windows"
-}
-
 verify_windows_localhost() {
 	if ! command -v powershell.exe >/dev/null 2>&1; then
 		return
@@ -320,8 +308,7 @@ verify_windows_localhost() {
 		ok "Windows acessa serverlist em 127.0.0.1:${PUBLIC_WEB_PORT}"
 	else
 		echo "[WARN] Windows ainda nao acessou http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
-		echo "[WARN] Rode no PowerShell como administrador:"
-		echo "[WARN] powershell -ExecutionPolicy Bypass -File .\\server\\app\\tools\\Configure-Windows-PortProxy.ps1"
+		echo "[WARN] O modo local nao usa portproxy. Verifique se o WSL esta encaminhando localhost para o Windows."
 	fi
 
 	if powershell.exe -NoProfile -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 2000 -InformationLevel Quiet)) { exit 1 }" >/dev/null 2>&1; then
@@ -373,7 +360,6 @@ configure_database
 write_server_config
 ensure_generated_user_files
 build_server
-configure_windows_portproxy
 
 if [ "$START_AFTER_INSTALL" -eq 1 ]; then
 	log "Subindo stack CloverTOS"

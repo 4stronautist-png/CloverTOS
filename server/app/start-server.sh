@@ -21,7 +21,6 @@ WINDOWS_CLIENT_ROOT="${WINDOWS_CLIENT_ROOT:-/mnt/c/CloverTOS-Local}"
 WINDOWS_CLIENT_XML="${WINDOWS_CLIENT_XML:-$WINDOWS_CLIENT_ROOT/release/client.xml}"
 WINDOWS_USER_XML="${WINDOWS_USER_XML:-$WINDOWS_CLIENT_ROOT/release/user.xml}"
 WINDOWS_START_BAT="${WINDOWS_START_BAT:-$WINDOWS_CLIENT_ROOT/release/Start-CloverTOS-Local.bat}"
-WINDOWS_PORTPROXY_SCRIPT="${WINDOWS_PORTPROXY_SCRIPT:-$(pwd -P)/tools/Configure-Windows-PortProxy.ps1}"
 DB_NAME="${DB_NAME:-clover_local}"
 DB_USER="${DB_USER:-melia}"
 DB_PASS="${DB_PASS:-melia123}"
@@ -42,18 +41,6 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
-}
-
-get_wsl_ip() {
-    ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -n 1
-}
-
-windows_portproxy_target() {
-    local port=$1
-    local listen_address=${2:-127.0.0.1}
-    powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null \
-        | tr -d '\r' \
-        | awk -v address="$listen_address" -v port="$port" '$1 == address && $2 == port { print $3; exit }'
 }
 
 ensure_server_config() {
@@ -128,32 +115,6 @@ EOF
     log_success "Cliente local configurado em $WINDOWS_CLIENT_ROOT"
 }
 
-ensure_windows_portproxy() {
-    local wsl_ip
-    local stale=0
-    wsl_ip=$(get_wsl_ip)
-
-    log_info "Configurando portproxy do Windows como fallback para localhost..."
-    for port in "${MELIA_PORTS[@]}" "$PUBLIC_WEB_PORT"; do
-        local target
-        target=$(windows_portproxy_target "$port" "127.0.0.1" || true)
-        if [ "$target" != "$wsl_ip" ]; then
-            stale=1
-        fi
-    done
-
-    if [ "$stale" -eq 0 ]; then
-        log_success "Portproxy do Windows ja esta pronto."
-        return 0
-    fi
-
-    log_warning "Atualizando portproxy do Windows. O prompt de administrador pode aparecer."
-    local distro_name
-    distro_name="${WSL_DISTRO_NAME:-Ubuntu-20.04}"
-    powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$WINDOWS_PORTPROXY_SCRIPT")\" -Distro \"${distro_name}\" -ExternalWebPort ${PUBLIC_WEB_PORT}'" >/dev/null 2>&1 || true
-    sleep 2
-}
-
 wait_for_port() {
     local port=$1
     local timeout=${2:-45}
@@ -223,17 +184,11 @@ verify_windows_client_connectivity() {
 
     log_info "Validando conectividade do cliente Windows em 127.0.0.1..."
 
-    if ! powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri 'http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml'; if (\$r.Content -notmatch 'Server0_IP=\"127\.0\.0\.1\"') { throw 'serverlist nao aponta para 127.0.0.1' }" >/dev/null 2>&1; then
-        log_warning "Windows nao acessou o WebServer em 127.0.0.1:${PUBLIC_WEB_PORT}. Tentando reconfigurar portproxy..."
-        ensure_windows_portproxy
-        sleep 2
-    fi
-
     if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri 'http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml'; if (\$r.Content -notmatch 'Server0_IP=\"127\.0\.0\.1\"') { throw 'serverlist nao aponta para 127.0.0.1' }" >/dev/null 2>&1; then
         log_success "Cliente Windows consegue acessar serverlist em 127.0.0.1:${PUBLIC_WEB_PORT}"
     else
         log_error "Cliente Windows nao consegue acessar http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
-        log_error "Rode como administrador: powershell -ExecutionPolicy Bypass -File .\\server\\app\\tools\\Configure-Windows-PortProxy.ps1"
+        log_error "Sem portproxy no modo local: verifique se o WSL esta encaminhando localhost para o Windows."
         return 1
     fi
 

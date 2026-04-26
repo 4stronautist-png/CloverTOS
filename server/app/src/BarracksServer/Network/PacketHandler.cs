@@ -394,7 +394,6 @@ namespace Melia.Barracks.Network
 			character.Name = name;
 			character.TeamName = conn.Account.TeamName;
 			character.JobId = job;
-			character.Jobs.Add(job);
 			character.Gender = gender;
 			character.Hair = hair;
 			character.SkinColor = skinColor;
@@ -426,8 +425,6 @@ namespace Melia.Barracks.Network
 
 			Send.BC_COMMANDER_CREATE_SLOTID(conn, character);
 			Send.BC_COMMANDER_CREATE(conn, character);
-			Send.BC_COMMANDER_LIST(conn);
-			Send.BC_NORMAL.SetBarrackCharacter(conn, character);
 
 			BarracksServer.Instance.ServerEvents.OnCharacterCreated(new CharacterEventArgs(conn, character));
 		}

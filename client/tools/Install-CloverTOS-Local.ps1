@@ -245,8 +245,10 @@ function Reset-ClientState {
 
     $transientFiles = @(
         "user.xml",
+        "user_c.xml",
         "chatmacro.xml",
-        "system.cfg"
+        "system.cfg",
+        "serverlist_recent.xml"
     )
 
     foreach ($name in $transientFiles) {
@@ -255,6 +257,26 @@ function Reset-ClientState {
             Remove-Item -LiteralPath $path -Force
         }
     }
+}
+
+function Test-ClientServerList {
+    param([string]$ReleasePath)
+
+    $clientXmlPath = Join-Path $ReleasePath "client.xml"
+    [xml]$clientXml = Get-Content -LiteralPath $clientXmlPath -Raw
+    $serverListUrl = $clientXml.client.GameOption.ServerListURL
+
+    if (-not $serverListUrl) {
+        throw "client.xml nao contem ServerListURL."
+    }
+
+    Write-Step "Validando ServerListURL"
+    $response = Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri $serverListUrl
+    if ($response.Content -notmatch 'Server0_IP="127\.0\.0\.1"') {
+        throw "ServerListURL respondeu, mas nao aponta para 127.0.0.1: $serverListUrl"
+    }
+
+    Write-Ok "ServerListURL acessivel: $serverListUrl"
 }
 
 Write-Step "Localizando Tree of Savior instalado pela Steam"
@@ -306,6 +328,8 @@ Write-Step "Aplicando configuracao do servidor $ServerName"
 Write-ClientConfig -ReleasePath $releasePath
 Disable-Reshade -ReleasePath $releasePath
 Reset-ClientState -ReleasePath $releasePath
+Write-ClientConfig -ReleasePath $releasePath
+Test-ClientServerList -ReleasePath $releasePath
 Write-Ok "Configuracao aplicada"
 
 Write-Step "Finalizado"

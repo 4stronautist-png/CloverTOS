@@ -195,7 +195,6 @@ namespace Melia.Barracks.Database
 					}
 				}
 
-				character.AccountId = this.Id;
 				character.TeamName = this.TeamName;
 
 				_characters.Add(character);
@@ -268,10 +267,7 @@ namespace Melia.Barracks.Database
 
 			var characters = BarracksServer.Instance.Database.GetCharacters(account.Id);
 			foreach (var character in characters)
-			{
 				account.AddCharacter(character);
-				BarracksServer.Instance.Database.SaveCharacter(character);
-			}
 
 			var companions = BarracksServer.Instance.Database.GetCompanions(account.Id);
 			foreach (var companion in companions)
@@ -313,16 +309,8 @@ namespace Melia.Barracks.Database
 		/// <param name="character"></param>
 		public void CreateCharacter(Character character)
 		{
+			BarracksServer.Instance.Database.CreateCharacter(this.Id, character);
 			this.AddCharacter(character);
-			try
-			{
-				BarracksServer.Instance.Database.CreateCharacter(this.Id, character);
-			}
-			catch
-			{
-				this.RemoveCharacter(character);
-				throw;
-			}
 		}
 
 		/// <summary>

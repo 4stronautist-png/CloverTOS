@@ -3,6 +3,7 @@ param(
     [string[]]$ListenAddresses = @("127.0.0.1"),
     [int[]]$Ports = @(2000, 7001, 7002, 8080, 9001, 9002),
     [int]$ExternalWebPort = 8080,
+    [int[]]$LegacyWebPorts = @(18080),
     [switch]$ExposeLan
 )
 
@@ -39,6 +40,9 @@ foreach ($cleanupAddress in $cleanupAddresses) {
     }
 
     & netsh interface portproxy delete v4tov4 listenaddress=$cleanupAddress listenport=$ExternalWebPort | Out-Null
+    foreach ($legacyWebPort in $LegacyWebPorts) {
+        & netsh interface portproxy delete v4tov4 listenaddress=$cleanupAddress listenport=$legacyWebPort | Out-Null
+    }
 }
 
 foreach ($listenAddress in $ListenAddresses) {
@@ -51,6 +55,13 @@ foreach ($listenAddress in $ListenAddresses) {
         & netsh interface portproxy add v4tov4 listenaddress=$listenAddress listenport=$ExternalWebPort connectaddress=$wslIp connectport=8080 | Out-Null
         Write-Host "  ${listenAddress}:${ExternalWebPort} -> ${wslIp}:8080"
     }
+
+    foreach ($legacyWebPort in $LegacyWebPorts) {
+        if (($Ports -notcontains $legacyWebPort) -and ($legacyWebPort -ne $ExternalWebPort)) {
+            & netsh interface portproxy add v4tov4 listenaddress=$listenAddress listenport=$legacyWebPort connectaddress=$wslIp connectport=8080 | Out-Null
+            Write-Host "  ${listenAddress}:${legacyWebPort} -> ${wslIp}:8080"
+        }
+    }
 }
 
 Write-Host "Configurando Windows Firewall..." -ForegroundColor Cyan
@@ -61,6 +72,11 @@ foreach ($port in $Ports) {
 }
 if ($Ports -notcontains $ExternalWebPort) {
     & netsh advfirewall firewall add rule name="$ruleName" dir=in action=allow protocol=TCP localport=$ExternalWebPort | Out-Null
+}
+foreach ($legacyWebPort in $LegacyWebPorts) {
+    if (($Ports -notcontains $legacyWebPort) -and ($legacyWebPort -ne $ExternalWebPort)) {
+        & netsh advfirewall firewall add rule name="$ruleName" dir=in action=allow protocol=TCP localport=$legacyWebPort | Out-Null
+    }
 }
 
 Write-Host ""
