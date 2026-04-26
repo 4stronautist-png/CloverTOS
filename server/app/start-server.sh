@@ -133,22 +133,21 @@ ensure_windows_portproxy() {
     local stale=0
     wsl_ip=$(get_wsl_ip)
 
-    log_info "Verificando portproxy do Windows..."
+    log_info "Configurando portproxy do Windows como fallback para localhost..."
     for port in "${MELIA_PORTS[@]}" "$PUBLIC_WEB_PORT"; do
         local target
         target=$(windows_portproxy_target "$port" "127.0.0.1" || true)
         if [ "$target" != "$wsl_ip" ]; then
             stale=1
-            log_warning "Portproxy $port aponta para '${target:-nenhum}', esperado $wsl_ip."
         fi
     done
 
     if [ "$stale" -eq 0 ]; then
-        log_success "Portproxy do Windows ja esta correto."
+        log_success "Portproxy do Windows ja esta pronto."
         return 0
     fi
 
-    log_warning "Atualizando portproxy do Windows..."
+    log_warning "Atualizando portproxy do Windows. O prompt de administrador pode aparecer."
     local distro_name
     distro_name="${WSL_DISTRO_NAME:-Ubuntu-20.04}"
     powershell.exe -NoProfile -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w "$WINDOWS_PORTPROXY_SCRIPT")\" -Distro \"${distro_name}\" -ExternalWebPort ${PUBLIC_WEB_PORT}'" >/dev/null 2>&1 || true
@@ -246,6 +245,34 @@ verify_windows_client_connectivity() {
     fi
 }
 
+verify_account_api() {
+    local account_name="clover_api_check_$(date +%s)"
+    local account_pass="clover123"
+    local body
+    body="{\"username\":\"${account_name}\",\"password1\":\"${account_pass}\",\"password2\":\"${account_pass}\"}"
+
+    log_info "Validando API de criacao de conta..."
+
+    if curl -fsS \
+        -H "Content-Type: application/json" \
+        -d "$body" \
+        "http://127.0.0.1:8080/api/account/create" >/tmp/clovertos-account-api-check.json 2>/tmp/clovertos-account-api-check.err; then
+        if mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" -N -B -e "SELECT COUNT(*) FROM accounts WHERE name='${account_name}';" 2>/dev/null | grep -q '^1$'; then
+            log_success "API de conta gravou no banco corretamente."
+            return 0
+        fi
+
+        log_error "API de conta respondeu, mas a conta nao apareceu no banco."
+        return 1
+    fi
+
+    log_error "API de criacao de conta nao respondeu corretamente."
+    if [ -s /tmp/clovertos-account-api-check.err ]; then
+        tail -n 20 /tmp/clovertos-account-api-check.err
+    fi
+    return 1
+}
+
 start_server() {
     local server_name=$1
     local project_path=$2
@@ -277,7 +304,6 @@ mkdir -p user/conf user/db tools logs
 
 ensure_server_config
 ensure_windows_client_config
-ensure_windows_portproxy
 
 if ! command -v dotnet >/dev/null 2>&1; then
     log_error ".NET SDK nao encontrado."
@@ -347,6 +373,12 @@ else
 fi
 
 if verify_windows_client_connectivity; then
+    :
+else
+    final_check_failed=1
+fi
+
+if verify_account_api; then
     :
 else
     final_check_failed=1
