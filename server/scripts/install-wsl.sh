@@ -104,23 +104,10 @@ SQL
 		log "Restaurando dump ${DB_DUMP}"
 		mysql -u "$DB_USER" -p"$DB_PASS" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`; CREATE DATABASE \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 		gzip -dc "$DB_DUMP" | mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME"
-		mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" <<'SQL'
-SET @slot := 0;
-SET @accountId := 0;
-UPDATE characters c
-JOIN (
-	SELECT
-		characterId,
-		@slot := IF(@accountId = accountId, @slot + 1, 1) AS repairedSlot,
-		@accountId := accountId AS accountMarker
-	FROM characters
-	ORDER BY accountId, IF(slot IS NULL OR slot = 0, 999, slot), characterId
-) fixed ON fixed.characterId = c.characterId
-SET c.slot = fixed.repairedSlot
-WHERE c.slot IS NULL OR c.slot = 0;
-SQL
+		mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$APP_DIR/tools/clover-repair-barracks.sql"
 		ok "Dump restaurado"
 	else
+		mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$APP_DIR/tools/clover-repair-barracks.sql"
 		ok "Banco existente preservado por causa de --keep-db"
 	fi
 }

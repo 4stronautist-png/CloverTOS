@@ -425,6 +425,10 @@ namespace Melia.Barracks.Network
 
 			Send.BC_COMMANDER_CREATE_SLOTID(conn, character);
 			Send.BC_COMMANDER_CREATE(conn, character);
+			Send.BC_COMMANDER_LIST(conn);
+			Send.BC_NORMAL.CharacterInfo(conn);
+			Send.BC_NORMAL.TeamUI(conn);
+			Send.BC_NORMAL.ZoneTraffic(conn);
 
 			BarracksServer.Instance.ServerEvents.OnCharacterCreated(new CharacterEventArgs(conn, character));
 		}

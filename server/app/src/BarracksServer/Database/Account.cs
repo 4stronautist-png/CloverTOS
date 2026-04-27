@@ -186,19 +186,24 @@ namespace Melia.Barracks.Database
 		{
 			lock (_characters)
 			{
-				for (byte i = 1; i <= byte.MaxValue; ++i)
-				{
-					if (!_characters.Any(a => a.Index == i))
-					{
-						character.Index = i;
-						break;
-					}
-				}
+				if (character.Index == 0 || _characters.Any(a => a.Index == character.Index))
+					character.Index = this.GetNextCharacterIndex();
 
 				character.TeamName = this.TeamName;
 
 				_characters.Add(character);
 			}
+		}
+
+		private byte GetNextCharacterIndex()
+		{
+			for (byte i = 1; i <= byte.MaxValue; ++i)
+			{
+				if (!_characters.Any(a => a.Index == i))
+					return i;
+			}
+
+			return 0;
 		}
 
 		/// <summary>
@@ -268,6 +273,7 @@ namespace Melia.Barracks.Database
 			var characters = BarracksServer.Instance.Database.GetCharacters(account.Id);
 			foreach (var character in characters)
 				account.AddCharacter(character);
+			account.EnsureValidSelectedCharacterSlot();
 
 			var companions = BarracksServer.Instance.Database.GetCompanions(account.Id);
 			foreach (var companion in companions)
@@ -309,8 +315,31 @@ namespace Melia.Barracks.Database
 		/// <param name="character"></param>
 		public void CreateCharacter(Character character)
 		{
+			lock (_characters)
+			{
+				if (character.Index == 0 || _characters.Any(a => a.Index == character.Index))
+					character.Index = this.GetNextCharacterIndex();
+			}
+
 			BarracksServer.Instance.Database.CreateCharacter(this.Id, character);
 			this.AddCharacter(character);
+			this.SelectedCharacterSlot = character.Index;
+			BarracksServer.Instance.Database.SaveAccount(this);
+		}
+
+		public void EnsureValidSelectedCharacterSlot()
+		{
+			lock (_characters)
+			{
+				if (_characters.Count == 0)
+				{
+					this.SelectedCharacterSlot = 0;
+					return;
+				}
+
+				if (!_characters.Any(a => a.Index == this.SelectedCharacterSlot))
+					this.SelectedCharacterSlot = _characters.OrderBy(a => a.Index).First().Index;
+			}
 		}
 
 		/// <summary>

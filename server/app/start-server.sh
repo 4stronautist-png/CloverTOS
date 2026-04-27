@@ -226,7 +226,20 @@ verify_account_api() {
     if [ -s /tmp/clovertos-account-api-check.err ]; then
         tail -n 20 /tmp/clovertos-account-api-check.err
     fi
-    return 1
+	return 1
+}
+
+repair_barracks_database() {
+    local repair_sql="tools/clover-repair-barracks.sql"
+
+    if [ ! -f "$repair_sql" ]; then
+        log_warning "SQL de reparo do barracks nao encontrado: $repair_sql"
+        return 0
+    fi
+
+    log_info "Reparando slots/selectedSlot do barracks..."
+    mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$repair_sql"
+    log_success "Barracks DB OK"
 }
 
 start_server() {
@@ -281,6 +294,8 @@ if ! mysql -u "$DB_USER" -p"$DB_PASS" -e "USE ${DB_NAME}; SELECT 1;" >/dev/null 
     log_error "Banco ${DB_NAME} nao esta acessivel."
     exit 1
 fi
+
+repair_barracks_database
 
 log_info "Compilando Release para garantir binarios atualizados..."
 dotnet build Melia.sln -c Release
