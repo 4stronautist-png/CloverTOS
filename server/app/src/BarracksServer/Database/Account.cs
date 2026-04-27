@@ -321,6 +321,10 @@ namespace Melia.Barracks.Database
 					character.Index = this.GetNextCharacterIndex();
 			}
 
+			character.AccountId = this.Id;
+			character.TeamName = this.TeamName;
+			character.Jobs.Add(character.JobId);
+
 			BarracksServer.Instance.Database.CreateCharacter(this.Id, character);
 			this.AddCharacter(character);
 			this.SelectedCharacterSlot = character.Index;
