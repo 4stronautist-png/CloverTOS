@@ -224,9 +224,5 @@ public class FSiauliaiWestMobScript : GeneralScript
 		AddSpawnPoint("f_siauliai_west.Id9", "f_siauliai_west", Rectangle(1464, -694, 20));
 		AddSpawnPoint("f_siauliai_west.Id9", "f_siauliai_west", Rectangle(592, -804, 20));
 
-		// Boss Spawners ---------------------------------
-		AddBossSpawner(MonsterId.Boss_Mushcaria, "f_siauliai_west", 1, Hours(2), Hours(4));
-		AddBossSpawner(MonsterId.Boss_Rocktortuga, "f_siauliai_west", 1, Hours(2), Hours(4));
-		AddBossSpawner(MonsterId.Boss_Golem, "f_siauliai_west", 1, Hours(2), Hours(4));
 	}
 }

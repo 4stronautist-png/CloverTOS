@@ -76,7 +76,7 @@ namespace Melia.Shared.Configuration.Files
 			this.IpfChecksumAutoUpdate = this.GetBool("ipf_checksum_auto_update", false);
 
 			this.StartMap = this.GetString("start_map", "f_siauliai_west");
-			this.StartPosition = this.GetPosition("start_position", new Position(-628, 260, -1025));
+			this.StartPosition = this.GetPosition("start_position", new Position(-599, 260, -1377));
 
 			this.EnableAccountCreation = this.GetBool("enable_account_creation", true);
 			this.StartAdditionalSlotCount = this.GetInt("additional_slot_count", 0);
@@ -94,7 +94,7 @@ namespace Melia.Shared.Configuration.Files
 		/// <returns></returns>
 		private Position GetPosition(string option, Position defaultValue)
 		{
-			var value = this.GetString(option, "-628, 260, -1025");
+			var value = this.GetString(option, "-599, 260, -1377");
 
 			var split = value.Split(',');
 			if (split.Length != 3)

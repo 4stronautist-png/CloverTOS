@@ -523,7 +523,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					.OrderBy(a => a.Id)
 					.FirstOrDefault(a =>
 						string.Equals(a.QuestStartMode, "NPCDIALOG", StringComparison.OrdinalIgnoreCase) &&
-						this.StaticNpcDialogMatches(a.StartNPC, npcDialogName) &&
+						this.StaticQuestCanStartFromNpcDialog(a, npcDialogName) &&
 						!this.Has(new QuestId(a.Id)) &&
 						this.MeetsStaticPrerequisites(a));
 
@@ -535,6 +535,15 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			return anythingChanged;
+		}
+
+		private bool StaticQuestCanStartFromNpcDialog(QuestStaticData questData, string npcDialogName)
+		{
+			if (this.StaticNpcDialogMatches(questData.StartNPC, npcDialogName))
+				return true;
+
+			return questData.Id == 1014 &&
+				this.StaticNpcDialogMatches("SIALUL_WEST_DRASIUS", npcDialogName);
 		}
 
 		private bool TryAdvanceStaticQuestFromNpcDialog(Quest quest, string npcDialogName)

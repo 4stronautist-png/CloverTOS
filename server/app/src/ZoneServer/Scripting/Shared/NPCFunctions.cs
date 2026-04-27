@@ -14,6 +14,7 @@ using Melia.Zone.Network;
 using Melia.Zone.Scripting.Dialogues;
 using Melia.Zone.World.Actors;
 using Melia.Zone.World.Actors.Characters.Components;
+using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Items;
 using Melia.Zone.World.Maps;
@@ -2453,6 +2454,24 @@ namespace Melia.Zone.Scripting.Shared
 		{
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
 			await COMMON_QUEST_HANDLER(dialog);
+			EnsureWestSiauliaiScoutKepaEncounter(dialog.Player);
+		}
+
+		private static void EnsureWestSiauliaiScoutKepaEncounter(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return;
+			if (!character.Quests.IsActive(1004) || character.Quests.HasCompleted(1004))
+				return;
+			if (!character.Variables.Temp.ActivateOnce("Clover.WestSiauliai.ScoutKepaEncounter"))
+				return;
+
+			AddMonster(24011, 400001, "Kepa", "f_siauliai_west", -1705, 260, -768, 90);
+			AddMonster(24012, 400001, "Kepa", "f_siauliai_west", -1658, 260, -830, 135);
+			AddMonster(24013, 400001, "Kepa", "f_siauliai_west", -1598, 260, -732, 225);
+			AddMonster(24014, 400001, "Kepa", "f_siauliai_west", -1734, 260, -706, 45);
+
+			character.LookAround();
 		}
 
 		[DialogFunction("SIAUL_WEST_NAGLIS2")]

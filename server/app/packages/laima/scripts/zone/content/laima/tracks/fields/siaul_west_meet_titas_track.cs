@@ -39,8 +39,6 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 		var guardRight = SpawnCutsceneNpc(character, 25003, 40202, "Sentinel", -639, 260, -938, 225);
 		actors.Add(guardRight);
 
-		character.Position = new Position(-628, 260, -1025);
-
 		Log.Info(
 			"SIAU_WEST_START_TRACK: spawned actors for '{0}' on layer {1} -> Titas={2}, GuardL={3}, GuardR={4}, ActorCount={5}",
 			character.Name,

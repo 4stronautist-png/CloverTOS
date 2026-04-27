@@ -18,7 +18,7 @@ namespace Melia.Barracks.Network
 {
 	public class PacketHandler : PacketHandler<IBarracksConnection>
 	{
-		private static readonly Position CloverStartPosition = new(-628, 260, -1025);
+		private static readonly Position CloverStartPosition = new(-599, 260, -1377);
 		private const string CloverStartMap = "f_siauliai_west";
 
 		/// <summary>
