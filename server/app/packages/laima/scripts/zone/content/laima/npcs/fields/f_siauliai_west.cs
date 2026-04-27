@@ -22,6 +22,9 @@ using static Melia.Zone.Scripting.Shortcuts;
 public class FSiauliaiWestNpcScript : GeneralScript
 {
 	private const bool UseOpeningCutscene = false;
+	private const double TitasX = -760;
+	private const double TitasY = 260;
+	private const double TitasZ = -1095;
 	private Npc _scoutNpc;
 
 	[On("PlayerReady")]
@@ -102,7 +105,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 	protected override void Load()
 	{
-		_scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
+		_scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS");
 
 		// Opening quest trigger
 		//-------------------------------------------------------------------------
@@ -116,7 +119,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		// Siauliai camp setup and uses the knight-style NPC presentation rather
 		// than the later kingdom guard model. Keep the stable genType, but align
 		// the static map actor with the actual opening camp position.
-		AddNpc(77, 20113, L("Knight Titas"), "f_siauliai_west", -652, 260, -952, 180, "SIAUL_WEST_CAMP_MANAGER");
+		AddNpc(77, 20113, L("Knight Titas"), "f_siauliai_west", TitasX, TitasY, TitasZ, 180, "SIAUL_WEST_CAMP_MANAGER");
 
 		// Battle Commander
 		//-------------------------------------------------------------------------
@@ -124,10 +127,9 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 		// Western Woods Scout / Drasius
 		//-------------------------------------------------------------------------
-		// In the original flow the scout is revealed only when the player gets
-		// close to the marked area after the Titas handoff. Keep the NPC hidden
-		// by default and unhide it per-character on proximity for the active
-		// quest chain.
+		// The client already uses the active quest state to show/hide the quest
+		// marker. Keep the actor itself present; per-character invisibility was
+		// leaving the quest marker visible while the NPC never entered the client.
 		AddAreaTrigger("f_siauliai_west", -1649, -763, 300, async triggerArgs =>
 		{
 			if (triggerArgs.Initiator is not Character character)
