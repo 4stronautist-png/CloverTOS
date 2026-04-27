@@ -30,6 +30,7 @@ public class FSiauliaiWestMobScript : GeneralScript
 		AddSpawner("f_siauliai_west.Id7", MonsterId.Leaf_Diving, min: 12, max: 15);
 		AddSpawner("f_siauliai_west.Id8", MonsterId.Onion, min: 12, max: 15);
 		AddSpawner("f_siauliai_west.Id9", MonsterId.Hanaming, min: 15, max: 20);
+		AddSpawner("f_siauliai_west.Id10", MonsterId.Onion_Big_Q1, amount: 1, respawn: Seconds(20));
 
 		// Monster Spawn Points -----------------------------
 
@@ -52,6 +53,9 @@ public class FSiauliaiWestMobScript : GeneralScript
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1934, -120, 80));
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1832, 282, 80));
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1812, -419, 80));
+
+		// 'Onion_Big_Q1' Large Kepa for SIAUL_WEST_MEET_NAGLIS
+		AddSpawnPoint("f_siauliai_west.Id10", "f_siauliai_west", Rectangle(-1862, 185, 60));
 
 		// 'Hanaming' GenType 16 Spawn Points
 		AddSpawnPoint("f_siauliai_west.Id3", "f_siauliai_west", Rectangle(-110, 489, 40));
