@@ -28,26 +28,26 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 
 		var actors = new List<IActor>();
 
-		// Match the actor slots from ies_mongen for client rev 402595.
-		// The direction file binds SIAU_WEST_START_TRACK to these original
-		// genTypes; arbitrary private genTypes make the client animate the
-		// wrong model/position pair.
+		// Keep the original actor slots, but avoid monsterId 10032 here. The
+		// current Clover client crashes while updating quest markers after
+		// materializing its soldier2_m asset during this track. The visible
+		// opening flow is less important than keeping map entry stable.
 		var titas = SpawnCutsceneNpc(character, 7, 20032, "Knight Titas", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER");
 		actors.Add(titas);
 
-		var frontGuard = SpawnCutsceneNpc(character, 8, 20032, "Sentinel", -652, 260, -953, -90, "SIAU_FRON_NPC_01");
+		var frontGuard = SpawnCutsceneNpc(character, 8, 20019, "Sentinel", -652, 260, -953, -90, "SIAU_FRON_NPC_01");
 		actors.Add(frontGuard);
 
-		var guard1 = SpawnCutsceneNpc(character, 51, 10032, "Sentinel", -626, 260, -757, 86, "SIAU_FRON_NPC_04");
+		var guard1 = SpawnCutsceneNpc(character, 51, 20019, "Sentinel", -626, 260, -757, 86, "SIAU_FRON_NPC_04");
 		actors.Add(guard1);
 
-		var guard2 = SpawnCutsceneNpc(character, 52, 10032, "Sentinel", -619, 260, -707, -75, "SIAU_FRON_NPC_05");
+		var guard2 = SpawnCutsceneNpc(character, 52, 20019, "Sentinel", -619, 260, -707, -75, "SIAU_FRON_NPC_05");
 		actors.Add(guard2);
 
-		var guard3 = SpawnCutsceneNpc(character, 53, 10032, "Sentinel", -509, 260, -821, 161, "SIAU_FRON_NPC_03");
+		var guard3 = SpawnCutsceneNpc(character, 53, 20019, "Sentinel", -509, 260, -821, 161, "SIAU_FRON_NPC_03");
 		actors.Add(guard3);
 
-		var guard4 = SpawnCutsceneNpc(character, 54, 10032, "Sentinel", -589, 260, -822, 0, "SIAU_FRON_NPC_02");
+		var guard4 = SpawnCutsceneNpc(character, 54, 20019, "Sentinel", -589, 260, -822, 0, "SIAU_FRON_NPC_02");
 		actors.Add(guard4);
 
 		Log.Info(
