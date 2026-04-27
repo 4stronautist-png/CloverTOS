@@ -44,6 +44,7 @@ namespace Melia.Zone.Scripting.Shared
 				{
 					dialog.State = DialogState.Active;
 					await dialog.Hooks(hookOwner, "BeforeStart");
+					character.Quests.HandleStaticNpcDialog(hookOwner);
 					await dialog.Hooks(hookOwner, "BeforeEnd");
 				}
 				finally

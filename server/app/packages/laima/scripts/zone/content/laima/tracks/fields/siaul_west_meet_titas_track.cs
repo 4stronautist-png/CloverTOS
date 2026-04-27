@@ -8,6 +8,7 @@ using Melia.Zone.Scripting;
 using Melia.Zone.World.Actors;
 using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.Monsters;
+using Melia.Zone.World.Quests;
 using Melia.Zone.World.Tracks;
 using Yggdrasil.Logging;
 
@@ -91,4 +92,30 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 
 	public override Task OnProgress(Character character, Track track, int frame)
 		=> base.OnProgress(character, track, frame);
+
+	public override void OnComplete(Character character, Track track)
+	{
+		base.OnComplete(character, track);
+
+		Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+
+		var westForestQuestId = new QuestId(1002);
+		if (!character.Quests.IsActive(westForestQuestId) && !character.Quests.HasCompleted(westForestQuestId))
+		{
+			character.Quests.Start("SIAUL_WEST_WEST_FOREST");
+			Log.Info("SIAU_WEST_START_TRACK: started SIAUL_WEST_WEST_FOREST for '{0}' after intro track.", character.Name);
+		}
+
+		RevealOpeningTitas(character);
+		character.LookAround();
+	}
+
+	private static void RevealOpeningTitas(Character character)
+	{
+		if (character?.Map?.TryGetMonster(m => m is Npc npc && npc.DialogName == "SIAUL_WEST_CAMP_MANAGER", out var titasMonster) == true && titasMonster is Npc titasNpc)
+		{
+			if (character.GetMapNPCState(titasNpc) != NpcState.Normal)
+				character.SetMapNPCState(titasNpc, NpcState.Normal);
+		}
+	}
 }

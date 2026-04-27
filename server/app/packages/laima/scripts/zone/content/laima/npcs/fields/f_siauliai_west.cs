@@ -21,7 +21,7 @@ using static Melia.Zone.Scripting.Shortcuts;
 
 public class FSiauliaiWestNpcScript : GeneralScript
 {
-	private const bool UseOpeningCutscene = false;
+	private const bool UseOpeningCutscene = true;
 	private Npc _titasNpc;
 	private Npc _scoutNpc;
 
@@ -50,10 +50,10 @@ public class FSiauliaiWestNpcScript : GeneralScript
 				Log.Info("West Siauliai opening: movement tutorial triggered for '{0}'.", character.Name);
 			}
 
-			if (!character.Quests.TryGetById(1001, out var titasQuest))
+			if (!character.Quests.TryGetById(1001, out var titasQuest) && !character.Quests.HasCompleted(1001))
 			{
-				character.Quests.Start("SIAUL_WEST_MEET_TITAS");
-				Log.Info("West Siauliai opening: started quest SIAUL_WEST_MEET_TITAS for '{0}'.", character.Name);
+				character.Quests.HandleStaticNpcDialog("SIAUL_WEST_MEET_TITAS_AUTO");
+				Log.Info("West Siauliai opening: triggered static start SIAUL_WEST_MEET_TITAS for '{0}'.", character.Name);
 			}
 
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
