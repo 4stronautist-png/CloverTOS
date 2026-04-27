@@ -22,9 +22,7 @@ using static Melia.Zone.Scripting.Shortcuts;
 public class FSiauliaiWestNpcScript : GeneralScript
 {
 	private const bool UseOpeningCutscene = false;
-	private const double TitasX = -760;
-	private const double TitasY = 260;
-	private const double TitasZ = -1095;
+	private Npc _titasNpc;
 	private Npc _scoutNpc;
 
 	[On("PlayerReady")]
@@ -59,6 +57,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			}
 
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+			RevealTitasIfNeeded(character);
 			RevealScoutIfNeeded(character);
 
 			if (!UseOpeningCutscene)
@@ -75,6 +74,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 					Log.Info("West Siauliai opening: started visible Titas quest SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
 				}
 
+				RevealTitasIfNeeded(character);
 				Log.Info("West Siauliai opening: skipping broken intro cutscene for '{0}' and keeping HUD/world controls active.", character.Name);
 				character.LookAround();
 				return;
@@ -105,7 +105,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 	protected override void Load()
 	{
-		_scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS");
+		_scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
 
 		// Opening quest trigger
 		//-------------------------------------------------------------------------
@@ -119,7 +119,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		// Siauliai camp setup and uses the knight-style NPC presentation rather
 		// than the later kingdom guard model. Keep the stable genType, but align
 		// the static map actor with the actual opening camp position.
-		AddNpc(77, 20113, L("Knight Titas"), "f_siauliai_west", TitasX, TitasY, TitasZ, 180, "SIAUL_WEST_CAMP_MANAGER");
+		_titasNpc = AddNpc(77, 20113, L("Knight Titas"), "f_siauliai_west", -652, 260, -952, 180, "SIAUL_WEST_CAMP_MANAGER", state: (int)NpcState.Invisible);
 
 		// Battle Commander
 		//-------------------------------------------------------------------------
@@ -127,9 +127,8 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 		// Western Woods Scout / Drasius
 		//-------------------------------------------------------------------------
-		// The client already uses the active quest state to show/hide the quest
-		// marker. Keep the actor itself present; per-character invisibility was
-		// leaving the quest marker visible while the NPC never entered the client.
+		// Drasius is revealed per character after the Titas handoff. The shared
+		// NPC state helper sends both the actor and the effective state.
 		AddAreaTrigger("f_siauliai_west", -1649, -763, 300, async triggerArgs =>
 		{
 			if (triggerArgs.Initiator is not Character character)
@@ -192,7 +191,6 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			return;
 
 		var shouldReveal =
-			character.Quests.IsActive(1002) ||
 			character.Quests.HasCompleted(1002) ||
 			character.Quests.IsActive(1003) ||
 			character.Quests.HasCompleted(1003) ||
@@ -203,9 +201,25 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			return;
 
 		character.SetMapNPCState(_scoutNpc, NpcState.Normal);
-		Send.ZC_ENTER_MONSTER(character.Connection, _scoutNpc);
-		Send.ZC_SET_NPC_STATE(character.Connection, _scoutNpc, (short)NpcState.Normal);
-		character.LookAround();
 		Log.Info("West Siauliai scout reveal: revealed Drasius for '{0}'.", character.Name);
+	}
+
+	private void RevealTitasIfNeeded(Character character)
+	{
+		if (_titasNpc == null || character == null || character.Connection == null)
+			return;
+
+		var shouldReveal =
+			character.Quests.IsActive(1002) ||
+			character.Quests.HasCompleted(1002) ||
+			character.Quests.IsActive(1003) ||
+			character.Quests.HasCompleted(1003) ||
+			character.Quests.IsActive(1004);
+
+		if (!shouldReveal || character.GetMapNPCState(_titasNpc) == NpcState.Normal)
+			return;
+
+		character.SetMapNPCState(_titasNpc, NpcState.Normal);
+		Log.Info("West Siauliai Titas reveal: revealed Titas for '{0}'.", character.Name);
 	}
 }

@@ -59,7 +59,10 @@ namespace Melia.Zone.World.Actors.Characters
 		public void SetMapNPCState(Npc npc, NpcState state)
 		{
 			this.Variables.Perm.Set($"{npc.Map.Id}:{npc.GenType}", (short)state);
+			if (state != NpcState.Invisible && state != NpcState.IgnoreState)
+				Send.ZC_ENTER_MONSTER(this.Connection, npc);
 			Send.ZC_SET_NPC_STATE(this.Connection, npc, (short)state);
+			this.LookAround();
 		}
 
 		/// <summary>

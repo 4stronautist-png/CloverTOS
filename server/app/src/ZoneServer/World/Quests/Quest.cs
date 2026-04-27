@@ -177,8 +177,10 @@ namespace Melia.Zone.World.Quests
 		/// </summary>
 		private void InitProgresses()
 		{
+			var objectiveId = 0;
 			foreach (var objective in this.Data.Objectives)
 			{
+				objective.Id = objectiveId++;
 				var progress = new QuestProgress(objective);
 				_progresses.Add(progress);
 				_indexedProgresses[objective.Ident] = progress;

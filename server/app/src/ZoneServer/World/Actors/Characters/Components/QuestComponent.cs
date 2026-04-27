@@ -35,6 +35,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 	{
 		private readonly static TimeSpan AutoReceiveDelay = TimeSpan.FromMinutes(1);
 		private readonly static TimeSpan LocationCheckInterval = TimeSpan.FromSeconds(1);
+		private readonly static object StaticObjectiveLoadLock = new();
+		private readonly static HashSet<Type> LoadedStaticObjectiveTypes = new();
 
 		private readonly object _syncLock = new();
 		private readonly List<Quest> _quests = new();
@@ -455,11 +457,13 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					if (string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase) &&
 						ZoneServer.Instance.Data.MonsterDb.TryFind(objectiveData.Target, out var monsterData))
 					{
-						questData.Objectives.Add(new KillObjective(Math.Max(1, objectiveData.Count), monsterData.Id)
+						var objective = new KillObjective(Math.Max(1, objectiveData.Count), monsterData.Id)
 						{
 							Ident = ident,
 							Text = text,
-						});
+						};
+						this.EnsureStaticObjectiveLoaded(objective);
+						questData.Objectives.Add(objective);
 						continue;
 					}
 
@@ -478,6 +482,15 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					Ident = "manual",
 					Text = questStaticData.Name,
 				});
+			}
+		}
+
+		private void EnsureStaticObjectiveLoaded(QuestObjective objective)
+		{
+			lock (StaticObjectiveLoadLock)
+			{
+				if (LoadedStaticObjectiveTypes.Add(objective.GetType()))
+					objective.Load();
 			}
 		}
 

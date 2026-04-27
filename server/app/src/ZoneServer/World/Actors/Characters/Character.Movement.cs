@@ -696,8 +696,12 @@ namespace Melia.Zone.World.Actors.Characters
 				}
 			}
 
-			if (monster is MonsterInName minMon && this.GetMapNPCState(minMon) != NpcState.IgnoreState)
-				Send.ZC_SET_NPC_STATE(minMon);
+			if (monster is MonsterInName minMon)
+			{
+				var npcState = this.GetMapNPCState(minMon);
+				if (npcState != NpcState.IgnoreState)
+					Send.ZC_SET_NPC_STATE(this.Connection, minMon, (short)npcState);
+			}
 		}
 
 		private void HandleDisappearingMonsters(List<IMonster> disappearMonsters)

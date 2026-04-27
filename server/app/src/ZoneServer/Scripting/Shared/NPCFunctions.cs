@@ -2553,9 +2553,6 @@ namespace Melia.Zone.Scripting.Shared
 					return;
 
 				character.SetMapNPCState(scoutNpc, NpcState.Normal);
-				Send.ZC_ENTER_MONSTER(character.Connection, scoutNpc);
-				Send.ZC_SET_NPC_STATE(character.Connection, scoutNpc, (short)NpcState.Normal);
-				character.LookAround();
 				Log.Info("West Siauliai flow: revealed Scout for '{0}'.", character.Name);
 			}
 		}
