@@ -86,6 +86,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		{
 			this.AddSilent(job);
 			Send.ZC_PC(this.Character, PcUpdateType.Job, (int)job.Id, 0);
+			Send.ZC_SKILL_LIST(this.Character);
+			Send.ZC_COMMON_SKILL_LIST(this.Character);
 			Send.ZC_NORMAL.UpdateSkillUI(this.Character);
 			this.Character.Properties.SetFloat(PropertyName.Job, (int)job.Id);
 			Send.ZC_OBJECT_PROPERTY(this.Character, PropertyName.JobName);
@@ -135,6 +137,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			// XXX: Seems like this is not enough to get rid of the jobs at
 			//   run-time. Is there a way for us to refresh the UI?
 			Send.ZC_PC(this.Character, PcUpdateType.Job, (int)this.Character.JobId, _jobs.Last().Value.SkillPoints);
+			Send.ZC_SKILL_LIST(this.Character);
+			Send.ZC_COMMON_SKILL_LIST(this.Character);
 			Send.ZC_NORMAL.UpdateSkillUI(this.Character);
 			this.Character.AddonMessage(AddonMessage.JOB_UPDATE);
 			this.Character.InvalidateProperties();

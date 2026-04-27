@@ -242,15 +242,105 @@ namespace Melia.Barracks.Database
 				// Job
 				using (var cmd = new InsertCommand("INSERT INTO `jobs` {parameters}", conn, trans))
 				{
+					var now = DateTime.Now;
+
 					cmd.Set("characterId", character.DbId);
 					cmd.Set("jobId", character.JobId);
-					cmd.Set("selectionDate", DateTime.Now);
+					cmd.Set("circle", 1);
+					cmd.Set("skillPoints", 1);
+					cmd.Set("totalExp", 0);
+					cmd.Set("selectionDate", now);
+					cmd.Set("advDate", now);
 
 					cmd.Execute();
 				}
 
+				foreach (var skillId in this.GetInitialSkillIds(character.JobId))
+				{
+					using (var cmd = new InsertCommand("INSERT INTO `skills` {parameters}", conn, trans))
+					{
+						cmd.Set("characterId", character.DbId);
+						cmd.Set("id", skillId);
+						cmd.Set("level", 1);
+
+						cmd.Execute();
+					}
+				}
+
 				trans.Commit();
 			}
+		}
+
+		private IEnumerable<SkillId> GetInitialSkillIds(JobId jobId)
+		{
+			var skills = new List<SkillId>
+			{
+				SkillId.Default,
+				SkillId.Common_shovel,
+				SkillId.Common_otlflag,
+				SkillId.Common_dumbbell,
+				SkillId.Common_vuvuzela,
+				SkillId.Common_snowspray,
+				SkillId.Common_balloonpipe,
+			};
+
+			switch (jobId)
+			{
+				case JobId.Swordsman:
+					skills.AddRange([
+						SkillId.Normal_Attack,
+						SkillId.Normal_Attack_TH,
+						SkillId.Warrior_Guard,
+						SkillId.Pistol_Attack,
+						SkillId.Common_DaggerAries,
+					]);
+					break;
+
+				case JobId.Wizard:
+					skills.AddRange([
+						SkillId.Magic_Attack,
+						SkillId.Magic_Attack_TH,
+						SkillId.Common_DaggerAries,
+						SkillId.Common_StaffAttack,
+					]);
+					break;
+
+				case JobId.Archer:
+					skills.AddRange([
+						SkillId.Bow_Attack,
+						SkillId.CrossBow_Attack,
+						SkillId.Common_DaggerAries,
+						SkillId.Warrior_Guard,
+						SkillId.Pistol_Attack,
+						SkillId.Musket_Attack,
+						SkillId.Sword_Attack,
+						SkillId.Cannon_Normal_Attack,
+					]);
+					break;
+
+				case JobId.Cleric:
+					skills.AddRange([
+						SkillId.Hammer_Attack,
+						SkillId.Hammer_Attack_TH,
+						SkillId.Common_DaggerAries,
+					]);
+					break;
+
+				case JobId.Scout:
+					skills.AddRange([
+						SkillId.Normal_Attack,
+						SkillId.Normal_Attack_TH,
+						SkillId.Warrior_Guard,
+						SkillId.War_JustFrameAttack,
+						SkillId.War_JustFrameDagger,
+						SkillId.War_JustFramePistol,
+						SkillId.Pistol_Attack,
+						SkillId.Common_DaggerAries,
+					]);
+					break;
+			}
+
+			return skills.Distinct();
 		}
 
 		/// <summary>

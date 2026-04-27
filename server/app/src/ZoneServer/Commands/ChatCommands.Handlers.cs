@@ -177,6 +177,7 @@ namespace Melia.Zone.Commands
 			this.Add("give", "<item id> <amount> <player>", "Creates items in a player's inventory.", this.HandleGive);
 			this.Add("removeitem", "<item id> <amount> <player>", "Removes items from a player.", this.HandleRemoveItem);
 			this.Add("godmode", "<player>", "Toggles invulnerability for a player.", this.HandleGodMode);
+			this.Add("gmpanel", "", "Displays SoulSociety GM panel shortcuts.", this.HandleGmPanel);
 			this.Add("mail", "<item id> <amount> <player> <title> <message>", "Sends an item to a player's message box.", this.HandleMail);
 			this.Add("mailall", "<item id> <amount> <title> <message> <days>", "Sends an item to all registered teams' message boxes.", this.HandleMailAll);
 			this.Add("serialkiller", "", "Toggles one-hit kills for the GM.", this.HandleSerialKiller);
@@ -4655,6 +4656,26 @@ namespace Melia.Zone.Commands
 			player.Warp(sender.GetLocation());
 			player.ServerMessage(Localization.Get("You've been summoned by {0}."), sender.TeamName);
 			sender.ServerMessage(Localization.Get("{0} was summoned to your location."), player.TeamName);
+
+			return CommandResult.Okay;
+		}
+
+		/// <summary>
+		/// Displays the SoulSociety GM panel shortcuts.
+		/// </summary>
+		private CommandResult HandleGmPanel(Character sender, Character target, string message, string commandName, Arguments args)
+		{
+			var prefix = ZoneServer.Instance.Conf.Commands.SelfPrefix;
+
+			sender.ServerMessage("SoulSociety GM Panel");
+			sender.ServerMessage("{0}aviso <mensagem> - aviso central para todos", prefix);
+			sender.ServerMessage("{0}give <itemId> <quantidade> <player> - envia item para jogador online", prefix);
+			sender.ServerMessage("{0}removeitem <itemId> <quantidade> <player> - remove item de jogador online", prefix);
+			sender.ServerMessage("{0}mail <itemId[:qtd][,itemId:qtd]> <player> <titulo> <mensagem> - envia correio", prefix);
+			sender.ServerMessage("{0}mailall <itemId[:qtd][,itemId:qtd]> <titulo> <mensagem> <dias> - envia correio global", prefix);
+			sender.ServerMessage("{0}godmode <player> - alterna invulnerabilidade", prefix);
+			sender.ServerMessage("{0}serialkiller - alterna one-hit kill para voce", prefix);
+			sender.ServerMessage("{0}summon <player>, {0}kick <player|map>, {0}warp, {0}item, {0}buff - atalhos GM comuns", prefix);
 
 			return CommandResult.Okay;
 		}
