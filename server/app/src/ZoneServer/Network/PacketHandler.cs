@@ -327,6 +327,7 @@ namespace Melia.Zone.Network
 				Send.ZC_SPLIT_ACHIEVE_SET(character);
 				Send.ZC_CHAT_MACRO_LIST(character);
 				Send.ZC_MAP_REVEAL_LIST(conn);
+				character.Quests.SyncStaticQuestNpcStates();
 				Send.ZC_NPC_STATE_LIST(character);
 				Send.ZC_HELP_LIST(character);
 				Send.ZC_MYPAGE_MAP(conn);
@@ -494,6 +495,7 @@ namespace Melia.Zone.Network
 				Send.ZC_ACHIEVE_POINT_LIST(character);
 				Send.ZC_CHAT_MACRO_LIST(character);
 				Send.ZC_UI_INFO_LIST(conn);
+				character.Quests.SyncStaticQuestNpcStates();
 				Send.ZC_NPC_STATE_LIST(character);
 				// ZC_HELP_LIST
 				// ZC_MYPAGE_MAP

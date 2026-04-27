@@ -7,6 +7,7 @@ using Melia.Shared.Game.Const;
 using Melia.Zone.Events.Arguments;
 using Melia.Zone.Network;
 using Melia.Zone.Scripting;
+using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Quests;
 using Melia.Zone.World.Quests.Modifiers;
 using Melia.Zone.World.Quests.Objectives;
@@ -538,6 +539,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return false;
 
 			var anythingChanged = false;
+			var questIdsPresentBeforeDialog = this.GetList()
+				.Select(quest => quest.Data.Id)
+				.ToHashSet();
 
 			for (var pass = 0; pass < 20; pass++)
 			{
@@ -550,6 +554,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 						continue;
 
 					if (QuestScript.Exists(new QuestId("Laima.Quest", quest.Data.Id.Value)) || QuestScript.Exists(quest.Data.Id))
+						continue;
+
+					if (!questIdsPresentBeforeDialog.Contains(quest.Data.Id))
 						continue;
 
 					if (quest.InProgress && this.TryAdvanceStaticQuestFromNpcDialog(quest, npcDialogName))
@@ -583,9 +590,99 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 				this.StartStaticQuest(startableQuest, TimeSpan.Zero);
 				anythingChanged = true;
+				break;
 			}
 
+			if (anythingChanged)
+				this.SyncStaticQuestNpcStates();
+
 			return anythingChanged;
+		}
+
+		/// <summary>
+		/// Reconciles static quest availability with NPC actor visibility on the
+		/// current map. Quest data can make the client show a marker, but the
+		/// server must still reveal the actual actor for this character.
+		/// </summary>
+		public void SyncStaticQuestNpcStates()
+		{
+			if (this.Character?.Connection == null || this.Character.Map == null)
+				return;
+
+			var mapClassName = this.Character.Map.ClassName;
+			var npcs = this.Character.Map.GetNpcs(a => a is Npc npc && !string.IsNullOrWhiteSpace(npc.DialogName));
+
+			foreach (var minMon in npcs)
+			{
+				if (minMon is not Npc npc)
+					continue;
+
+				if (!this.StaticNpcIsRelevantForCurrentQuestState(npc.DialogName, mapClassName))
+					continue;
+
+				var currentState = this.Character.GetMapNPCState(npc);
+				if (currentState == NpcState.Invisible || npc.State == NpcState.Invisible)
+					this.Character.SetMapNPCState(npc, NpcState.Normal);
+			}
+		}
+
+		private bool StaticNpcIsRelevantForCurrentQuestState(string npcDialogName, string mapClassName)
+		{
+			foreach (var questData in ZoneServer.Instance.Data.QuestDb.GetList())
+			{
+				if (!this.StaticQuestReferencesMap(questData, mapClassName))
+					continue;
+
+				var questId = new QuestId(questData.Id);
+				if (this.TryGetById(questId, out var quest))
+				{
+					if (quest.Status == QuestStatus.Completed || quest.Status == QuestStatus.Abandoned)
+						continue;
+
+					if (quest.Status == QuestStatus.Success && this.StaticNpcDialogMatches(questData.EndNPC, npcDialogName))
+						return true;
+
+					if (quest.InProgress &&
+						(this.StaticNpcDialogMatches(questData.ProgNPC, npcDialogName) ||
+						 this.StaticNpcDialogMatches(questData.EndNPC, npcDialogName) ||
+						 this.StaticNpcDialogMatches(questData.StartNPC, npcDialogName)))
+						return true;
+
+					continue;
+				}
+
+				if (string.Equals(questData.QuestStartMode, "NPCDIALOG", StringComparison.OrdinalIgnoreCase) &&
+					this.StaticNpcDialogMatches(questData.StartNPC, npcDialogName) &&
+					this.MeetsStaticPrerequisites(questData))
+					return true;
+			}
+
+			return false;
+		}
+
+		private bool StaticQuestReferencesMap(QuestStaticData questData, string mapClassName)
+		{
+			return this.StaticQuestMapMatches(questData.StartMap, mapClassName) ||
+				this.StaticQuestMapMatches(questData.ProgMap, mapClassName) ||
+				this.StaticQuestMapMatches(questData.EndMap, mapClassName) ||
+				this.StaticQuestLocationReferencesMap(questData.StartLocation, mapClassName) ||
+				this.StaticQuestLocationReferencesMap(questData.ProgLocation, mapClassName) ||
+				this.StaticQuestLocationReferencesMap(questData.EndLocation, mapClassName);
+		}
+
+		private bool StaticQuestMapMatches(string questMap, string mapClassName)
+		{
+			return !string.IsNullOrWhiteSpace(questMap) &&
+				string.Equals(questMap, mapClassName, StringComparison.OrdinalIgnoreCase);
+		}
+
+		private bool StaticQuestLocationReferencesMap(string location, string mapClassName)
+		{
+			if (string.IsNullOrWhiteSpace(location) || string.IsNullOrWhiteSpace(mapClassName))
+				return false;
+
+			return location.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+				.Any(part => string.Equals(part, mapClassName, StringComparison.OrdinalIgnoreCase));
 		}
 
 		private bool StaticQuestCanStartFromNpcDialog(QuestStaticData questData, string npcDialogName)
@@ -635,7 +732,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return true;
 
 			if (this.StaticNpcDialogMatches(questData.StartNPC, npcDialogName))
-				return true;
+				return string.IsNullOrWhiteSpace(questData.ProgNPC) &&
+					string.IsNullOrWhiteSpace(questData.ProgLocation) &&
+					string.IsNullOrWhiteSpace(questData.EndNPC);
 
 			if (string.Equals(questData.QuestEndMode, "SYSTEM", StringComparison.OrdinalIgnoreCase) &&
 				string.IsNullOrWhiteSpace(questData.ProgNPC) &&
@@ -1067,6 +1166,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			this.UpdateClient_RemoveQuest(quest);
 			this.UpdateClient_CompleteQuest(quest);
+			this.SyncStaticQuestNpcStates();
 		}
 
 		/// <summary>
@@ -1253,6 +1353,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			var lua = "Melia.Quests.Add(" + questTable.Serialize() + ")";
 			Send.ZC_EXEC_CLIENT_SCP(this.Character.Connection, lua);
+			this.SyncStaticQuestNpcStates();
 
 			//Log.Debug(lua);
 		}
@@ -1287,6 +1388,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			var lua = "Melia.Quests.Update(" + questTable.Serialize() + ")";
 			Send.ZC_EXEC_CLIENT_SCP(this.Character.Connection, lua);
+			this.SyncStaticQuestNpcStates();
 
 			//Log.Debug(lua);
 		}
