@@ -240,6 +240,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 						if (quest.Status == QuestStatus.Success && !quest.IsCompletable)
 							quest.Status = QuestStatus.InProgress;
+						else if (quest.Status == QuestStatus.InProgress && quest.IsCompletable)
+							quest.Status = QuestStatus.Success;
 
 						this.UpdateClient_UpdateQuest(quest);
 					}
@@ -606,6 +608,16 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 					if (!questIdsPresentBeforeDialog.Contains(quest.Data.Id))
 						continue;
+
+					if (quest.InProgress &&
+						quest.ObjectivesCompleted &&
+						this.StaticQuestShouldCompleteFromNpcDialog(quest.QuestStaticData, npcDialogName))
+					{
+						this.Complete(quest);
+						anythingChanged = true;
+						changedThisPass = true;
+						break;
+					}
 
 					if (quest.InProgress && this.TryAdvanceStaticQuestFromNpcDialog(quest, npcDialogName))
 					{
