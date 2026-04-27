@@ -29,6 +29,25 @@ namespace Melia.Shared.Data.Database
 		public string EndNPC { get; internal set; }
 		public string RequiredQuestItem { get; internal set; }
 		public List<string> RequiredQuests { get; internal set; }
+		public List<QuestObjectiveStaticData> Objectives { get; internal set; }
+		public List<QuestRewardItemStaticData> RewardItems { get; internal set; }
+	}
+
+	[Serializable]
+	public class QuestObjectiveStaticData
+	{
+		public string Ident { get; set; }
+		public string Type { get; set; }
+		public string Text { get; set; }
+		public string Target { get; set; }
+		public int Count { get; set; }
+	}
+
+	[Serializable]
+	public class QuestRewardItemStaticData
+	{
+		public string Item { get; set; }
+		public int Amount { get; set; }
 	}
 
 	/// <summary>
@@ -86,8 +105,49 @@ namespace Melia.Shared.Data.Database
 			info.EndNPC = entry.ReadString("endNPC");
 			info.RequiredQuestItem = entry.ReadString("requiredQuestItem");
 			info.RequiredQuests = entry.ReadList<string>("requiredQuestName");
+			info.Objectives = ReadObjectives(entry);
+			info.RewardItems = ReadRewardItems(entry);
 
 			this.Entries[info.Id] = info;
+		}
+
+		private static List<QuestObjectiveStaticData> ReadObjectives(JObject entry)
+		{
+			if (!entry.ContainsKey("objectives"))
+				return null;
+
+			var result = new List<QuestObjectiveStaticData>();
+			foreach (var token in (JArray)entry["objectives"])
+			{
+				var obj = (JObject)token;
+				result.Add(new QuestObjectiveStaticData
+				{
+					Ident = obj.ReadString("ident"),
+					Type = obj.ReadString("type"),
+					Text = obj.ReadString("text"),
+					Target = obj.ReadString("target"),
+					Count = obj.ReadInt("count", 1),
+				});
+			}
+			return result;
+		}
+
+		private static List<QuestRewardItemStaticData> ReadRewardItems(JObject entry)
+		{
+			if (!entry.ContainsKey("rewardItems"))
+				return null;
+
+			var result = new List<QuestRewardItemStaticData>();
+			foreach (var token in (JArray)entry["rewardItems"])
+			{
+				var obj = (JObject)token;
+				result.Add(new QuestRewardItemStaticData
+				{
+					Item = obj.ReadString("item"),
+					Amount = obj.ReadInt("amount", 1),
+				});
+			}
+			return result;
 		}
 	}
 }

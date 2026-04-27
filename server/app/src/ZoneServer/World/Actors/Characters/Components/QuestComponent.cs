@@ -437,15 +437,41 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				ReceiveType = QuestReceiveType.Manual,
 			};
 
-			if (questStaticData.Id == 1004)
+			this.AddStaticQuestObjectives(questStaticData, questData);
+			this.AddStaticQuestRewards(questStaticData, questData);
+
+			return new Quest(questData);
+		}
+
+		private void AddStaticQuestObjectives(QuestStaticData questStaticData, QuestData questData)
+		{
+			if (questStaticData.Objectives != null && questStaticData.Objectives.Count != 0)
 			{
-				questData.Objectives.Add(new KillObjective(3, 400001)
+				foreach (var objectiveData in questStaticData.Objectives)
 				{
-					Ident = "kepa",
-					Text = "Defeat the Kepas near the Scout",
-				});
+					var ident = !string.IsNullOrWhiteSpace(objectiveData.Ident) ? objectiveData.Ident : $"objective{questData.Objectives.Count + 1}";
+					var text = !string.IsNullOrWhiteSpace(objectiveData.Text) ? objectiveData.Text : questStaticData.Name;
+
+					if (string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase) &&
+						ZoneServer.Instance.Data.MonsterDb.TryFind(objectiveData.Target, out var monsterData))
+					{
+						questData.Objectives.Add(new KillObjective(Math.Max(1, objectiveData.Count), monsterData.Id)
+						{
+							Ident = ident,
+							Text = text,
+						});
+						continue;
+					}
+
+					questData.Objectives.Add(new ManualObjective
+					{
+						Ident = ident,
+						Text = text,
+					});
+				}
 			}
-			else
+
+			if (questData.Objectives.Count == 0)
 			{
 				questData.Objectives.Add(new ManualObjective
 				{
@@ -453,11 +479,23 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					Text = questStaticData.Name,
 				});
 			}
+		}
 
-			if (questStaticData.Id == 1002)
-				questData.Rewards.Add(new ItemReward(640091, 1));
+		private void AddStaticQuestRewards(QuestStaticData questStaticData, QuestData questData)
+		{
+			if (questStaticData.RewardItems == null)
+				return;
 
-			return new Quest(questData);
+			foreach (var rewardData in questStaticData.RewardItems)
+			{
+				if (string.IsNullOrWhiteSpace(rewardData.Item))
+					continue;
+
+				if (int.TryParse(rewardData.Item, out var itemId) || ZoneServer.Instance.Data.ItemDb.TryFind(rewardData.Item, out var itemData) && (itemId = itemData.Id) != 0)
+					questData.Rewards.Add(new ItemReward(itemId, Math.Max(1, rewardData.Amount)));
+				else
+					Log.Warning("Static quest '{0}' references unknown reward item '{1}'.", questStaticData.ClassName, rewardData.Item);
+			}
 		}
 
 		private bool MeetsStaticPrerequisites(QuestStaticData questStaticData)

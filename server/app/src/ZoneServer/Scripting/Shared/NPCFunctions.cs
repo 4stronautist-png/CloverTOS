@@ -31,8 +31,41 @@ namespace Melia.Zone.Scripting.Shared
 		{
 			await dialog.HooksByDialogName("BeforeStart");
 			if (dialog.Npc != null)
+				await ShowStaticQuestDialog(dialog, dialog.Npc.DialogName, beforeAdvance: true);
+			if (dialog.Npc != null)
 				dialog.Player.Quests.HandleStaticNpcDialog(dialog.Npc.DialogName);
+			if (dialog.Npc != null)
+				await ShowStaticQuestDialog(dialog, dialog.Npc.DialogName, beforeAdvance: false);
 			await dialog.HooksByDialogName("BeforeEnd");
+		}
+
+		private static async Task ShowStaticQuestDialog(Dialog dialog, string npcDialogName, bool beforeAdvance)
+		{
+			var quest = dialog.Player.Quests.GetList()
+				.Where(q => q.QuestStaticData != null && StaticQuestUsesNpc(q.QuestStaticData, npcDialogName))
+				.OrderBy(q => q.Data.Id.Value)
+				.FirstOrDefault(q => beforeAdvance ? q.InProgress : q.Status == QuestStatus.Success || q.Status == QuestStatus.Completed);
+
+			if (quest == null)
+				return;
+
+			var className = quest.QuestStaticData.ClassName;
+			var keys = beforeAdvance
+				? new[] { $"{className}_dlg1" }
+				: new[] { $"{className}_dlg2", $"{className}_dlg3", $"{className}_dlg4" };
+
+			foreach (var key in keys)
+			{
+				if (ZoneServer.Instance.Data.DialogDb.Exists(key))
+					await dialog.Msg(key);
+			}
+		}
+
+		private static bool StaticQuestUsesNpc(QuestStaticData questData, string npcDialogName)
+		{
+			return string.Equals(questData.StartNPC, npcDialogName, StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(questData.ProgNPC, npcDialogName, StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(questData.EndNPC, npcDialogName, StringComparison.OrdinalIgnoreCase);
 		}
 
 		[DialogFunction]
@@ -2454,61 +2487,10 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIALUL_WEST_DRASIUS")]
 		public static async Task SIALUL_WEST_DRASIUS(Dialog dialog)
 		{
-			if (dialog.Player?.MapId == 1021)
-			{
-				await HandleWestSiauliaiScout(dialog);
-				return;
-			}
-
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
+			Send.ZC_NORMAL.SetupCutscene(dialog.Player, false, false, false);
 			await COMMON_QUEST_HANDLER(dialog);
-		}
-
-		private static async Task HandleWestSiauliaiScout(Dialog dialog)
-		{
-			var character = dialog.Player;
-			var drasius1 = new QuestId("Laima.Quest", 1003);
-			var drasius2 = new QuestId("Laima.Quest", 1004);
-			var naglis = new QuestId("Laima.Quest", 1014);
-
-			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
-
-			if (!character.Quests.IsActive(drasius1) && !character.Quests.HasCompleted(drasius1) && !character.Quests.IsActive(drasius2) && !character.Quests.HasCompleted(drasius2))
-			{
-				await character.Quests.Start("SIAUL_WEST_DRASIUS1");
-				Log.Info("West Siauliai Scout flow: started missing SIAUL_WEST_DRASIUS1 for '{0}'.", character.Name);
-			}
-
-			if (character.Quests.IsActive(drasius1))
-			{
-				await dialog.Msg("SIAUL_WEST_DRASIUS1_dlg1", "SIAUL_WEST_DRASIUS1_dlg2");
-				character.Quests.Complete(drasius1);
-				await character.Quests.Start("SIAUL_WEST_DRASIUS2");
-				EnsureWestSiauliaiScoutKepaEncounter(character);
-				Log.Info("West Siauliai Scout flow: accepted Kepa encounter quest for '{0}'.", character.Name);
-				return;
-			}
-
-			if (character.Quests.TryGetById(drasius2, out var kepaQuest) && kepaQuest.Status == QuestStatus.Success)
-			{
-				await dialog.Msg("SIAUL_WEST_DRASIUS2_dlg2", "SIAUL_WEST_DRASIUS2_dlg3");
-				character.Quests.Complete(drasius2);
-
-				if (!character.Quests.IsActive(naglis) && !character.Quests.HasCompleted(naglis))
-					await character.Quests.Start("SIAUL_WEST_MEET_NAGLIS");
-
-				Log.Info("West Siauliai Scout flow: completed Kepa encounter and started Naglis handoff for '{0}'.", character.Name);
-				return;
-			}
-
-			if (character.Quests.IsActive(drasius2))
-			{
-				EnsureWestSiauliaiScoutKepaEncounter(character);
-				await dialog.Msg("SIAUL_WEST_DRASIUS2_dlg1");
-				return;
-			}
-
-			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
+			EnsureWestSiauliaiScoutKepaEncounter(dialog.Player);
 		}
 
 		private static void EnsureWestSiauliaiScoutKepaEncounter(Character character)
@@ -2542,43 +2524,25 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIAUL_WEST_CAMP_MANAGER")]
 		public static async Task SIAUL_WEST_CAMP_MANAGER(Dialog dialog)
 		{
-			if (dialog.Player?.MapId == 1021)
-			{
-				await HandleWestSiauliaiTitas(dialog);
-				return;
-			}
-
+			var character = dialog.Player;
 			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
+			EnsureWestSiauliaiOpeningReady(character);
 			await COMMON_QUEST_HANDLER(dialog);
+			RevealWestSiauliaiScout(character);
 		}
 
-		private static async Task HandleWestSiauliaiTitas(Dialog dialog)
+		private static void EnsureWestSiauliaiOpeningReady(Character character)
 		{
-			var character = dialog.Player;
-			var titas = new QuestId("Laima.Quest", 1002);
-			var scout = new QuestId("Laima.Quest", 1003);
-
-			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
+			if (character == null || character.MapId != 1021)
+				return;
 
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
 
-			if (!character.Quests.IsActive(titas) && !character.Quests.HasCompleted(titas) && !character.Quests.IsActive(scout) && !character.Quests.HasCompleted(scout))
+			if (character.Quests.IsActive(1001))
 			{
-				await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
-				Log.Info("West Siauliai Titas flow: started missing SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
+				character.Quests.Complete(1001);
+				Log.Info("West Siauliai opening: completed intro trigger quest for '{0}'.", character.Name);
 			}
-
-			if (character.Quests.IsActive(titas))
-			{
-				await dialog.Msg("SIAUL_WEST_WEST_FOREST_dlg1", "SIAUL_WEST_WEST_FOREST_dlg4");
-				character.Quests.Complete(titas);
-				await character.Quests.Start("SIAUL_WEST_DRASIUS1");
-				RevealWestSiauliaiScout(character);
-				Log.Info("West Siauliai Titas flow: completed Titas handoff and started Scout quest for '{0}'.", character.Name);
-				return;
-			}
-
-			RevealWestSiauliaiScout(character);
 		}
 
 		private static void RevealWestSiauliaiScout(Character character)
