@@ -76,7 +76,8 @@ namespace Melia.Zone.World.Quests.Modifiers
 			if (args.Target is not Mob monster)
 				return;
 
-			if (args.Attacker is not Character character)
+			var character = monster.GetKillBeneficiary(args.Attacker);
+			if (character == null)
 				return;
 
 			character.Quests.UpdateModifiers<ItemDropModifier>((quest, modifier, progress) =>
@@ -84,12 +85,12 @@ namespace Melia.Zone.World.Quests.Modifiers
 				if (modifier.IsTarget(monster))
 				{
 					// Check drop chance
-				var rnd = RandomProvider.Get();
-				if (rnd.NextDouble() < modifier.DropChance)
-				{
-					// Add item directly to player's inventory
-					character.Inventory.Add(modifier.ItemId, 1, InventoryAddType.PickUp);
-				}
+					var rnd = RandomProvider.Get();
+					if (rnd.NextDouble() < modifier.DropChance)
+					{
+						// Add item directly to player's inventory
+						character.Inventory.Add(modifier.ItemId, 1, InventoryAddType.PickUp);
+					}
 				}
 			});
 		}

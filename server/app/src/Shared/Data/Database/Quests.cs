@@ -40,6 +40,9 @@ namespace Melia.Shared.Data.Database
 		public string Type { get; set; }
 		public string Text { get; set; }
 		public string Target { get; set; }
+		public string Item { get; set; }
+		public string DropTarget { get; set; }
+		public float DropChance { get; set; }
 		public int Count { get; set; }
 	}
 
@@ -126,6 +129,9 @@ namespace Melia.Shared.Data.Database
 					Type = obj.ReadString("type"),
 					Text = obj.ReadString("text"),
 					Target = obj.ReadString("target"),
+					Item = obj.ReadString("item"),
+					DropTarget = obj.ReadString("dropTarget"),
+					DropChance = obj.ReadFloat("dropChance", 1),
 					Count = obj.ReadInt("count", 1),
 				});
 			}

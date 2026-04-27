@@ -38,6 +38,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		private readonly static TimeSpan LocationCheckInterval = TimeSpan.FromSeconds(1);
 		private readonly static object StaticObjectiveLoadLock = new();
 		private readonly static HashSet<Type> LoadedStaticObjectiveTypes = new();
+		private readonly static object StaticModifierLoadLock = new();
+		private readonly static HashSet<Type> LoadedStaticModifierTypes = new();
 
 		private readonly object _syncLock = new();
 		private readonly List<Quest> _quests = new();
@@ -468,6 +470,28 @@ namespace Melia.Zone.World.Actors.Characters.Components
 						continue;
 					}
 
+					if (string.Equals(objectiveData.Type, "Collect", StringComparison.OrdinalIgnoreCase) &&
+						this.TryResolveStaticItem(objectiveData.Item ?? objectiveData.Target, out var itemId))
+					{
+						var objective = new CollectItemObjective(itemId, Math.Max(1, objectiveData.Count))
+						{
+							Ident = ident,
+							Text = text,
+						};
+						this.EnsureStaticObjectiveLoaded(objective);
+						questData.Objectives.Add(objective);
+
+						if (!string.IsNullOrWhiteSpace(objectiveData.DropTarget) &&
+							ZoneServer.Instance.Data.MonsterDb.TryFind(objectiveData.DropTarget, out var dropMonsterData))
+						{
+							var modifier = new ItemDropModifier(itemId, objectiveData.DropChance <= 0 ? 1 : objectiveData.DropChance, dropMonsterData.Id);
+							this.EnsureStaticModifierLoaded(modifier);
+							questData.Modifiers.Add(modifier);
+						}
+
+						continue;
+					}
+
 					questData.Objectives.Add(new ManualObjective
 					{
 						Ident = ident,
@@ -486,12 +510,36 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 		}
 
+		private bool TryResolveStaticItem(string item, out int itemId)
+		{
+			if (int.TryParse(item, out itemId))
+				return ZoneServer.Instance.Data.ItemDb.TryFind(itemId, out _);
+
+			if (!string.IsNullOrWhiteSpace(item) && ZoneServer.Instance.Data.ItemDb.TryFind(item, out var itemData))
+			{
+				itemId = itemData.Id;
+				return true;
+			}
+
+			itemId = 0;
+			return false;
+		}
+
 		private void EnsureStaticObjectiveLoaded(QuestObjective objective)
 		{
 			lock (StaticObjectiveLoadLock)
 			{
 				if (LoadedStaticObjectiveTypes.Add(objective.GetType()))
 					objective.Load();
+			}
+		}
+
+		private void EnsureStaticModifierLoaded(QuestModifier modifier)
+		{
+			lock (StaticModifierLoadLock)
+			{
+				if (LoadedStaticModifierTypes.Add(modifier.GetType()))
+					modifier.Load();
 			}
 		}
 
