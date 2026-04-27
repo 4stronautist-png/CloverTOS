@@ -273,6 +273,7 @@ namespace Melia.Zone.Network
 					Send.ZC_CONNECT_OK(conn, character);
 				}
 
+				_ = this.EnsureGameReadyFallback(conn, character);
 				CallSafe(character.ShowMainChatOnLogin());
 			}
 			finally
@@ -298,6 +299,7 @@ namespace Melia.Zone.Network
 			var serverId = packet.GetShort();
 
 			var character = conn.SelectedCharacter;
+			Log.Info($"CZ_GAME_READY: '{character?.Name ?? "NULL"}' requested game-ready initialization on server {serverId}.");
 			var gameReadyArgs = new PlayerGameReadyEventArgs(character);
 
 			ZoneServer.Instance.ServerEvents.PlayerGameReady.Raise(gameReadyArgs);
@@ -542,6 +544,20 @@ namespace Melia.Zone.Network
 			character.OpenEyes();
 
 			ZoneServer.Instance.ServerEvents.PlayerReady.Raise(new PlayerEventArgs(character));
+		}
+
+		private async Task EnsureGameReadyFallback(IZoneConnection conn, Character character)
+		{
+			await Task.Delay(2000);
+
+			if (conn.GameReady || conn.SelectedCharacter != character || !character.IsOnline)
+				return;
+
+			Log.Warning($"CZ_GAME_READY fallback: forcing game-ready initialization for '{character.Name}' because the client did not trigger it.");
+			using var packet = Packet.Rent(Op.CZ_GAME_READY);
+			packet.PutShort(0);
+			packet.Rewind();
+			this.CZ_GAME_READY(conn, packet);
 		}
 
 		/// <summary>
