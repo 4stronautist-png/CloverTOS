@@ -105,21 +105,20 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 	protected override void Load()
 	{
-		_scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
+		_scoutNpc = AddNpc(1, 20063, L("Scout"), "f_siauliai_west", -1121, 260, -528, -99, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
 
 		// Opening quest trigger
 		//-------------------------------------------------------------------------
 		// The first West Siauliai quest starts from an invisible enter trigger,
 		// which kicks off the Titas intro chain after the movement tutorial.
-		AddNpc(24001, 20117, "", "f_siauliai_west", -643, 260, -948, 0, "", "SIAUL_WEST_MEET_TITAS_AUTO", "", (int)NpcState.Invisible, 25);
+		AddNpc(55, 20041, "", "f_siauliai_west", -560, 260, -780, 0, "", "SIAUL_WEST_MEET_TITAS_AUTO", "", (int)NpcState.Invisible, 25);
 
 		// Knight Titas / Camp Manager
 		//-------------------------------------------------------------------------
-		// The extracted client data ties Knight Titas to the original West
-		// Siauliai camp setup and uses the knight-style NPC presentation rather
-		// than the later kingdom guard model. Keep the stable genType, but align
-		// the static map actor with the actual opening camp position.
-		_titasNpc = AddNpc(77, 20113, L("Knight Titas"), "f_siauliai_west", -652, 260, -952, 180, "SIAUL_WEST_CAMP_MANAGER", state: (int)NpcState.Invisible);
+		// Client rev 402595 maps Knight Titas to genType 7 / NPCID 20032.
+		// Using later NPC IDs renders a different character and breaks the
+		// direction actor mapping for SIAU_WEST_START_TRACK.
+		_titasNpc = AddNpc(7, 20032, L("Knight Titas"), "f_siauliai_west", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER", state: (int)NpcState.Invisible);
 
 		// Battle Commander
 		//-------------------------------------------------------------------------
@@ -129,7 +128,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		//-------------------------------------------------------------------------
 		// Drasius is revealed per character after the Titas handoff. The shared
 		// NPC state helper sends both the actor and the effective state.
-		AddAreaTrigger("f_siauliai_west", -1649, -763, 300, async triggerArgs =>
+		AddAreaTrigger("f_siauliai_west", -1121, -528, 300, async triggerArgs =>
 		{
 			if (triggerArgs.Initiator is not Character character)
 				return;

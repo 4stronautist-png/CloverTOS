@@ -28,25 +28,38 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 
 		var actors = new List<IActor>();
 
-		// Use a knight-style NPC model here, not the generic kingdom guard.
-		// The previous actor id (150219) rendered as a Royal Army Guard, which
-		// is why the cutscene showed an extra guard instead of Titas.
-		var titas = SpawnCutsceneNpc(character, 25001, 20113, "Knight Titas", -652, 260, -952, 180, "SIAUL_WEST_CAMP_MANAGER");
+		// Match the actor slots from ies_mongen for client rev 402595.
+		// The direction file binds SIAU_WEST_START_TRACK to these original
+		// genTypes; arbitrary private genTypes make the client animate the
+		// wrong model/position pair.
+		var titas = SpawnCutsceneNpc(character, 7, 20032, "Knight Titas", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER");
 		actors.Add(titas);
 
-		var guardLeft = SpawnCutsceneNpc(character, 25002, 40202, "Sentinel", -666, 260, -962, 135);
-		actors.Add(guardLeft);
+		var frontGuard = SpawnCutsceneNpc(character, 8, 20032, "Sentinel", -652, 260, -953, -90, "SIAU_FRON_NPC_01");
+		actors.Add(frontGuard);
 
-		var guardRight = SpawnCutsceneNpc(character, 25003, 40202, "Sentinel", -639, 260, -938, 225);
-		actors.Add(guardRight);
+		var guard1 = SpawnCutsceneNpc(character, 51, 10032, "Sentinel", -626, 260, -757, 86, "SIAU_FRON_NPC_04");
+		actors.Add(guard1);
+
+		var guard2 = SpawnCutsceneNpc(character, 52, 10032, "Sentinel", -619, 260, -707, -75, "SIAU_FRON_NPC_05");
+		actors.Add(guard2);
+
+		var guard3 = SpawnCutsceneNpc(character, 53, 10032, "Sentinel", -509, 260, -821, 161, "SIAU_FRON_NPC_03");
+		actors.Add(guard3);
+
+		var guard4 = SpawnCutsceneNpc(character, 54, 10032, "Sentinel", -589, 260, -822, 0, "SIAU_FRON_NPC_02");
+		actors.Add(guard4);
 
 		Log.Info(
-			"SIAU_WEST_START_TRACK: spawned actors for '{0}' on layer {1} -> Titas={2}, GuardL={3}, GuardR={4}, ActorCount={5}",
+			"SIAU_WEST_START_TRACK: spawned actors for '{0}' on layer {1} -> Titas={2}, FrontGuard={3}, Guard51={4}, Guard52={5}, Guard53={6}, Guard54={7}, ActorCount={8}",
 			character.Name,
 			character.Layer,
 			titas.Handle,
-			guardLeft.Handle,
-			guardRight.Handle,
+			frontGuard.Handle,
+			guard1.Handle,
+			guard2.Handle,
+			guard3.Handle,
+			guard4.Handle,
 			actors.Count
 		);
 
