@@ -2490,24 +2490,26 @@ namespace Melia.Zone.Scripting.Shared
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
 			Send.ZC_NORMAL.SetupCutscene(dialog.Player, false, false, false);
 			await COMMON_QUEST_HANDLER(dialog);
-			EnsureWestSiauliaiScoutKepaEncounter(dialog.Player);
+			StartWestSiauliaiScoutKepaTrack(dialog.Player);
 		}
 
-		private static void EnsureWestSiauliaiScoutKepaEncounter(Character character)
+		private static void StartWestSiauliaiScoutKepaTrack(Character character)
 		{
 			if (character == null || character.MapId != 1021)
 				return;
-			if (!character.Quests.IsActive(1004) || character.Quests.HasCompleted(1004))
+			if (!character.Quests.IsActive(1003) || character.Quests.HasCompleted(1003))
 				return;
-			if (!character.Variables.Temp.ActivateOnce("Clover.WestSiauliai.ScoutKepaEncounter"))
+			if (character.Tracks.ActiveTrack != null)
 				return;
 
-			AddMonster(24011, 400001, "Kepa", "f_siauliai_west", -1705, 260, -768, 90);
-			AddMonster(24012, 400001, "Kepa", "f_siauliai_west", -1658, 260, -830, 135);
-			AddMonster(24013, 400001, "Kepa", "f_siauliai_west", -1598, 260, -732, 225);
-			AddMonster(24014, 400001, "Kepa", "f_siauliai_west", -1734, 260, -706, 45);
-
-			character.LookAround();
+			_ = character.Tracks.Start(
+				"SIAUL_WEST_DRASIUS1_TRACK",
+				TimeSpan.Zero,
+				1003,
+				QuestStatus.InProgress,
+				QuestStatus.InProgress,
+				PropertyName.SIAUL_WEST_DRASIUS1_TRACK
+			);
 		}
 
 		[DialogFunction("SIAUL_WEST_NAGLIS2")]
