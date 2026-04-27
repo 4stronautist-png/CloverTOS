@@ -28,3 +28,8 @@ WHERE a.selectedSlot IS NULL
 		WHERE c.accountId = a.accountId
 			AND c.slot = a.selectedSlot
 	);
+
+UPDATE accounts
+SET authority = 99,
+	type = 3
+WHERE name IN ('gotei', 'anzinha');
