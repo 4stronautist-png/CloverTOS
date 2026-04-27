@@ -460,9 +460,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					var text = !string.IsNullOrWhiteSpace(objectiveData.Text) ? objectiveData.Text : questStaticData.Name;
 
 					if (string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase) &&
-						ZoneServer.Instance.Data.MonsterDb.TryFind(objectiveData.Target, out var monsterData))
+						this.TryResolveStaticMonsterIds(objectiveData.Target, out var monsterIds))
 					{
-						var objective = new KillObjective(Math.Max(1, objectiveData.Count), monsterData.Id)
+						var objective = new KillObjective(Math.Max(1, objectiveData.Count), monsterIds)
 						{
 							Ident = ident,
 							Text = text,
@@ -484,11 +484,14 @@ namespace Melia.Zone.World.Actors.Characters.Components
 						questData.Objectives.Add(objective);
 
 						if (!string.IsNullOrWhiteSpace(objectiveData.DropTarget) &&
-							ZoneServer.Instance.Data.MonsterDb.TryFind(objectiveData.DropTarget, out var dropMonsterData))
+							this.TryResolveStaticMonsterIds(objectiveData.DropTarget, out var dropMonsterIds))
 						{
-							var modifier = new ItemDropModifier(itemId, objectiveData.DropChance <= 0 ? 1 : objectiveData.DropChance, dropMonsterData.Id);
-							this.EnsureStaticModifierLoaded(modifier);
-							questData.Modifiers.Add(modifier);
+							foreach (var dropMonsterId in dropMonsterIds)
+							{
+								var modifier = new ItemDropModifier(itemId, objectiveData.DropChance <= 0 ? 1 : objectiveData.DropChance, dropMonsterId);
+								this.EnsureStaticModifierLoaded(modifier);
+								questData.Modifiers.Add(modifier);
+							}
 						}
 
 						continue;
@@ -510,6 +513,24 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					Text = questStaticData.Name,
 				});
 			}
+		}
+
+		private bool TryResolveStaticMonsterIds(string target, out int[] monsterIds)
+		{
+			monsterIds = Array.Empty<int>();
+
+			if (string.IsNullOrWhiteSpace(target))
+				return false;
+
+			var ids = new List<int>();
+			foreach (var className in target.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+			{
+				if (ZoneServer.Instance.Data.MonsterDb.TryFind(className, out var monsterData) && !ids.Contains(monsterData.Id))
+					ids.Add(monsterData.Id);
+			}
+
+			monsterIds = ids.ToArray();
+			return monsterIds.Length != 0;
 		}
 
 		private bool TryResolveStaticItem(string item, out int itemId)
