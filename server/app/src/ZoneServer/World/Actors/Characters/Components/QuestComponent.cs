@@ -10,6 +10,7 @@ using Melia.Zone.Scripting;
 using Melia.Zone.World.Quests;
 using Melia.Zone.World.Quests.Modifiers;
 using Melia.Zone.World.Quests.Objectives;
+using Melia.Zone.World.Quests.Rewards;
 using Yggdrasil.Scheduling;
 using Yggdrasil.Util;
 using System.Threading.Tasks;
@@ -436,11 +437,25 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				ReceiveType = QuestReceiveType.Manual,
 			};
 
-			questData.Objectives.Add(new ManualObjective
+			if (questStaticData.Id == 1004)
 			{
-				Ident = "manual",
-				Text = questStaticData.Name,
-			});
+				questData.Objectives.Add(new KillObjective(3, 400001)
+				{
+					Ident = "kepa",
+					Text = "Defeat the Kepas near the Scout",
+				});
+			}
+			else
+			{
+				questData.Objectives.Add(new ManualObjective
+				{
+					Ident = "manual",
+					Text = questStaticData.Name,
+				});
+			}
+
+			if (questStaticData.Id == 1002)
+				questData.Rewards.Add(new ItemReward(640091, 1));
 
 			return new Quest(questData);
 		}

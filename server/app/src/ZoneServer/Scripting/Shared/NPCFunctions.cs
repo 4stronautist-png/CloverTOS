@@ -2459,8 +2459,7 @@ namespace Melia.Zone.Scripting.Shared
 		public static async Task SIAUL_WEST_NAGLIS2(Dialog dialog)
 		{
 			await dialog.Msg("SIAUL_WEST_NAGLIS2_basic1");
-			await dialog.HooksByDialogName("BeforeStart");
-			await dialog.HooksByDialogName("BeforeEnd");
+			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("WARP_F_SIAULIAI_WEST")]
