@@ -14,12 +14,16 @@ using Melia.Zone.Scripting;
 using Melia.Zone.Scripting.Dialogues;
 using Melia.Zone.Scripting.Extensions.LivelyDialog;
 using Melia.Zone.World.Actors.Characters;
+using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Quests;
 using Yggdrasil.Logging;
 using static Melia.Zone.Scripting.Shortcuts;
 
 public class FSiauliaiWestNpcScript : GeneralScript
 {
+	private const bool UseOpeningCutscene = false;
+	private Npc _scoutNpc;
+
 	[On("PlayerReady")]
 	public void OnPlayerReady(object sender, PlayerEventArgs args)
 	{
@@ -51,6 +55,16 @@ public class FSiauliaiWestNpcScript : GeneralScript
 				Log.Info("West Siauliai opening: started quest SIAUL_WEST_MEET_TITAS for '{0}'.", character.Name);
 			}
 
+			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+			RevealScoutIfNeeded(character);
+
+			if (!UseOpeningCutscene)
+			{
+				Log.Info("West Siauliai opening: skipping broken intro cutscene for '{0}' and keeping HUD/world controls active.", character.Name);
+				character.LookAround();
+				return;
+			}
+
 			await Task.Delay(2500);
 
 			if (character.Connection == null || character.MapId != 1021 || character.Level > 1)
@@ -76,7 +90,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 	protected override void Load()
 	{
-		var scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
+		_scoutNpc = AddNpc(11, 20019, L("Scout"), "f_siauliai_west", -1649, 260, -763, 90, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
 
 		// Opening quest trigger
 		//-------------------------------------------------------------------------
@@ -107,14 +121,6 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			if (triggerArgs.Initiator is not Character character)
 				return;
 
-			var shouldReveal =
-				character.Quests.IsActive(1002) ||
-				character.Quests.HasCompleted(1002) ||
-				character.Quests.IsActive(1003) ||
-				character.Quests.HasCompleted(1003) ||
-				character.Quests.IsActive(1004) ||
-				character.Quests.IsActive(1014);
-
 			Log.Info(
 				"West Siauliai scout trigger: '{0}' entered reveal area. layer={1}, q1002={2}, q1002Done={3}, q1003={4}, q1003Done={5}, q1004={6}, q1014={7}, scoutState={8}",
 				character.Name,
@@ -125,20 +131,10 @@ public class FSiauliaiWestNpcScript : GeneralScript
 				character.Quests.HasCompleted(1003),
 				character.Quests.IsActive(1004),
 				character.Quests.IsActive(1014),
-				character.GetMapNPCState(scoutNpc)
+				character.GetMapNPCState(_scoutNpc)
 			);
 
-			if (!shouldReveal)
-				return;
-
-			if (character.GetMapNPCState(scoutNpc) != NpcState.Normal)
-			{
-				character.SetMapNPCState(scoutNpc, NpcState.Normal);
-				Send.ZC_ENTER_MONSTER(character.Connection, scoutNpc);
-				Send.ZC_SET_NPC_STATE(character.Connection, scoutNpc, (short)NpcState.Normal);
-				character.LookAround();
-				Log.Info("West Siauliai scout reveal: revealed Drasius for '{0}'.", character.Name);
-			}
+			RevealScoutIfNeeded(character);
 
 			await Task.CompletedTask;
 		});
@@ -174,5 +170,28 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		// Lv1 Treasure Chest
 		//-------------------------------------------------------------------------
 		AddNpc(2036, 147392, "Lv1 Treasure Chest", "f_siauliai_west", 1346.05, 210.31, -1087.24, 90, "TREASUREBOX_LV_F_SIAULIAI_WEST2036", "", "");
+	}
+
+	private void RevealScoutIfNeeded(Character character)
+	{
+		if (_scoutNpc == null || character == null || character.Connection == null)
+			return;
+
+		var shouldReveal =
+			character.Quests.IsActive(1002) ||
+			character.Quests.HasCompleted(1002) ||
+			character.Quests.IsActive(1003) ||
+			character.Quests.HasCompleted(1003) ||
+			character.Quests.IsActive(1004) ||
+			character.Quests.IsActive(1014);
+
+		if (!shouldReveal || character.GetMapNPCState(_scoutNpc) == NpcState.Normal)
+			return;
+
+		character.SetMapNPCState(_scoutNpc, NpcState.Normal);
+		Send.ZC_ENTER_MONSTER(character.Connection, _scoutNpc);
+		Send.ZC_SET_NPC_STATE(character.Connection, _scoutNpc, (short)NpcState.Normal);
+		character.LookAround();
+		Log.Info("West Siauliai scout reveal: revealed Drasius for '{0}'.", character.Name);
 	}
 }

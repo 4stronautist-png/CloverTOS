@@ -18,6 +18,7 @@ using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Items;
 using Melia.Zone.World.Maps;
+using Yggdrasil.Logging;
 using Yggdrasil.Util.Commands;
 using static Melia.Zone.Scripting.Shortcuts;
 
@@ -2453,8 +2454,37 @@ namespace Melia.Zone.Scripting.Shared
 		public static async Task SIALUL_WEST_DRASIUS(Dialog dialog)
 		{
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
+			await EnsureWestSiauliaiScoutFlow(dialog.Player);
 			await COMMON_QUEST_HANDLER(dialog);
 			EnsureWestSiauliaiScoutKepaEncounter(dialog.Player);
+		}
+
+		private static async Task EnsureWestSiauliaiScoutFlow(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return;
+
+			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+
+			if (character.Quests.IsActive(1003))
+			{
+				character.Quests.Complete(1003);
+				Log.Info("West Siauliai Scout flow: completed SIAUL_WEST_DRASIUS1 for '{0}'.", character.Name);
+			}
+
+			if (!character.Quests.HasCompleted(20127))
+			{
+				if (!character.Quests.IsActive(20127))
+					await character.Quests.Start("SIAUL_WEST_STATUS_TUTO_1");
+				character.Quests.Complete(20127);
+				Log.Info("West Siauliai Scout flow: completed status tutorial bridge for '{0}'.", character.Name);
+			}
+
+			if (!character.Quests.IsActive(1004) && !character.Quests.HasCompleted(1004))
+			{
+				await character.Quests.Start("SIAUL_WEST_DRASIUS2");
+				Log.Info("West Siauliai Scout flow: started SIAUL_WEST_DRASIUS2 for '{0}'.", character.Name);
+			}
 		}
 
 		private static void EnsureWestSiauliaiScoutKepaEncounter(Character character)
@@ -2489,6 +2519,7 @@ namespace Melia.Zone.Scripting.Shared
 		public static async Task SIAUL_WEST_CAMP_MANAGER(Dialog dialog)
 		{
 			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
+			await EnsureWestSiauliaiTitasFlow(dialog.Player);
 			await COMMON_QUEST_HANDLER(dialog);
 
 			// The official opening flow hands the player from Titas to the
@@ -2511,7 +2542,38 @@ namespace Melia.Zone.Scripting.Shared
 					Send.ZC_ENTER_MONSTER(character.Connection, scoutNpc);
 					Send.ZC_SET_NPC_STATE(character.Connection, scoutNpc, (short)NpcState.Normal);
 					character.LookAround();
+					Log.Info("West Siauliai Titas flow: revealed Scout for '{0}'.", character.Name);
 				}
+			}
+		}
+
+		private static async Task EnsureWestSiauliaiTitasFlow(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return;
+
+			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+
+			if (character.Quests.IsActive(1001))
+			{
+				character.Quests.Complete(1001);
+				if (character.Variables.Perm.ActivateOnce("Clover.WestSiauliai.TitasPotionReward"))
+					character.Inventory.Add(640091, 5, InventoryAddType.PickUp);
+				Log.Info("West Siauliai Titas flow: completed SIAUL_WEST_MEET_TITAS and granted potion for '{0}'.", character.Name);
+			}
+
+			if (!character.Quests.HasCompleted(1002))
+			{
+				if (!character.Quests.IsActive(1002))
+					await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
+				character.Quests.Complete(1002);
+				Log.Info("West Siauliai Titas flow: completed SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
+			}
+
+			if (!character.Quests.IsActive(1003) && !character.Quests.HasCompleted(1003))
+			{
+				await character.Quests.Start("SIAUL_WEST_DRASIUS1");
+				Log.Info("West Siauliai Titas flow: started SIAUL_WEST_DRASIUS1 for '{0}'.", character.Name);
 			}
 		}
 
