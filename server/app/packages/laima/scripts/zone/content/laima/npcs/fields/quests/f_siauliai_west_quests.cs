@@ -440,6 +440,59 @@ public class FSiauliaiWestQuestNpcsScript : GeneralScript
 	}
 }
 
+public class CloverWestSiauliaiTitasHandoffQuest : QuestScript
+{
+	protected override void Load()
+	{
+		SetId("Laima.Quest", 1002);
+		SetName(L("Talk to Knight Titas"));
+		SetDescription(L("Talk to Knight Titas at West Siauliai Woods."));
+		SetCancelable(false);
+		SetAutoTracked(true);
+		AddObjective("talkToTitas", L("Talk to Knight Titas"), new ManualObjective());
+		AddReward(new ItemReward(640091, 5)); // Basic Small HP Potion
+	}
+}
+
+public class CloverWestSiauliaiScoutIntroQuest : QuestScript
+{
+	protected override void Load()
+	{
+		SetId("Laima.Quest", 1003);
+		SetName(L("Talk to the Scout"));
+		SetDescription(L("Meet the Scout at the marked area in West Siauliai Woods."));
+		SetCancelable(false);
+		SetAutoTracked(true);
+		AddObjective("talkToScout", L("Talk to the Scout"), new ManualObjective());
+	}
+}
+
+public class CloverWestSiauliaiScoutKepaQuest : QuestScript
+{
+	protected override void Load()
+	{
+		SetId("Laima.Quest", 1004);
+		SetName(L("Defeat the Kepas"));
+		SetDescription(L("Defeat the Kepas attacking the Scout."));
+		SetCancelable(false);
+		SetAutoTracked(true);
+		AddObjective("killKepas", L("Defeat Kepas"), new KillObjective(4, MonsterId.Onion));
+	}
+}
+
+public class CloverWestSiauliaiSearchScoutQuest : QuestScript
+{
+	protected override void Load()
+	{
+		SetId("Laima.Quest", 1014);
+		SetName(L("Talk to the Search Scout"));
+		SetDescription(L("Continue toward Search Scout Naglis."));
+		SetCancelable(false);
+		SetAutoTracked(true);
+		AddObjective("talkToSearchScout", L("Talk to the Search Scout"), new ManualObjective());
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Quests
 //-----------------------------------------------------------------------------

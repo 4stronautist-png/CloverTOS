@@ -18,6 +18,7 @@ using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Items;
 using Melia.Zone.World.Maps;
+using Melia.Zone.World.Quests;
 using Yggdrasil.Logging;
 using Yggdrasil.Util.Commands;
 using static Melia.Zone.Scripting.Shortcuts;
@@ -2453,38 +2454,61 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIALUL_WEST_DRASIUS")]
 		public static async Task SIALUL_WEST_DRASIUS(Dialog dialog)
 		{
+			if (dialog.Player?.MapId == 1021)
+			{
+				await HandleWestSiauliaiScout(dialog);
+				return;
+			}
+
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
-			await EnsureWestSiauliaiScoutFlow(dialog.Player);
 			await COMMON_QUEST_HANDLER(dialog);
-			EnsureWestSiauliaiScoutKepaEncounter(dialog.Player);
 		}
 
-		private static async Task EnsureWestSiauliaiScoutFlow(Character character)
+		private static async Task HandleWestSiauliaiScout(Dialog dialog)
 		{
-			if (character == null || character.MapId != 1021)
-				return;
+			var character = dialog.Player;
+			var drasius1 = new QuestId("Laima.Quest", 1003);
+			var drasius2 = new QuestId("Laima.Quest", 1004);
+			var naglis = new QuestId("Laima.Quest", 1014);
 
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
 
-			if (character.Quests.IsActive(1003))
+			if (!character.Quests.IsActive(drasius1) && !character.Quests.HasCompleted(drasius1) && !character.Quests.IsActive(drasius2) && !character.Quests.HasCompleted(drasius2))
 			{
-				character.Quests.Complete(1003);
-				Log.Info("West Siauliai Scout flow: completed SIAUL_WEST_DRASIUS1 for '{0}'.", character.Name);
+				await character.Quests.Start("SIAUL_WEST_DRASIUS1");
+				Log.Info("West Siauliai Scout flow: started missing SIAUL_WEST_DRASIUS1 for '{0}'.", character.Name);
 			}
 
-			if (!character.Quests.HasCompleted(20127))
+			if (character.Quests.IsActive(drasius1))
 			{
-				if (!character.Quests.IsActive(20127))
-					await character.Quests.Start("SIAUL_WEST_STATUS_TUTO_1");
-				character.Quests.Complete(20127);
-				Log.Info("West Siauliai Scout flow: completed status tutorial bridge for '{0}'.", character.Name);
-			}
-
-			if (!character.Quests.IsActive(1004) && !character.Quests.HasCompleted(1004))
-			{
+				await dialog.Msg("SIAUL_WEST_DRASIUS1_dlg1", "SIAUL_WEST_DRASIUS1_dlg2");
+				character.Quests.Complete(drasius1);
 				await character.Quests.Start("SIAUL_WEST_DRASIUS2");
-				Log.Info("West Siauliai Scout flow: started SIAUL_WEST_DRASIUS2 for '{0}'.", character.Name);
+				EnsureWestSiauliaiScoutKepaEncounter(character);
+				Log.Info("West Siauliai Scout flow: accepted Kepa encounter quest for '{0}'.", character.Name);
+				return;
 			}
+
+			if (character.Quests.TryGetById(drasius2, out var kepaQuest) && kepaQuest.Status == QuestStatus.Success)
+			{
+				await dialog.Msg("SIAUL_WEST_DRASIUS2_dlg2", "SIAUL_WEST_DRASIUS2_dlg3");
+				character.Quests.Complete(drasius2);
+
+				if (!character.Quests.IsActive(naglis) && !character.Quests.HasCompleted(naglis))
+					await character.Quests.Start("SIAUL_WEST_MEET_NAGLIS");
+
+				Log.Info("West Siauliai Scout flow: completed Kepa encounter and started Naglis handoff for '{0}'.", character.Name);
+				return;
+			}
+
+			if (character.Quests.IsActive(drasius2))
+			{
+				EnsureWestSiauliaiScoutKepaEncounter(character);
+				await dialog.Msg("SIAUL_WEST_DRASIUS2_dlg1");
+				return;
+			}
+
+			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
 		}
 
 		private static void EnsureWestSiauliaiScoutKepaEncounter(Character character)
@@ -2518,62 +2542,57 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIAUL_WEST_CAMP_MANAGER")]
 		public static async Task SIAUL_WEST_CAMP_MANAGER(Dialog dialog)
 		{
-			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
-			await EnsureWestSiauliaiTitasFlow(dialog.Player);
-			await COMMON_QUEST_HANDLER(dialog);
-
-			// The official opening flow hands the player from Titas to the
-			// West scout right away. If the player already progressed past the
-			// Titas step while standing near the reveal area, make sure the
-			// scout becomes visible without requiring a second trigger pass.
-			var character = dialog.Player;
-			var shouldRevealScout =
-				character.Quests.IsActive(1002) ||
-				character.Quests.HasCompleted(1002) ||
-				character.Quests.IsActive(1003) ||
-				character.Quests.HasCompleted(1003) ||
-				character.Quests.IsActive(1004);
-
-			if (shouldRevealScout && character.Map?.TryGetMonster(m => m is Npc npc && npc.DialogName == "SIALUL_WEST_DRASIUS", out var scoutMonster) == true && scoutMonster is Npc scoutNpc)
+			if (dialog.Player?.MapId == 1021)
 			{
-				if (character.GetMapNPCState(scoutNpc) != NpcState.Normal)
-				{
-					character.SetMapNPCState(scoutNpc, NpcState.Normal);
-					Send.ZC_ENTER_MONSTER(character.Connection, scoutNpc);
-					Send.ZC_SET_NPC_STATE(character.Connection, scoutNpc, (short)NpcState.Normal);
-					character.LookAround();
-					Log.Info("West Siauliai Titas flow: revealed Scout for '{0}'.", character.Name);
-				}
+				await HandleWestSiauliaiTitas(dialog);
+				return;
 			}
+
+			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
+			await COMMON_QUEST_HANDLER(dialog);
 		}
 
-		private static async Task EnsureWestSiauliaiTitasFlow(Character character)
+		private static async Task HandleWestSiauliaiTitas(Dialog dialog)
 		{
-			if (character == null || character.MapId != 1021)
-				return;
+			var character = dialog.Player;
+			var titas = new QuestId("Laima.Quest", 1002);
+			var scout = new QuestId("Laima.Quest", 1003);
+
+			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
 
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
 
-			if (character.Quests.IsActive(1001))
+			if (!character.Quests.IsActive(titas) && !character.Quests.HasCompleted(titas) && !character.Quests.IsActive(scout) && !character.Quests.HasCompleted(scout))
 			{
-				character.Quests.Complete(1001);
-				if (character.Variables.Perm.ActivateOnce("Clover.WestSiauliai.TitasPotionReward"))
-					character.Inventory.Add(640091, 5, InventoryAddType.PickUp);
-				Log.Info("West Siauliai Titas flow: completed SIAUL_WEST_MEET_TITAS and granted potion for '{0}'.", character.Name);
+				await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
+				Log.Info("West Siauliai Titas flow: started missing SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
 			}
 
-			if (!character.Quests.HasCompleted(1002))
+			if (character.Quests.IsActive(titas))
 			{
-				if (!character.Quests.IsActive(1002))
-					await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
-				character.Quests.Complete(1002);
-				Log.Info("West Siauliai Titas flow: completed SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
-			}
-
-			if (!character.Quests.IsActive(1003) && !character.Quests.HasCompleted(1003))
-			{
+				await dialog.Msg("SIAUL_WEST_WEST_FOREST_dlg1", "SIAUL_WEST_WEST_FOREST_dlg4");
+				character.Quests.Complete(titas);
 				await character.Quests.Start("SIAUL_WEST_DRASIUS1");
-				Log.Info("West Siauliai Titas flow: started SIAUL_WEST_DRASIUS1 for '{0}'.", character.Name);
+				RevealWestSiauliaiScout(character);
+				Log.Info("West Siauliai Titas flow: completed Titas handoff and started Scout quest for '{0}'.", character.Name);
+				return;
+			}
+
+			RevealWestSiauliaiScout(character);
+		}
+
+		private static void RevealWestSiauliaiScout(Character character)
+		{
+			if (character?.Map?.TryGetMonster(m => m is Npc npc && npc.DialogName == "SIALUL_WEST_DRASIUS", out var scoutMonster) == true && scoutMonster is Npc scoutNpc)
+			{
+				if (character.GetMapNPCState(scoutNpc) == NpcState.Normal)
+					return;
+
+				character.SetMapNPCState(scoutNpc, NpcState.Normal);
+				Send.ZC_ENTER_MONSTER(character.Connection, scoutNpc);
+				Send.ZC_SET_NPC_STATE(character.Connection, scoutNpc, (short)NpcState.Normal);
+				character.LookAround();
+				Log.Info("West Siauliai flow: revealed Scout for '{0}'.", character.Name);
 			}
 		}
 
