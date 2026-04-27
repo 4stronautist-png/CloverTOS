@@ -25,6 +25,7 @@ DB_NAME="${DB_NAME:-clover_local}"
 DB_USER="${DB_USER:-melia}"
 DB_PASS="${DB_PASS:-melia123}"
 GROUP_ID="${GROUP_ID:-1001}"
+CLOVER_CLIENT_VERSION="${CLOVER_CLIENT_VERSION:-402595}"
 MELIA_PORTS=(2000 7001 7002 8080 9001 9002)
 
 log_info() {
@@ -255,7 +256,8 @@ if [ ! -f "Melia.sln" ]; then
     exit 1
 fi
 
-mkdir -p user/conf user/db tools logs
+mkdir -p user/conf user/db user/versions tools logs
+printf '#define VERSION %s\n' "$CLOVER_CLIENT_VERSION" > user/versions/version.txt
 
 ensure_server_config
 ensure_windows_client_config
@@ -280,10 +282,8 @@ if ! mysql -u "$DB_USER" -p"$DB_PASS" -e "USE ${DB_NAME}; SELECT 1;" >/dev/null 
     exit 1
 fi
 
-if [ ! -f "bin/Release/net8.0/BarracksServer.dll" ]; then
-    log_warning "Build Release nao encontrado. Compilando..."
-    dotnet build Melia.sln -c Release
-fi
+log_info "Compilando Release para garantir binarios atualizados..."
+dotnet build Melia.sln -c Release
 
 if [ -f "./stop-server.sh" ]; then
     ./stop-server.sh >/dev/null 2>&1 || true
