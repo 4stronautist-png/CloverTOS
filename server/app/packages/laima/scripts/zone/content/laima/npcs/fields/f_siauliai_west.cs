@@ -60,6 +60,18 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 			if (!UseOpeningCutscene)
 			{
+				if (character.Quests.IsActive(1001))
+				{
+					character.Quests.Complete(1001);
+					Log.Info("West Siauliai opening: completed intro trigger quest for '{0}' because the cutscene is disabled.", character.Name);
+				}
+
+				if (!character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
+				{
+					await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
+					Log.Info("West Siauliai opening: started visible Titas quest SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
+				}
+
 				Log.Info("West Siauliai opening: skipping broken intro cutscene for '{0}' and keeping HUD/world controls active.", character.Name);
 				character.LookAround();
 				return;
