@@ -401,6 +401,7 @@ namespace Melia.Barracks.Network
 			character.MapId = startMapData.Id;
 			character.Position = startPosition;
 			character.BarracksPosition = barrackPos;
+			character.BarrackLayer = conn.Account.SelectedBarrackLayer;
 
 			Log.Info("CB_COMMANDER_CREATE: Creating '{0}' on map '{1}' ({2}) at {3},{4},{5}.", character.Name, startMapName, startMapData.Id, startPosition.X, startPosition.Y, startPosition.Z);
 
