@@ -41,13 +41,15 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return;
 			}
 
-			if (this._help.TryGetValue(help.Id, out var isHelpShown) && isHelpShown)
+			if (!forceShow && this._help.TryGetValue(help.Id, out var isHelpShown) && isHelpShown)
 				return;
 
 			lock (_help)
 			{
-				if (this._help.TryAdd(help.Id, true) || forceShow)
+				if (forceShow || this._help.TryAdd(help.Id, true))
 				{
+					this._help[help.Id] = true;
+
 					// Custom Tutorials on Help Calls
 					switch (className)
 					{

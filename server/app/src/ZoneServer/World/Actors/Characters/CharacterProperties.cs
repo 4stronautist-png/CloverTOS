@@ -116,6 +116,23 @@ namespace Melia.Zone.World.Actors.Characters
 			this.Create(PropertyName.StatPoint, "SCR_Get_Character_StatPoint");
 			this.Create(new StringProperty(PropertyName.AbilityPoint, "0")); // Why oh why did they make this a string >_>
 
+			// The client uses these PC UI state flags to decide which core HUD
+			// frames are available. Defaulting them to zero leaves fresh West
+			// Siauliai characters without the bottom menu, minimap, quest list,
+			// or quickslot bar until another script happens to touch them.
+			this.Create(new FloatProperty(PropertyName.inventory, 1));
+			this.Create(new FloatProperty(PropertyName.status, 1));
+			this.Create(new FloatProperty(PropertyName.skillvan, 1));
+			this.Create(new FloatProperty(PropertyName.sysmenu, 1));
+			this.Create(new FloatProperty(PropertyName.quest, 1));
+			this.Create(new FloatProperty(PropertyName.quickslotnexpbar, 1));
+			this.Create(new FloatProperty(PropertyName.map, 1));
+			this.Create(new FloatProperty(PropertyName.minimap, 1));
+			this.Create(new FloatProperty(PropertyName.targetinfo, 1));
+			this.Create(new FloatProperty(PropertyName.targetbuff, 1));
+			this.Create(new FloatProperty(PropertyName.monsterbaseinfo, 1));
+			this.Create(new FloatProperty(PropertyName.changejobbutton, 1));
+
 			this.Create(PropertyName.MAXPATK, "SCR_Get_Character_MAXPATK");
 			this.Create(PropertyName.MINPATK, "SCR_Get_Character_MINPATK");
 			this.Create(PropertyName.MAXMATK, "SCR_Get_Character_MAXMATK");

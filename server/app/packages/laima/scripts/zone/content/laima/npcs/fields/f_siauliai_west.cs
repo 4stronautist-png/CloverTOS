@@ -44,8 +44,10 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 		try
 		{
-			if (character.Variables.Perm.ActivateOnce("Clover.Tutorial.Movement.WestSiauliai"))
+			var introTrackCompleted = character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1;
+			if (!introTrackCompleted)
 			{
+				Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
 				character.ShowHelp("TUTO_MOVE_KB", true);
 				Log.Info("West Siauliai opening: movement tutorial triggered for '{0}'.", character.Name);
 			}
@@ -80,7 +82,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 				return;
 			}
 
-			await Task.Delay(2500);
+			await Task.Delay(7000);
 
 			if (character.Connection == null || character.MapId != 1021 || character.Level > 1)
 				return;
