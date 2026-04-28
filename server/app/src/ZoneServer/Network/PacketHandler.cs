@@ -336,6 +336,10 @@ namespace Melia.Zone.Network
 					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.SkillPoints);
 					Send.ZC_JOB_PTS(character, job);
 				}
+				Send.ZC_SESSION_OBJECTS(character);
+				Send.ZC_OBJECT_PROPERTY(character, character.Etc, PropertyName.IS_LEGEND_CARD_OPEN);
+				Send.ZC_NORMAL.AccountProperties(character, PropertyName.IS_GODDESS_CARD_OPEN);
+				Send.ZC_NORMAL.AccountProperties(character, PropertyName.LEGEND_CARD_LIFT_TEAM_COMPLETE_COUNT);
 				Send.ZC_NORMAL.UpdateSkillUI(character);
 				// Official server sends Skintone Object Property around here
 				Send.ZC_ITEM_EQUIP_LIST(character);

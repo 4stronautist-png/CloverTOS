@@ -315,7 +315,7 @@ namespace Melia.Shared.Configuration.Files
 			this.JobMaxRank = this.GetInt("job_max_rank", 4);
 			this.NoAdvancement = this.GetBool("no_advancement", false);
 			this.NoRankReset = this.GetBool("no_rank_reset", true);
-			this.MaxLevel = this.GetInt("max_level", 520);
+			this.MaxLevel = this.GetInt("max_level", 550);
 			this.MaxCompanionLevel = this.GetInt("max_companion_level", 520);
 			this.MaxBaseJobLevel = this.GetInt("max_base_job_level", 15);
 			this.MaxAdvanceJobLevel = this.GetInt("max_advanced_job_level", 45);

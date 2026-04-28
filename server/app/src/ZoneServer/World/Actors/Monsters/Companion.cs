@@ -22,10 +22,19 @@ namespace Melia.Zone.World.Actors.Monsters
 {
 	public class Companion : Mob, IPropertyObject
 	{
+		private const float GroundDisplayScale = 1.5f;
+		private const float BirdDisplayScale = 1.3f;
+
 		/// <summary>
 		/// Companion's unique id.
 		/// </summary>
 		public long DbId { get; set; }
+
+		/// <summary>
+		/// Id of the character this companion is currently assigned to.
+		/// Zero means the companion is owned by the account but not equipped.
+		/// </summary>
+		public long CharacterDbId { get; set; }
 
 		/// <summary>
 		/// Companion's globally unique id.
@@ -122,7 +131,13 @@ namespace Melia.Zone.World.Actors.Monsters
 			_staminaDecayTime = TimeSpan.FromMilliseconds(60000);
 			this.Properties = new CompanionProperties(this);
 			this.Properties.AddDefaultProperties();
+			this.ApplyDisplayScale();
 			this.InitEvents();
+		}
+
+		public void ApplyDisplayScale()
+		{
+			this.Properties.SetFloat(PropertyName.Scale, this.IsBird ? BirdDisplayScale : GroundDisplayScale);
 		}
 
 		/// <summary>
@@ -140,6 +155,7 @@ namespace Melia.Zone.World.Actors.Monsters
 
 				this.Properties.InvalidateAll();
 				this.Properties.InitAutoUpdates();
+				this.ApplyDisplayScale();
 				return;
 			}
 
@@ -155,6 +171,7 @@ namespace Melia.Zone.World.Actors.Monsters
 			this.Properties.SetFloat(PropertyName.Stamina, this.Properties.GetFloat(PropertyName.MaxStamina));
 
 			this.Properties.InvalidateAll();
+			this.ApplyDisplayScale();
 		}
 
 		/// <summary>
@@ -199,6 +216,7 @@ namespace Melia.Zone.World.Actors.Monsters
 		public void SetCompanionState(bool isActive)
 		{
 			this.IsActivated = isActive;
+			this.CharacterDbId = isActive ? this.Owner.DbId : 0;
 			Send.ZC_OBJECT_PROPERTY(this.Owner.Connection, this, PropertyName.IsActivated);
 			if (isActive)
 			{
@@ -243,7 +261,7 @@ namespace Melia.Zone.World.Actors.Monsters
 				this.OwnerHandle = 0;
 				// Clear Buffs
 				Send.ZC_LEAVE(this, LeaveType.Companion);
-				this.Map.RemoveMonster(this);
+				this.Map?.RemoveMonster(this);
 			}
 		}
 
