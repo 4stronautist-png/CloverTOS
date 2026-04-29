@@ -6516,7 +6516,7 @@ namespace Melia.Zone.Network
 			var propertiesSize = properties.GetByteCount();
 			var etcProperties = character.Etc.Properties.GetAll();
 			var etcPropertiesSize = etcProperties.GetByteCount();
-			var equipItems = character.Inventory.GetEquip();
+			var achievements = character.Achievements.GetAchievements();
 
 			using var packet = Packet.Rent(Op.ZC_PROPERTY_COMPARE);
 
@@ -6529,8 +6529,8 @@ namespace Melia.Zone.Network
 			packet.PutByte(like);
 			packet.PutInt(-1); // adventurerIndex
 			packet.PutInt(0); // adventurerRank
-			packet.PutInt(0); // achievementTitleCount
-			packet.PutInt(0);// achievementCount
+			packet.PutInt(achievements.Length);
+			packet.PutInt(achievements.Length);
 
 			// General character info? Same as in Friends list.
 			{
@@ -6573,10 +6573,10 @@ namespace Melia.Zone.Network
 				packet.PutInt(35);
 			}
 
-			foreach (var equipItemKv in equipItems)
+			for (var i = 0; i < InventoryDefaults.EquipSlotCount; ++i)
 			{
-				var equipSlot = equipItemKv.Key;
-				var equipItem = equipItemKv.Value;
+				var equipSlot = (EquipSlot)i;
+				var equipItem = character.Inventory.GetEquip(equipSlot);
 
 				var equipItemProperties = equipItem.Properties.GetAll();
 				var equipItemPropertiesSize = equipItemProperties.GetByteCount();
@@ -6599,12 +6599,16 @@ namespace Melia.Zone.Network
 				}
 			}
 
+			if (Versions.Client >= 402363)
+				packet.PutEmptyBin(8);
+
 			packet.PutShort(jobs.Length);
 			foreach (var job in jobs)
 			{
+				var grade = Math.Clamp(character.Jobs.GetJobRank(job.Id), 1, 4);
+
 				packet.PutShort((short)job.Id);
-				packet.PutByte(0x00);
-				packet.PutByte(0xB1);
+				packet.PutShort((short)grade);
 				packet.PutInt(0);
 				packet.PutInt(0);
 				packet.PutInt(0);
@@ -6615,6 +6619,9 @@ namespace Melia.Zone.Network
 				packet.PutInt(0);
 				packet.PutInt(0);
 			}
+
+			foreach (var achievement in achievements)
+				packet.PutInt(achievement);
 
 			conn.Send(packet);
 		}

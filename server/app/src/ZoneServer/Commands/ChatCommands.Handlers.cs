@@ -71,6 +71,7 @@ namespace Melia.Zone.Commands
 			this.Add("intewarpByToken", "<destination>", "", this.HandleTokenWarp);
 			this.Add("mic", "<message>", "", this.HandleMic);
 			this.Add("hairgacha", "<type>", "", this.HandleHairGacha);
+			this.Add("memberinfo", "<team name>", "Displays another character's public information.", this.HandleMemberInfo);
 
 			// Client Party Commands
 			this.Add("memberinfoForAct", "<team name>", "", this.HandleMemberInfoForAct);
@@ -249,7 +250,7 @@ namespace Melia.Zone.Commands
 			// Chronomancer Test Commands
 			// Aliases
 			this.AddAlias("iteminfo", "ii");
-			this.AddAlias("monsterinfo", "mi");
+			this.AddAlias("memberinfo", "mi");
 			this.AddAlias("reloadscripts", "rs");
 			this.AddAlias("jump", "setpos");
 			this.AddAlias("resetstats", "statsreset");
@@ -2897,6 +2898,20 @@ namespace Melia.Zone.Commands
 		}
 
 		/// <summary>
+		/// Opens the public info window for an online character.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="target"></param>
+		/// <param name="message"></param>
+		/// <param name="commandName"></param>
+		/// <param name="args"></param>
+		/// <returns></returns>
+		private CommandResult HandleMemberInfo(Character sender, Character target, string message, string commandName, Arguments args)
+		{
+			return this.ShowMemberInfo(sender, commandName, args, false);
+		}
+
+		/// <summary>
 		/// Official slash command to get a Member Info For Act?
 		/// </summary>
 		/// <param name="sender"></param>
@@ -2907,35 +2922,50 @@ namespace Melia.Zone.Commands
 		/// <returns></returns>
 		private CommandResult HandleMemberInfoForAct(Character sender, Character target, string message, string commandName, Arguments args)
 		{
+			return this.ShowMemberInfo(sender, commandName, args, true);
+		}
+
+		private CommandResult ShowMemberInfo(Character sender, string commandName, Arguments args, bool quiet)
+		{
 			if (args.Count < 1)
 			{
-				Log.Debug("HandleMemberInfoForAct: No team name given by user '{0}'.", sender.Username);
+				if (!quiet)
+					sender.ServerMessage(Localization.Get("Usage: /{0} <team name>"), commandName);
+				else
+					Log.Debug("ShowMemberInfo: No player name given by user '{0}'.", sender.Username);
+
 				return CommandResult.Okay;
 			}
 
-			// Since this command is sent via UI interactions, we'll not
-			// use any automated command result messages, but we'll leave
-			// debug messages for now, in case of unexpected values.
+			var teamNameParts = new string[args.Count];
+			for (var i = 0; i < args.Count; ++i)
+				teamNameParts[i] = args.Get(i);
+			var teamName = string.Join(" ", teamNameParts);
+			var character = ZoneServer.Instance.World.GetCharacterByTeamName(teamName);
 
-			if (args.Count != 1)
+			if (character == null)
 			{
-				Log.Debug("HandleMemberInfoForAct: Invalid call by user '{0}': {1}", sender.Username, commandName);
+				if (!quiet)
+					sender.ServerMessage(Localization.Get("Target character not found."));
+				else
+					Log.Debug("ShowMemberInfo: Team '{0}' requested by user '{1}' was not found.", teamName, sender.Username);
+
 				return CommandResult.Okay;
 			}
 
-			// To Do - Handle Party Name Check
-			//ZoneServer.Instance.World.GetParty() ?
-			var character = ZoneServer.Instance.World.GetCharacterByTeamName(args.Get(0));
-			if (character != null)
-			{
-				if (character.Connection.Party != null) // Guild check removed: Guild type deleted
-				{
-					Send.ZC_NORMAL.ShowParty(sender.Connection, character);
-					Send.ZC_TO_SOMEWHERE_CLIENT(sender);
-				}
-			}
+			Send.ZC_PROPERTY_COMPARE(sender.Connection, character, !quiet, false);
+			this.SendMemberInfoSupplement(sender, character);
 
 			return CommandResult.Okay;
+		}
+
+		private void SendMemberInfoSupplement(Character sender, Character target)
+		{
+			var jobs = string.Join(",", target.Jobs.GetList()
+				.Select(job => $"{(int)job.Id}:{Math.Clamp(target.Jobs.GetJobRank(job.Id), 1, 4)}"));
+			var achievementCount = target.Achievements.GetAchievements().Length;
+
+			Send.ZC_EXEC_CLIENT_SCP(sender.Connection, $"SSMI_APPLY({achievementCount},\"{jobs}\")");
 		}
 
 		/// <summary>
