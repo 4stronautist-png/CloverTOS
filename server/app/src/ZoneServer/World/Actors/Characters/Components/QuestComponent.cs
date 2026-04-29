@@ -774,6 +774,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			var mapClassName = this.Character.Map.ClassName;
 			this.EnsureStaticQuestNpcActors(mapClassName);
+			this.EnsureStaticQuestObjectiveMonsters(mapClassName);
 
 			var npcs = this.Character.Map.GetNpcs(a => a is Npc npc && !string.IsNullOrWhiteSpace(npc.DialogName));
 
@@ -830,6 +831,87 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			return false;
+		}
+
+		private void EnsureStaticQuestObjectiveMonsters(string mapClassName)
+		{
+			foreach (var request in this.GetRelevantStaticMonsterSpawnRequests(mapClassName))
+			{
+				var existingCount = this.Character.Map
+					.GetMonsters(monster => monster.Id == request.MonsterId && monster.Hp > 0)
+					.Count;
+
+				if (existingCount >= request.Count)
+					continue;
+
+				var spawnCount = Math.Min(request.Count - existingCount, 3);
+				for (var i = 0; i < spawnCount; i++)
+				{
+					var offset = i * 35;
+					Shortcuts.AddMonster(0, request.MonsterId, request.Name, mapClassName, request.X + offset, request.Y, request.Z + offset, 0, "Monster");
+				}
+
+				Log.Info("Static quest chain: spawned {0} fallback objective monster(s) '{1}' for quest '{2}' on map '{3}' at {4:0.##}/{5:0.##}/{6:0.##}.", spawnCount, request.ClassName, request.QuestClassName, mapClassName, request.X, request.Y, request.Z);
+			}
+		}
+
+		private IEnumerable<StaticQuestMonsterSpawnRequest> GetRelevantStaticMonsterSpawnRequests(string mapClassName)
+		{
+			foreach (var quest in this.GetInProgress())
+			{
+				var questData = quest.QuestStaticData;
+				if (questData?.Objectives == null)
+					continue;
+
+				if (!this.StaticQuestReferencesMap(questData, mapClassName))
+					continue;
+
+				foreach (var objectiveData in questData.Objectives)
+				{
+					if (objectiveData == null || !quest.TryGetProgress(objectiveData.Ident, out var progress) || progress.Done || !progress.Unlocked)
+						continue;
+
+					var target = this.GetStaticObjectiveMonsterTarget(objectiveData);
+					if (string.IsNullOrWhiteSpace(target))
+						continue;
+
+					if (!this.TryResolveStaticObjectivePosition(questData, mapClassName, out var x, out var y, out var z, out _))
+					{
+						x = this.Character.Position.X;
+						y = this.Character.Position.Y;
+						z = this.Character.Position.Z;
+					}
+
+					foreach (var monsterData in this.ResolveStaticObjectiveMonsterTargets(target))
+					{
+						var missingCount = Math.Max(1, Math.Min(objectiveData.Count - progress.Count, 3));
+						yield return new StaticQuestMonsterSpawnRequest(monsterData.Id, monsterData.ClassName, monsterData.Name, questData.ClassName, x, y, z, missingCount);
+					}
+				}
+			}
+		}
+
+		private string GetStaticObjectiveMonsterTarget(Melia.Shared.Data.Database.QuestObjectiveStaticData objectiveData)
+		{
+			if (string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase))
+				return objectiveData.Target;
+
+			if (string.Equals(objectiveData.Type, "Collect", StringComparison.OrdinalIgnoreCase))
+				return objectiveData.DropTarget;
+
+			return null;
+		}
+
+		private IEnumerable<Melia.Shared.Data.Database.MonsterData> ResolveStaticObjectiveMonsterTargets(string target)
+		{
+			foreach (var className in target.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+			{
+				if (string.Equals(className, "ALL", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				if (ZoneServer.Instance.Data.MonsterDb.TryFind(className, out var monsterData))
+					yield return monsterData;
+			}
 		}
 
 		private void EnsureStaticQuestNpcActors(string mapClassName)
@@ -952,6 +1034,53 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			return false;
 		}
 
+		private bool TryResolveStaticObjectivePosition(QuestStaticData questData, string mapClassName, out double x, out double y, out double z, out double range)
+		{
+			if (this.TryResolveStaticPositionFromLocation(questData.ProgLocation, mapClassName, out x, out y, out z, out range))
+				return true;
+			if (this.TryResolveStaticPositionFromLocation(questData.EndLocation, mapClassName, out x, out y, out z, out range))
+				return true;
+			if (this.TryResolveStaticPositionFromLocation(questData.StartLocation, mapClassName, out x, out y, out z, out range))
+				return true;
+
+			x = 0;
+			y = 0;
+			z = 0;
+			range = 100;
+			return false;
+		}
+
+		private bool TryResolveStaticPositionFromLocation(string location, string mapClassName, out double x, out double y, out double z, out double range)
+		{
+			x = 0;
+			y = 0;
+			z = 0;
+			range = 100;
+
+			if (string.IsNullOrWhiteSpace(location))
+				return false;
+
+			var parts = location.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			for (var i = 0; i < parts.Length; i++)
+			{
+				if (!string.Equals(parts[i], mapClassName, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				if (i + 4 < parts.Length &&
+					double.TryParse(parts[i + 1], out x) &&
+					double.TryParse(parts[i + 2], out y) &&
+					double.TryParse(parts[i + 3], out z))
+				{
+					double.TryParse(parts[i + 4], out range);
+					if (range <= 0)
+						range = 100;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		private bool TryResolveStaticNpcPositionFromLocation(string location, string dialogName, string mapClassName, out double x, out double y, out double z, out double range)
 		{
 			x = 0;
@@ -1027,6 +1156,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		}
 
 		private readonly record struct StaticQuestNpcSpawnRequest(string DialogName, string QuestClassName, string Name, double X, double Y, double Z, double Range);
+		private readonly record struct StaticQuestMonsterSpawnRequest(int MonsterId, string ClassName, string Name, string QuestClassName, double X, double Y, double Z, int Count);
 
 		private bool StaticQuestReferencesMap(QuestStaticData questData, string mapClassName)
 		{
