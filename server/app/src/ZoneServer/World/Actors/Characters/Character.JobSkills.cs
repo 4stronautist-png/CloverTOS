@@ -288,6 +288,8 @@ namespace Melia.Zone.World.Actors.Characters
 			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(this));
 
 			this.Variables.Perm.Remove("JobAdvancement");
+
+			ZoneServer.Instance.Database.SavePlayerData(this, this.Connection?.Account);
 		}
 
 		/// <summary>

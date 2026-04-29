@@ -32,6 +32,7 @@ namespace Melia.Zone.World.Actors.Monsters
 		private ItemMonster(Item item, int monsterId) : base(monsterId)
 		{
 			this.Item = item;
+			this.Name = item.Name;
 			//this.Properties = item.Properties;
 		}
 
