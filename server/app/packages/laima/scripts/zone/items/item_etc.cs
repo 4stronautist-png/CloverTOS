@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
 using Melia.Zone;
+using Melia.Zone.Network;
 using Melia.Zone.Scripting;
 using Melia.Zone.Scripting.Dialogues;
 using Melia.Zone.World.Actors;
@@ -17,6 +18,42 @@ using static Melia.Zone.Scripting.Shortcuts;
 
 public class ItemEtcScripts : GeneralScript
 {
+	[ScriptableFunction]
+	public ItemUseResult SCR_QUEST_CLEAR_LEGEND_CARD_LIFT(Character character, Item item, string strArg, float numArg1, float numArg2)
+	{
+		const int QuestCompleted = 300;
+
+		if (character.Etc.Properties.GetFloat(PropertyName.IS_LEGEND_CARD_OPEN, 0) >= 1)
+		{
+			character.SetAccountProperty(PropertyName.IS_GODDESS_CARD_OPEN, 1);
+			character.SetAccountProperty(PropertyName.LEGEND_CARD_LIFT_TEAM_COMPLETE_COUNT, 1);
+			character.SetProperty(character.SessionObjects.Main, PropertyName.LEGEND_CARD_LIFT, QuestCompleted);
+			ZoneServer.Instance.Database.SavePlayerData(character, character.Connection.Account);
+
+			character.AddonMessage(AddonMessage.NOTICE_Dm_Exclaimation, "Legend and Goddess card slots are already unlocked.", 3);
+			return ItemUseResult.OkayNotConsumed;
+		}
+
+		character.Etc.Properties.SetFloat(PropertyName.IS_LEGEND_CARD_OPEN, 1);
+		character.Connection.Account.Properties.SetFloat(PropertyName.IS_GODDESS_CARD_OPEN, 1);
+		character.Connection.Account.Properties.SetFloat(PropertyName.LEGEND_CARD_LIFT_TEAM_COMPLETE_COUNT, 1);
+
+		var currentQuestState = character.SessionObjects.Main.Properties.GetFloat(PropertyName.LEGEND_CARD_LIFT, 0);
+		if (currentQuestState < QuestCompleted)
+			character.SetProperty(character.SessionObjects.Main, PropertyName.LEGEND_CARD_LIFT, QuestCompleted);
+
+		character.AddonMessage("MSG_PLAY_LEGENDCARD_OPEN_EFFECT");
+		character.AddonMessage(AddonMessage.NOTICE_Dm_Clear, "Legend and Goddess card slots unlocked.", 3);
+
+		ZoneServer.Instance.Database.SavePlayerData(character, character.Connection.Account);
+
+		Send.ZC_SESSION_OBJECTS(character);
+		Send.ZC_OBJECT_PROPERTY(character, character.Etc, PropertyName.IS_LEGEND_CARD_OPEN);
+		Send.ZC_NORMAL.AccountProperties(character, PropertyName.IS_GODDESS_CARD_OPEN);
+		Send.ZC_NORMAL.AccountProperties(character, PropertyName.LEGEND_CARD_LIFT_TEAM_COMPLETE_COUNT);
+		return ItemUseResult.Okay;
+	}
+
 	/// <summary>
 	/// Unlocks an achievement by adding 1 achievement point specified by the item.
 	/// </summary>
