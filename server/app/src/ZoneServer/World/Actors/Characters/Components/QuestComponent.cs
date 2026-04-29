@@ -389,6 +389,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			{
 				this.Start(quest);
 				this.AddSilent(quest);
+				this.EnsureStaticQuestLayerState(quest);
 			}
 			else
 			{
@@ -773,6 +774,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return;
 
 			var mapClassName = this.Character.Map.ClassName;
+			this.EnsureStaticQuestLayerState();
 			this.SyncStaticQuestSessionObjects();
 			this.EnsureStaticQuestNpcActors(mapClassName);
 			this.EnsureStaticQuestObjectiveMonsters(mapClassName);
@@ -839,7 +841,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			foreach (var request in this.GetRelevantStaticMonsterSpawnRequests(mapClassName))
 			{
 				var existingCount = this.Character.Map
-					.GetMonsters(monster => monster.Id == request.MonsterId && monster.Hp > 0)
+					.GetMonsters(monster => monster.Id == request.MonsterId && monster.Hp > 0 && monster.Layer == this.Character.Layer)
 					.Count;
 
 				if (existingCount >= request.Count)
@@ -849,11 +851,71 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				for (var i = 0; i < spawnCount; i++)
 				{
 					var offset = i * 35;
-					Shortcuts.AddMonster(0, request.MonsterId, request.Name, mapClassName, request.X + offset, request.Y, request.Z + offset, 0, "Monster");
+					var monster = Shortcuts.AddMonster(0, request.MonsterId, request.Name, mapClassName, request.X + offset, request.Y, request.Z + offset, 0, "Monster");
+					monster.Layer = this.Character.Layer;
+					if (this.Character.Connection != null)
+						Send.ZC_ENTER_MONSTER(this.Character.Connection, monster);
 				}
 
 				Log.Info("Static quest chain: spawned {0} fallback objective monster(s) '{1}' for quest '{2}' on map '{3}' at {4:0.##}/{5:0.##}/{6:0.##}.", spawnCount, request.ClassName, request.QuestClassName, mapClassName, request.X, request.Y, request.Z);
 			}
+		}
+
+		private void EnsureStaticQuestLayerState()
+		{
+			foreach (var quest in this.GetInProgress())
+				this.EnsureStaticQuestLayerState(quest);
+		}
+
+		private void EnsureStaticQuestLayerState(Quest quest)
+		{
+			if (quest?.QuestStaticData == null || this.Character.Map == null)
+				return;
+
+			if (!quest.InProgress || !this.HasActiveStaticLayerObjective(quest))
+				return;
+
+			if (this.Character.Layer == 0)
+			{
+				var layer = this.Character.StartLayer();
+				Log.Info("Static quest layer: moved '{0}' to layer {1} for quest '{2}'.", this.Character.Name, layer, quest.QuestStaticData.ClassName);
+			}
+		}
+
+		private bool HasActiveStaticLayerObjective(Quest quest)
+		{
+			var questStaticData = quest?.QuestStaticData;
+			if (questStaticData?.Objectives == null)
+				return false;
+
+			foreach (var objectiveData in questStaticData.Objectives)
+			{
+				if (objectiveData == null || !objectiveData.Layer)
+					continue;
+
+				if (!quest.TryGetProgress(objectiveData.Ident, out var progress))
+					continue;
+
+				if (!progress.Done && progress.Unlocked)
+					return true;
+			}
+
+			return false;
+		}
+
+		private void StopStaticQuestLayerIfDone(Quest quest)
+		{
+			if (quest?.QuestStaticData?.Objectives == null || this.Character.Layer == 0)
+				return;
+
+			if (!quest.QuestStaticData.Objectives.Any(objective => objective.Layer))
+				return;
+
+			if (this.HasActiveStaticLayerObjective(quest))
+				return;
+
+			Log.Info("Static quest layer: returning '{0}' to normal layer after quest '{1}' objective completion.", this.Character.Name, quest.QuestStaticData.ClassName);
+			this.Character.StopLayer();
 		}
 
 		private IEnumerable<StaticQuestMonsterSpawnRequest> GetRelevantStaticMonsterSpawnRequests(string mapClassName)
@@ -2528,6 +2590,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				{
 					quest.Status = QuestStatus.Success;
 					questScript?.OnSuccess(this.Character, quest);
+					this.StopStaticQuestLayerIfDone(quest);
 				}
 			}
 		}
@@ -2580,6 +2643,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				{
 					quest.Status = QuestStatus.Success;
 					questScript?.OnSuccess(this.Character, quest);
+					this.StopStaticQuestLayerIfDone(quest);
 				}
 			}
 		}

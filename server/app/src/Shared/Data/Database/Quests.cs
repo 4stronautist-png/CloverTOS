@@ -46,6 +46,7 @@ namespace Melia.Shared.Data.Database
 		public string DropTarget { get; set; }
 		public float DropChance { get; set; }
 		public int Count { get; set; }
+		public bool Layer { get; set; }
 	}
 
 	[Serializable]
@@ -137,6 +138,7 @@ namespace Melia.Shared.Data.Database
 					DropTarget = obj.ReadString("dropTarget"),
 					DropChance = obj.ReadFloat("dropChance", 1),
 					Count = obj.ReadInt("count", 1),
+					Layer = obj.ReadBool("layer", false),
 				});
 			}
 			return result;
