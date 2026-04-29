@@ -103,10 +103,10 @@ ensure_windows_client_config() {
 </client>
 EOF
 
-    cat > "$WINDOWS_START_BAT" <<'EOF'
+cat > "$WINDOWS_START_BAT" <<'EOF'
 @echo off
 cd /d "%~dp0"
-start "CloverTOS" "%~dp0Client_tos_x64.exe" -SERVICE
+start "CloverTOS" "%~dp0Client_tos_x64.exe" -SERVICE GLOBAL
 EOF
 
     if [ -f "$WINDOWS_USER_XML" ]; then
