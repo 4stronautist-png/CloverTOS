@@ -1849,6 +1849,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			{
 				// Re-check quest objectives to sync with current state (e.g., collection items in inventory)
 				this.InitialChecks(quest);
+				this.SyncStaticQuestSessionObject(quest);
 
 				var questTable = this.QuestToTable(quest);
 
@@ -1946,10 +1947,13 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (questData == null)
 				return changedProperties;
 
-			this.SetQuestSessionStringList(sessionObject, "QuestInfoName", questData.InfoName, 10, changedProperties);
-			this.SetQuestSessionStringList(sessionObject, "QuestInfoViewType", questData.InfoViewType, 10, changedProperties);
-			this.SetQuestSessionNumberList(sessionObject, "QuestInfoMaxCount", questData.InfoMaxCount, 10, changedProperties);
-			this.SetQuestInfoValueDefaults(sessionObject, questData.InfoMaxCount?.Count ?? 0, changedProperties);
+			var infoNames = this.GetQuestInfoNames(quest, questData);
+			var infoViewTypes = this.GetQuestInfoViewTypes(infoNames, questData);
+			var infoMaxCounts = this.GetQuestInfoMaxCounts(quest, questData, infoNames.Count);
+			this.SetQuestSessionStringList(sessionObject, "QuestInfoName", infoNames, 10, changedProperties);
+			this.SetQuestSessionStringList(sessionObject, "QuestInfoViewType", infoViewTypes, 10, changedProperties);
+			this.SetQuestSessionNumberList(sessionObject, "QuestInfoMaxCount", infoMaxCounts, 10, changedProperties);
+			this.SetQuestInfoValueDefaults(sessionObject, infoMaxCounts.Count, changedProperties);
 
 			var mapPointGroups = this.GetQuestMapPointGroups(quest, questData);
 			var mapPointViews = this.GetQuestMapPointViews(mapPointGroups, questData);
@@ -1963,6 +1967,83 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			this.SetQuestSessionStringList(sessionObject, "QuestMonViewTerms", questData.MonsterViewTerms, 10, changedProperties);
 
 			return changedProperties;
+		}
+
+		private void SyncStaticQuestSessionObject(Quest quest)
+		{
+			if (quest.SessionObjectStaticData == null)
+				return;
+
+			var questSessionObject = this.Character.SessionObjects.GetOrCreate(quest.SessionObjectStaticData.Id);
+			foreach (var propertyName in this.ApplyStaticQuestSessionObjectProperties(quest, questSessionObject))
+				Send.ZC_OBJECT_PROPERTY(this.Character, questSessionObject, propertyName);
+		}
+
+		private List<string> GetQuestInfoNames(Quest quest, SessionQuestData questData)
+		{
+			var result = questData.InfoName != null
+				? questData.InfoName.Where(name => !this.IsNone(name)).ToList()
+				: new List<string>();
+
+			if (result.Count != 0)
+				return result;
+
+			var questStaticData = quest.QuestStaticData;
+			if (questStaticData?.Objectives != null && quest.InProgress)
+			{
+				foreach (var objectiveData in questStaticData.Objectives)
+				{
+					if (!quest.TryGetProgress(objectiveData.Ident, out var progress) || progress.Done || !progress.Unlocked)
+						continue;
+
+					if (!this.IsNone(objectiveData.Text))
+						result.Add(objectiveData.Text.Trim());
+				}
+			}
+
+			if (result.Count == 0 && !this.IsNone(questStaticData?.Name))
+				result.Add(questStaticData.Name.Trim());
+
+			return result;
+		}
+
+		private List<string> GetQuestInfoViewTypes(List<string> infoNames, SessionQuestData questData)
+		{
+			var result = questData.InfoViewType != null
+				? questData.InfoViewType.Where(viewType => !this.IsNone(viewType)).ToList()
+				: new List<string>();
+
+			while (result.Count < infoNames.Count)
+				result.Add("None");
+
+			return result;
+		}
+
+		private List<int> GetQuestInfoMaxCounts(Quest quest, SessionQuestData questData, int infoCount)
+		{
+			var result = questData.InfoMaxCount != null
+				? questData.InfoMaxCount.Where(count => count > 0).ToList()
+				: new List<int>();
+
+			if (result.Count != 0)
+				return result;
+
+			var questStaticData = quest.QuestStaticData;
+			if (questStaticData?.Objectives != null && quest.InProgress)
+			{
+				foreach (var objectiveData in questStaticData.Objectives)
+				{
+					if (!quest.TryGetProgress(objectiveData.Ident, out var progress) || progress.Done || !progress.Unlocked)
+						continue;
+
+					result.Add(Math.Max(1, objectiveData.Count));
+				}
+			}
+
+			while (result.Count < infoCount)
+				result.Add(1);
+
+			return result;
 		}
 
 		private List<string> GetQuestMapPointGroups(Quest quest, SessionQuestData questData)
