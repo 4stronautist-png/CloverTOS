@@ -12,6 +12,7 @@ namespace Melia.Shared.Data.Database
 		public int Id { get; set; }
 		public string ClassName { get; set; }
 		public string Name { get; set; }
+		public int Level { get; internal set; }
 		public string QuestSSN { get; internal set; }
 		public string QuestProperty { get; internal set; }
 		public string QuestMode { get; internal set; }
@@ -29,6 +30,7 @@ namespace Melia.Shared.Data.Database
 		public string EndNPC { get; internal set; }
 		public string RequiredQuestItem { get; internal set; }
 		public List<string> RequiredQuests { get; internal set; }
+		public List<string> CheckScripts { get; internal set; }
 		public List<QuestObjectiveStaticData> Objectives { get; internal set; }
 		public List<QuestRewardItemStaticData> RewardItems { get; internal set; }
 	}
@@ -91,6 +93,7 @@ namespace Melia.Shared.Data.Database
 			info.ClassName = entry.ReadString("className");
 			info.Name = entry.ReadString("name");
 
+			info.Level = entry.ReadInt("level", 0);
 			info.QuestSSN = entry.ReadString("questSSN");
 			info.QuestProperty = entry.ReadString("questPropertyName");
 			info.QuestMode = entry.ReadString("questMode");
@@ -108,6 +111,7 @@ namespace Melia.Shared.Data.Database
 			info.EndNPC = entry.ReadString("endNPC");
 			info.RequiredQuestItem = entry.ReadString("requiredQuestItem");
 			info.RequiredQuests = entry.ReadList<string>("requiredQuestName");
+			info.CheckScripts = entry.ReadList<string>("checkScripts");
 			info.Objectives = ReadObjectives(entry);
 			info.RewardItems = ReadRewardItems(entry);
 

@@ -652,6 +652,12 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 		private bool MeetsStaticPrerequisites(QuestStaticData questStaticData)
 		{
+			if (questStaticData.Level > 0 && this.Character.Level < questStaticData.Level)
+				return false;
+
+			if (!this.MeetsStaticCheckScripts(questStaticData))
+				return false;
+
 			if (questStaticData.RequiredQuests == null || questStaticData.RequiredQuests.Count == 0)
 				return true;
 
@@ -661,6 +667,20 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					continue;
 
 				if (!this.HasCompleted(requiredQuestData.Id))
+					return false;
+			}
+
+			return true;
+		}
+
+		private bool MeetsStaticCheckScripts(QuestStaticData questStaticData)
+		{
+			if (questStaticData.CheckScripts == null || questStaticData.CheckScripts.Count == 0)
+				return true;
+
+			foreach (var script in questStaticData.CheckScripts)
+			{
+				if (string.Equals(script, "IS_SELECTED_JOB", StringComparison.OrdinalIgnoreCase))
 					return false;
 			}
 
@@ -1806,8 +1826,10 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			this.SetQuestSessionStringList(sessionObject, "QuestMapPointGroup", mapPointGroups, 10, changedProperties);
 			this.SetQuestSessionNumberList(sessionObject, "QuestMapPointView", mapPointViews, 10, changedProperties);
 
-			this.SetQuestSessionStringList(sessionObject, "QuestMonNameGroup", questData.MonsterNameGroup, 10, changedProperties);
-			this.SetQuestSessionNumberList(sessionObject, "QuestMonView", questData.MonsterView, 10, changedProperties);
+			var monsterNameGroups = this.GetQuestMonsterNameGroups(quest, questData);
+			var monsterViews = this.GetQuestMonsterViews(monsterNameGroups, questData);
+			this.SetQuestSessionStringList(sessionObject, "QuestMonNameGroup", monsterNameGroups, 10, changedProperties);
+			this.SetQuestSessionNumberList(sessionObject, "QuestMonView", monsterViews, 10, changedProperties);
 			this.SetQuestSessionStringList(sessionObject, "QuestMonViewTerms", questData.MonsterViewTerms, 10, changedProperties);
 
 			return changedProperties;
@@ -1861,6 +1883,51 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			if (!this.IsNone(mapName) && !this.IsNone(npcName))
 				result.Add($"{mapName.Trim()} {npcName.Trim()} 100");
+		}
+
+		private List<string> GetQuestMonsterNameGroups(Quest quest, SessionQuestData questData)
+		{
+			var result = questData.MonsterNameGroup != null
+				? questData.MonsterNameGroup.Where(group => !this.IsNone(group)).ToList()
+				: new List<string>();
+
+			if (result.Count != 0 || !quest.InProgress)
+				return result;
+
+			var questStaticData = quest.QuestStaticData;
+			if (questStaticData?.Objectives == null)
+				return result;
+
+			foreach (var objectiveData in questStaticData.Objectives)
+			{
+				var monsterNameGroup = objectiveData.Target;
+				if (string.Equals(objectiveData.Type, "Collect", StringComparison.OrdinalIgnoreCase) && !this.IsNone(objectiveData.DropTarget))
+					monsterNameGroup = objectiveData.DropTarget;
+
+				if (!string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase)
+					&& !string.Equals(objectiveData.Type, "Collect", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				if (this.IsNone(monsterNameGroup) || string.Equals(monsterNameGroup, "ALL", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				result.Add(monsterNameGroup.Trim());
+			}
+
+			return result;
+		}
+
+		private List<int> GetQuestMonsterViews(List<string> monsterNameGroups, SessionQuestData questData)
+		{
+			var result = new List<int>();
+			for (var i = 0; i < monsterNameGroups.Count; i++)
+			{
+				var view = questData.MonsterView != null && i < questData.MonsterView.Count
+					? questData.MonsterView[i]
+					: 1;
+				result.Add(view == 0 ? 0 : 1);
+			}
+			return result;
 		}
 
 		private void SetQuestInfoValueDefaults(SessionObject sessionObject, int count, List<string> changedProperties)

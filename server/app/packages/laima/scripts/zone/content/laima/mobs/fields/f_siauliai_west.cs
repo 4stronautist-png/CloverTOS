@@ -55,7 +55,7 @@ public class FSiauliaiWestMobScript : GeneralScript
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1812, -419, 80));
 
 		// 'Onion_Big_Q1' Large Kepa for SIAUL_WEST_MEET_NAGLIS
-		AddSpawnPoint("f_siauliai_west.Id10", "f_siauliai_west", Rectangle(-1862, 185, 60));
+		AddSpawnPoint("f_siauliai_west.Id10", "f_siauliai_west", Rectangle(-1490, -140, 60));
 
 		// 'Hanaming' GenType 16 Spawn Points
 		AddSpawnPoint("f_siauliai_west.Id3", "f_siauliai_west", Rectangle(-110, 489, 40));
