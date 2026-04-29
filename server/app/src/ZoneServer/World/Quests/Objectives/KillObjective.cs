@@ -19,6 +19,11 @@ namespace Melia.Zone.World.Quests.Objectives
 		public HashSet<int> MonsterIds { get; }
 
 		/// <summary>
+		/// Returns true if any monster kill should count.
+		/// </summary>
+		public bool AnyMonster { get; }
+
+		/// <summary>
 		/// Creates an objective to kill a certain amount of one of the
 		/// given types of monsters.
 		/// </summary>
@@ -31,6 +36,23 @@ namespace Melia.Zone.World.Quests.Objectives
 
 			this.TargetCount = amount;
 			this.MonsterIds = [.. monsterIds];
+		}
+
+		private KillObjective(int amount, bool anyMonster)
+		{
+			this.TargetCount = amount;
+			this.AnyMonster = anyMonster;
+			this.MonsterIds = [];
+		}
+
+		/// <summary>
+		/// Creates an objective that counts any monster kill.
+		/// </summary>
+		/// <param name="amount"></param>
+		/// <returns></returns>
+		public static KillObjective Any(int amount)
+		{
+			return new KillObjective(amount, true);
 		}
 
 		/// <summary>
@@ -157,6 +179,9 @@ namespace Melia.Zone.World.Quests.Objectives
 		/// <returns></returns>
 		private bool IsTarget(IMonster monster)
 		{
+			if (this.AnyMonster)
+				return true;
+
 			return this.MonsterIds.Contains(monster.Id);
 		}
 	}

@@ -462,6 +462,17 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					var text = !string.IsNullOrWhiteSpace(objectiveData.Text) ? objectiveData.Text : questStaticData.Name;
 
 					if (string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase) &&
+						string.Equals(objectiveData.Target, "ALL", StringComparison.OrdinalIgnoreCase))
+					{
+						var objective = KillObjective.Any(Math.Max(1, objectiveData.Count));
+						objective.Ident = ident;
+						objective.Text = text;
+						this.EnsureStaticObjectiveLoaded(objective);
+						questData.Objectives.Add(objective);
+						continue;
+					}
+
+					if (string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase) &&
 						this.TryResolveStaticMonsterIds(objectiveData.Target, out var monsterIds))
 					{
 						var objective = new KillObjective(Math.Max(1, objectiveData.Count), monsterIds)
