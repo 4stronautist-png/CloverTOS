@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Melia.Shared.Game.Const;
 using Melia.Shared.ObjectProperties;
 using Melia.Zone.Network;
@@ -13,6 +14,22 @@ namespace Melia.Zone.World.Actors.Characters
 	// ===================================================================
 	public partial class Character
 	{
+		private static readonly string[] CoreHudProperties =
+		{
+			PropertyName.inventory,
+			PropertyName.status,
+			PropertyName.skillvan,
+			PropertyName.sysmenu,
+			PropertyName.quest,
+			PropertyName.quickslotnexpbar,
+			PropertyName.map,
+			PropertyName.minimap,
+			PropertyName.targetinfo,
+			PropertyName.targetbuff,
+			PropertyName.monsterbaseinfo,
+			PropertyName.changejobbutton,
+		};
+
 		#region Stats Properties
 		/// <summary>
 		/// Gets or sets the character's current job id.
@@ -227,8 +244,61 @@ namespace Melia.Zone.World.Actors.Characters
 					this.MaxExp = maxExp;
 			}
 
+			this.EnsureCoreHudProperties();
 			this.Properties.InvalidateAll();
 			this.Properties.InitAutoUpdates();
+		}
+
+		/// <summary>
+		/// Ensures core client HUD controls are visible for the current character.
+		/// </summary>
+		/// <param name="updateClient"></param>
+		public void EnsureCoreHudProperties(bool updateClient = false)
+		{
+			foreach (var propertyName in CoreHudProperties)
+			{
+				if (this.Properties.GetFloat(propertyName) != 1)
+					this.Properties.SetFloat(propertyName, 1);
+
+				if (updateClient && this.Connection != null)
+					Send.ZC_OBJECT_PROPERTY(this, propertyName);
+			}
+		}
+
+		/// <summary>
+		/// Forces the client back into normal gameplay UI state.
+		/// </summary>
+		public void RestoreCoreHudState(bool updateClient = false, bool repeat = false)
+		{
+			this.EnsureCoreHudProperties(updateClient);
+
+			if (updateClient && this.Connection != null)
+			{
+				Send.ZC_NORMAL.SetupCutscene(this, false, false, false);
+				Send.ZC_OBJECT_PROPERTY(this);
+				Send.ZC_NORMAL.UpdateSkillUI(this);
+				this.AddonMessage("PC_PROPERTY_UPDATE_TO_SYSMENU");
+				this.AddonMessage("PC_PROPERTY_UPDATE");
+				this.AddonMessage("STAT_UPDATE");
+				this.AddonMessage("LEVEL_UPDATE");
+				this.AddonMessage("EXP_UPDATE");
+				this.AddonMessage("RESET_SKL_UP");
+				this.AddonMessage("JOB_UPDATE");
+			}
+
+			if (!repeat)
+				return;
+
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(750);
+				if (this.Connection != null)
+					this.RestoreCoreHudState(true);
+
+				await Task.Delay(1750);
+				if (this.Connection != null)
+					this.RestoreCoreHudState(true);
+			});
 		}
 
 		/// <summary>

@@ -27,27 +27,27 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 		base.OnStart(character, track);
 
 		var actors = new List<IActor>();
+		const int titasNpcId = 20107;       // npc_intermediate_officer_men
+		const int frontGuardNpcId = 20016;  // soldier6
+		const int guardNpcId = 10032;       // Silvertransporter_m
 
-		// Keep the original actor slots, but avoid monsterId 10032 here. The
-		// current Clover client crashes while updating quest markers after
-		// materializing its soldier2_m asset during this track. The visible
-		// opening flow is less important than keeping map entry stable.
-		var titas = SpawnCutsceneNpc(character, 7, 20032, "Knight Titas", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER");
+		// Actor templates come from the client mongen for f_siauliai_west.
+		var titas = SpawnCutsceneNpc(character, 7, titasNpcId, "Knight Titas", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER");
 		actors.Add(titas);
 
-		var frontGuard = SpawnCutsceneNpc(character, 8, 20019, "Sentinel", -652, 260, -953, -90, "SIAU_FRON_NPC_01");
+		var frontGuard = SpawnCutsceneNpc(character, 8, frontGuardNpcId, "Sentinel", -652, 260, -953, -90, "SIAU_FRON_NPC_01");
 		actors.Add(frontGuard);
 
-		var guard1 = SpawnCutsceneNpc(character, 51, 20019, "Sentinel", -626, 260, -757, 86, "SIAU_FRON_NPC_04");
+		var guard1 = SpawnCutsceneNpc(character, 51, guardNpcId, "Sentinel", -626, 260, -757, 86, "SIAU_FRON_NPC_04");
 		actors.Add(guard1);
 
-		var guard2 = SpawnCutsceneNpc(character, 52, 20019, "Sentinel", -619, 260, -707, -75, "SIAU_FRON_NPC_05");
+		var guard2 = SpawnCutsceneNpc(character, 52, guardNpcId, "Sentinel", -619, 260, -707, -75, "SIAU_FRON_NPC_05");
 		actors.Add(guard2);
 
-		var guard3 = SpawnCutsceneNpc(character, 53, 20019, "Sentinel", -509, 260, -821, 161, "SIAU_FRON_NPC_03");
+		var guard3 = SpawnCutsceneNpc(character, 53, guardNpcId, "Sentinel", -509, 260, -821, 161, "SIAU_FRON_NPC_03");
 		actors.Add(guard3);
 
-		var guard4 = SpawnCutsceneNpc(character, 54, 20019, "Sentinel", -589, 260, -822, 0, "SIAU_FRON_NPC_02");
+		var guard4 = SpawnCutsceneNpc(character, 54, guardNpcId, "Sentinel", -589, 260, -822, 0, "SIAU_FRON_NPC_02");
 		actors.Add(guard4);
 
 		Log.Info(
@@ -110,7 +110,7 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 	{
 		base.OnComplete(character, track);
 
-		Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+		character.RestoreCoreHudState(true, true);
 
 		var westForestQuestId = new QuestId(1002);
 		if (!character.Quests.IsActive(westForestQuestId) && !character.Quests.HasCompleted(westForestQuestId))

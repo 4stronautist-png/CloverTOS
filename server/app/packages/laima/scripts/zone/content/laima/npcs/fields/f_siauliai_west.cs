@@ -29,7 +29,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 	public void OnPlayerReady(object sender, PlayerEventArgs args)
 	{
 		var character = args.Character;
-		if (character == null || character.MapId != 1021 || character.Level > 1)
+		if (character == null || character.MapId != 1021)
 			return;
 
 		_ = this.InitializeOpeningFlow(character);
@@ -39,16 +39,24 @@ public class FSiauliaiWestNpcScript : GeneralScript
 	{
 		await Task.Delay(1500);
 
-		if (character.Connection == null || character.MapId != 1021 || character.Level > 1)
+		if (character.Connection == null || character.MapId != 1021)
 			return;
 
 		try
 		{
+			character.RestoreCoreHudState(true, true);
+			ApplyStarterProgressCatchUp(character);
+			RevealTitasIfNeeded(character);
+			RevealScoutIfNeeded(character);
+
+			if (character.Level > 1 && character.Quests.HasCompleted(1001))
+				return;
+
 			var introTrackCompleted = character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1;
 			if (!introTrackCompleted)
 			{
 				Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
-				character.ShowHelp("TUTO_MOVE_KB", true);
+				character.ShowHelp("TUTO_MOVE_KB");
 				Log.Info("West Siauliai opening: movement tutorial triggered for '{0}'.", character.Name);
 			}
 
@@ -61,6 +69,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
 			RevealTitasIfNeeded(character);
 			RevealScoutIfNeeded(character);
+			QueueOpeningCutscene(character);
 
 			if (!UseOpeningCutscene)
 			{
@@ -81,23 +90,6 @@ public class FSiauliaiWestNpcScript : GeneralScript
 				character.LookAround();
 				return;
 			}
-
-			await Task.Delay(7000);
-
-			if (character.Connection == null || character.MapId != 1021 || character.Level > 1)
-				return;
-
-			if (!character.Quests.TryGetById(1001, out titasQuest))
-				return;
-			if (titasQuest.Status == QuestStatus.Completed)
-				return;
-			if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
-				return;
-			if (character.Tracks.ActiveTrack != null)
-				return;
-
-			await character.Tracks.Start("SIAU_WEST_START_TRACK", TimeSpan.Zero, 1001, QuestStatus.InProgress, QuestStatus.Completed, PropertyName.SIAUL_WEST_MEET_TITAS_TRACK);
-			Log.Info("West Siauliai opening: started SIAU_WEST_START_TRACK for '{0}'.", character.Name);
 		}
 		catch (Exception ex)
 		{
@@ -105,9 +97,107 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		}
 	}
 
+	private static void QueueOpeningCutscene(Character character)
+	{
+		if (character == null || character.MapId != 1021)
+			return;
+		if (!UseOpeningCutscene)
+			return;
+		if ((!character.Quests.IsActive(1001) && character.Quests.HasCompleted(1001)) ||
+			character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1 ||
+			character.Tracks.ActiveTrack != null)
+			return;
+
+		_ = Task.Run(async () =>
+		{
+			await Task.Delay(12000);
+
+			if (character.Connection == null || character.MapId != 1021)
+				return;
+			if ((!character.Quests.IsActive(1001) && character.Quests.HasCompleted(1001)) ||
+				character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1 ||
+				character.Tracks.ActiveTrack != null)
+				return;
+
+			try
+			{
+				Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+
+				if (character.Quests.IsActive(1001))
+				{
+					character.Quests.Complete(1001);
+					Log.Info("West Siauliai opening: completed SIAUL_WEST_MEET_TITAS for '{0}' before automatic intro track.", character.Name);
+				}
+
+				var started = await character.Tracks.Start(
+					"SIAU_WEST_START_TRACK",
+					TimeSpan.Zero,
+					0,
+					QuestStatus.Possible,
+					QuestStatus.Possible,
+					PropertyName.SIAUL_WEST_MEET_TITAS_TRACK
+				);
+
+				if (started)
+					Log.Info("West Siauliai opening: started SIAU_WEST_START_TRACK for '{0}' after basic command tutorial.", character.Name);
+				else
+					await EnsureWestForestFallback(character);
+			}
+			catch (Exception ex)
+			{
+				Log.Warning("West Siauliai opening: automatic intro track failed for '{0}': {1}", character.Name, ex);
+				await EnsureWestForestFallback(character);
+			}
+		});
+	}
+
+	private static async Task EnsureWestForestFallback(Character character)
+	{
+		if (character == null || character.MapId != 1021)
+			return;
+
+		if (character.Quests.IsActive(1001))
+			character.Quests.Complete(1001);
+
+		if (!character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
+		{
+			await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
+			Log.Info("West Siauliai opening: started SIAUL_WEST_WEST_FOREST for '{0}' via automatic fallback.", character.Name);
+		}
+
+		character.RestoreCoreHudState(true, true);
+		character.Quests.SyncStaticQuestNpcStates();
+	}
+
+	private static void ApplyStarterProgressCatchUp(Character character)
+	{
+		var targetLevel = 1;
+
+		if (character.Quests.HasCompleted(1002))
+			targetLevel = Math.Max(targetLevel, 2);
+		if (character.Quests.HasCompleted(1003) || character.Quests.HasCompleted(20127))
+			targetLevel = Math.Max(targetLevel, 3);
+		if (character.Quests.HasCompleted(1004) || character.Quests.IsActive(1014) || character.Quests.HasCompleted(1014))
+			targetLevel = Math.Max(targetLevel, 4);
+		if (character.Quests.HasCompleted(8350) || character.Quests.IsActive(1020) || character.Quests.HasCompleted(1020))
+			targetLevel = Math.Max(targetLevel, 5);
+
+		EnsureMinimumLevel(character, targetLevel);
+	}
+
+	private static void EnsureMinimumLevel(Character character, int targetLevel)
+	{
+		for (var guard = 0; character.Level < targetLevel && guard < 20; guard++)
+		{
+			var expNeeded = Math.Max(1, character.MaxExp - character.Exp);
+			var jobExpNeeded = Math.Max(1, character.Job?.MaxExp ?? expNeeded);
+			character.GiveExp(expNeeded, jobExpNeeded, null);
+		}
+	}
+
 	protected override void Load()
 	{
-		_scoutNpc = AddNpc(1, 20063, L("Scout"), "f_siauliai_west", -1121, 260, -528, -99, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
+		_scoutNpc = AddNpc(1, 10032, L("Scout"), "f_siauliai_west", -1121, 260, -528, -99, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
 
 		// Opening quest trigger
 		//-------------------------------------------------------------------------
@@ -117,14 +207,12 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 		// Knight Titas / Camp Manager
 		//-------------------------------------------------------------------------
-		// Client rev 402595 maps Knight Titas to genType 7 / NPCID 20032.
-		// Using later NPC IDs renders a different character and breaks the
-		// direction actor mapping for SIAU_WEST_START_TRACK.
-		_titasNpc = AddNpc(7, 20032, L("Knight Titas"), "f_siauliai_west", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER", state: (int)NpcState.Invisible);
+		// Client mongen maps Titas to npc_intermediate_officer_men.
+		_titasNpc = AddNpc(7, 20107, L("Knight Titas"), "f_siauliai_west", -576, 260, -719, 165, "SIAUL_WEST_CAMP_MANAGER", state: (int)NpcState.Invisible);
 
 		// Battle Commander
 		//-------------------------------------------------------------------------
-		AddNpc(2002, 150219, L("Battle Commander"), "f_siauliai_west", -144, 322, 444, 180, "SIAUL_WEST_SOL3");
+		AddNpc(2002, 20016, L("Battle Commander"), "f_siauliai_west", -144, 322, 444, 180, "SIAUL_WEST_SOL3");
 
 		// Western Woods Scout / Drasius
 		//-------------------------------------------------------------------------

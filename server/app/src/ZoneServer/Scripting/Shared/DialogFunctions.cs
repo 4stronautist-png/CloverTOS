@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Melia.Shared.Data.Database;
 using Melia.Zone.Scripting.Dialogues;
 
 namespace Melia.Zone.Scripting.Shared
@@ -27,6 +29,33 @@ namespace Melia.Zone.Scripting.Shared
 						this.Add(method.Name, func);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Adds the common quest handler for static quest NPCs that do not
+		/// have a specific server-side dialog function yet.
+		/// </summary>
+		public int AddStaticQuestFallbacks(QuestDb quests)
+		{
+			if (quests == null)
+				return 0;
+
+			var added = 0;
+			var dialogNames = quests.GetList()
+				.SelectMany(quest => new[] { quest.StartNPC, quest.ProgNPC, quest.EndNPC })
+				.Where(dialogName => !string.IsNullOrWhiteSpace(dialogName))
+				.Distinct(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var dialogName in dialogNames)
+			{
+				if (this.TryGet(dialogName, out _))
+					continue;
+
+				this.Add(dialogName, NPCFunctions.COMMON_QUEST_HANDLER);
+				added++;
+			}
+
+			return added;
 		}
 
 		/// <summary>

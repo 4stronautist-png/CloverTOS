@@ -646,16 +646,19 @@ namespace Melia.Zone.World.Actors.Characters
 				if (_resurrectDialogTimer <= TimeSpan.Zero)
 				{
 					ResurrectOptions options = 0;
+					var hasLocalRevivalPoints = ZoneServer.Instance.Data.ResurrectionPointDb.FindPositions(this.Map.ClassName).Count != 0;
 
-					if (ZoneServer.Instance.Conf.World.ResurrectCityOption)
-					{
-						options |= ResurrectOptions.NearestCity;
-					}
-					if (ZoneServer.Instance.Conf.World.ResurrectRevivalPointOption)
+					if (ZoneServer.Instance.Conf.World.ResurrectRevivalPointOption && hasLocalRevivalPoints)
 					{
 						options |= ResurrectOptions.NearestRevivalPoint;
 					}
-					if (ZoneServer.Instance.Conf.World.ResurrectRevivalPointOption)
+
+					if (ZoneServer.Instance.Conf.World.ResurrectCityOption || options == 0)
+					{
+						options |= ResurrectOptions.NearestCity;
+					}
+
+					if (ZoneServer.Instance.Conf.World.ResurrectSoulCrystalOption)
 					{
 						if (this.HasItem("RestartCristal"))
 						{

@@ -2488,12 +2488,22 @@ namespace Melia.Zone.Scripting.Shared
 		public static async Task SIALUL_WEST_DRASIUS(Dialog dialog)
 		{
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
-			Send.ZC_NORMAL.SetupCutscene(dialog.Player, false, false, false);
+			dialog.Player.RestoreCoreHudState(true, true);
 			await COMMON_QUEST_HANDLER(dialog);
-			StartWestSiauliaiScoutKepaTrack(dialog.Player);
+			dialog.Player.RestoreCoreHudState(true, true);
+			QueueWestSiauliaiScoutKepaTrack(dialog.Player);
 		}
 
-		private static void StartWestSiauliaiScoutKepaTrack(Character character)
+		private static void QueueWestSiauliaiScoutKepaTrack(Character character)
+		{
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(650);
+				await StartWestSiauliaiScoutKepaTrack(character);
+			});
+		}
+
+		private static async Task StartWestSiauliaiScoutKepaTrack(Character character)
 		{
 			if (character == null || character.MapId != 1021)
 				return;
@@ -2502,21 +2512,65 @@ namespace Melia.Zone.Scripting.Shared
 			if (character.Tracks.ActiveTrack != null)
 				return;
 
-			_ = character.Tracks.Start(
-				"SIAUL_WEST_DRASIUS1_TRACK",
-				TimeSpan.Zero,
-				1003,
-				QuestStatus.InProgress,
-				QuestStatus.InProgress,
-				PropertyName.SIAUL_WEST_DRASIUS1_TRACK
-			);
+			try
+			{
+				var started = await character.Tracks.Start(
+					"SIAUL_WEST_DRASIUS1_TRACK",
+					TimeSpan.Zero,
+					1003,
+					QuestStatus.InProgress,
+					QuestStatus.InProgress,
+					PropertyName.SIAUL_WEST_DRASIUS1_TRACK
+				);
+
+				if (started)
+					Log.Info("West Siauliai Scout: started SIAUL_WEST_DRASIUS1_TRACK for '{0}'.", character.Name);
+				else
+					Log.Warning("West Siauliai Scout: track did not start for '{0}'. activeTrack={1}, prop={2}, q1003={3}.", character.Name, character.Tracks.ActiveTrack?.Id ?? "none", character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_DRASIUS1_TRACK), character.Quests.IsActive(1003));
+			}
+			catch (Exception ex)
+			{
+				Log.Warning("West Siauliai Scout: failed to start SIAUL_WEST_DRASIUS1_TRACK for '{0}': {1}", character.Name, ex);
+				character.RestoreCoreHudState(true, true);
+			}
 		}
 
 		[DialogFunction("SIAUL_WEST_NAGLIS2")]
 		public static async Task SIAUL_WEST_NAGLIS2(Dialog dialog)
 		{
 			await dialog.Msg("SIAUL_WEST_NAGLIS2_basic1");
+			await RepairWestSiauliaiNaglisChain(dialog.Player);
 			await COMMON_QUEST_HANDLER(dialog);
+			await RepairWestSiauliaiNaglisChain(dialog.Player);
+		}
+
+		private static async Task RepairWestSiauliaiNaglisChain(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return;
+
+			character.RestoreCoreHudState(true, true);
+
+			if (character.Quests.TryGetById(1023, out var onionQuest) && onionQuest.ObjectivesCompleted && !character.Quests.HasCompleted(1023))
+				character.Quests.Complete(1023);
+
+			if (character.Quests.HasCompleted(1004) && !character.Quests.IsActive(1014) && !character.Quests.HasCompleted(1014))
+				await character.Quests.Start("SIAUL_WEST_MEET_NAGLIS");
+
+			if (character.Quests.HasCompleted(1014) && !character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
+				await character.Quests.Start("TUTO_SKILL_RUN");
+
+			if (character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
+			{
+				character.Quests.HandleStaticNpcDialog("SIAUL_WEST_NAGLIS2");
+				if (character.Quests.IsActive(8350))
+					character.Quests.Complete(8350);
+			}
+
+			if (character.Quests.HasCompleted(8350) && !character.Quests.IsActive(1020) && !character.Quests.HasCompleted(1020))
+				await character.Quests.Start("SIAUL_WEST_SOLDIER3");
+
+			character.Quests.SyncStaticQuestNpcStates();
 		}
 
 		[DialogFunction("WARP_F_SIAULIAI_WEST")]
@@ -2528,9 +2582,82 @@ namespace Melia.Zone.Scripting.Shared
 		{
 			var character = dialog.Player;
 			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
+
+			if (QueueWestSiauliaiTitasTrack(character))
+				return;
+
 			EnsureWestSiauliaiOpeningReady(character);
 			await COMMON_QUEST_HANDLER(dialog);
 			RevealWestSiauliaiScout(character);
+		}
+
+		private static bool QueueWestSiauliaiTitasTrack(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return false;
+			if (!character.Quests.IsActive(1001) && character.Quests.HasCompleted(1001))
+				return false;
+			if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
+				return false;
+			if (character.Tracks.ActiveTrack != null)
+				return false;
+
+			character.RestoreCoreHudState(true, true);
+
+			if (character.Quests.IsActive(1001))
+			{
+				character.Quests.Complete(1001);
+				Log.Info("West Siauliai opening: completed SIAUL_WEST_MEET_TITAS for '{0}' before intro track.", character.Name);
+			}
+
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(650);
+
+				if (character.Connection == null || character.MapId != 1021)
+					return;
+				if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
+					return;
+				if (character.Tracks.ActiveTrack != null)
+					return;
+
+				var started = await character.Tracks.Start(
+					"SIAU_WEST_START_TRACK",
+					TimeSpan.Zero,
+					0,
+					QuestStatus.Possible,
+					QuestStatus.Possible,
+					PropertyName.SIAUL_WEST_MEET_TITAS_TRACK
+				);
+
+				if (started)
+					Log.Info("West Siauliai opening: started SIAU_WEST_START_TRACK for '{0}' after Titas interaction.", character.Name);
+				else
+				{
+					Log.Warning("West Siauliai opening: failed to start SIAU_WEST_START_TRACK for '{0}', falling back to SIAUL_WEST_WEST_FOREST.", character.Name);
+					await EnsureWestSiauliaiWestForestQuest(character);
+				}
+			});
+
+			return true;
+		}
+
+		private static async Task EnsureWestSiauliaiWestForestQuest(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return;
+
+			if (character.Quests.IsActive(1001))
+				character.Quests.Complete(1001);
+
+			if (!character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
+			{
+				await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
+				Log.Info("West Siauliai opening: started SIAUL_WEST_WEST_FOREST for '{0}' via fallback.", character.Name);
+			}
+
+			character.RestoreCoreHudState(true, true);
+			character.Quests.SyncStaticQuestNpcStates();
 		}
 
 		private static void EnsureWestSiauliaiOpeningReady(Character character)
@@ -2538,7 +2665,7 @@ namespace Melia.Zone.Scripting.Shared
 			if (character == null || character.MapId != 1021)
 				return;
 
-			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+			character.RestoreCoreHudState(true, true);
 
 			if (character.Quests.IsActive(1001))
 			{

@@ -568,19 +568,73 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 		private void AddStaticQuestRewards(QuestStaticData questStaticData, QuestData questData)
 		{
-			if (questStaticData.RewardItems == null)
-				return;
-
-			foreach (var rewardData in questStaticData.RewardItems)
+			if (questStaticData.RewardItems != null)
 			{
-				if (string.IsNullOrWhiteSpace(rewardData.Item))
-					continue;
+				foreach (var rewardData in questStaticData.RewardItems)
+				{
+					if (string.IsNullOrWhiteSpace(rewardData.Item))
+						continue;
 
-				if (int.TryParse(rewardData.Item, out var itemId) || ZoneServer.Instance.Data.ItemDb.TryFind(rewardData.Item, out var itemData) && (itemId = itemData.Id) != 0)
-					questData.Rewards.Add(new ItemReward(itemId, Math.Max(1, rewardData.Amount)));
-				else
-					Log.Warning("Static quest '{0}' references unknown reward item '{1}'.", questStaticData.ClassName, rewardData.Item);
+					if (int.TryParse(rewardData.Item, out var itemId) || ZoneServer.Instance.Data.ItemDb.TryFind(rewardData.Item, out var itemData) && (itemId = itemData.Id) != 0)
+						questData.Rewards.Add(new ItemReward(itemId, Math.Max(1, rewardData.Amount)));
+					else
+						Log.Warning("Static quest '{0}' references unknown reward item '{1}'.", questStaticData.ClassName, rewardData.Item);
+				}
 			}
+
+			this.AddStaticQuestExperienceReward(questStaticData, questData);
+		}
+
+		private void AddStaticQuestExperienceReward(QuestStaticData questStaticData, QuestData questData)
+		{
+			var expRate = this.GetStaticQuestExperienceRate(questStaticData);
+
+			questData.Rewards.Add(new LevelScaledExpReward(expRate, expRate));
+		}
+
+		private float GetStaticQuestExperienceRate(QuestStaticData questStaticData)
+		{
+			if (this.IsStarterStaticQuest(questStaticData))
+			{
+				var starterRate = string.Equals(questStaticData.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase) ? 0.20f : 0.10f;
+
+				if (questStaticData.Objectives?.Count > 0)
+					starterRate += 0.25f;
+
+				return starterRate;
+			}
+
+			var expRate = 0.15f;
+
+			if (string.Equals(questStaticData.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase))
+				expRate = 0.35f;
+			else if (string.Equals(questStaticData.QuestMode, "REPEAT", StringComparison.OrdinalIgnoreCase))
+				expRate = 0.05f;
+
+			if (questStaticData.Objectives?.Count > 0)
+				expRate += string.Equals(questStaticData.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase) ? 0.15f : 0.05f;
+
+			return expRate;
+		}
+
+		private bool IsStarterStaticQuest(QuestStaticData questStaticData)
+		{
+			if (questStaticData == null)
+				return false;
+
+			if (string.Equals(questStaticData.QStartZone, "StartLine1", StringComparison.OrdinalIgnoreCase))
+				return true;
+
+			if (this.IsWestSiauliaiMap(questStaticData.StartMap) || this.IsWestSiauliaiMap(questStaticData.ProgMap) || this.IsWestSiauliaiMap(questStaticData.EndMap))
+				return true;
+
+			return questStaticData.ClassName?.StartsWith("SIAUL_WEST", StringComparison.OrdinalIgnoreCase) == true ||
+				string.Equals(questStaticData.ClassName, "TUTO_SKILL_RUN", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private bool IsWestSiauliaiMap(string mapName)
+		{
+			return string.Equals(mapName, "f_siauliai_west", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private bool MeetsStaticPrerequisites(QuestStaticData questStaticData)
@@ -663,6 +717,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					.FirstOrDefault(a =>
 						string.Equals(a.QuestStartMode, "NPCDIALOG", StringComparison.OrdinalIgnoreCase) &&
 						this.StaticQuestCanStartFromNpcDialog(a, npcDialogName) &&
+						!this.StaticQuestIsBlockedByPriorityQuest(a, npcDialogName) &&
 						!this.Has(new QuestId(a.Id)) &&
 						this.MeetsStaticPrerequisites(a));
 
@@ -773,6 +828,27 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			return questData.Id == 1014 &&
 				this.StaticNpcDialogMatches("SIALUL_WEST_DRASIUS", npcDialogName);
+		}
+
+		private bool StaticQuestIsBlockedByPriorityQuest(QuestStaticData questData, string npcDialogName)
+		{
+			if (questData == null)
+				return false;
+
+			if (!string.Equals(questData.QuestMode, "SUB", StringComparison.OrdinalIgnoreCase) &&
+				!string.Equals(questData.QuestMode, "REPEAT", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (questData.Id == 1023 && !this.HasCompleted(1014))
+				return true;
+
+			return ZoneServer.Instance.Data.QuestDb.GetList().Any(candidate =>
+				candidate.Id != questData.Id &&
+				string.Equals(candidate.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase) &&
+				string.Equals(candidate.QuestStartMode, "NPCDIALOG", StringComparison.OrdinalIgnoreCase) &&
+				this.StaticQuestCanStartFromNpcDialog(candidate, npcDialogName) &&
+				!this.Has(new QuestId(candidate.Id)) &&
+				this.MeetsStaticPrerequisites(candidate));
 		}
 
 		private bool TryAdvanceStaticQuestFromNpcDialog(Quest quest, string npcDialogName)
@@ -1247,7 +1323,28 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			this.UpdateClient_RemoveQuest(quest);
 			this.UpdateClient_CompleteQuest(quest);
+			this.StartStaticSystemFollowUpQuests(quest);
 			this.SyncStaticQuestNpcStates();
+		}
+
+		private void StartStaticSystemFollowUpQuests(Quest quest)
+		{
+			var completedQuestData = quest?.QuestStaticData;
+			if (completedQuestData == null || string.IsNullOrWhiteSpace(completedQuestData.ClassName))
+				return;
+
+			var nextQuests = ZoneServer.Instance.Data.QuestDb.GetList()
+				.Where(candidate =>
+					string.Equals(candidate.QuestStartMode, "SYSTEM", StringComparison.OrdinalIgnoreCase) &&
+					candidate.RequiredQuests != null &&
+					candidate.RequiredQuests.Any(requiredQuest => string.Equals(requiredQuest, completedQuestData.ClassName, StringComparison.OrdinalIgnoreCase)) &&
+					!this.Has(new QuestId(candidate.Id)) &&
+					this.MeetsStaticPrerequisites(candidate))
+				.OrderBy(candidate => candidate.Id)
+				.ToList();
+
+			foreach (var nextQuest in nextQuests)
+				this.StartStaticQuest(nextQuest, TimeSpan.Zero);
 		}
 
 		/// <summary>

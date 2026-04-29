@@ -165,6 +165,66 @@ wait_for_pid_exit() {
     return 1
 }
 
+mysql_ping() {
+    mysqladmin -u "$DB_USER" -p"$DB_PASS" ping >/dev/null 2>&1
+}
+
+start_database_service() {
+    local services=("mariadb" "mysql")
+    local service_name
+
+    for service_name in "${services[@]}"; do
+        if command -v service >/dev/null 2>&1 && service "$service_name" status >/dev/null 2>&1; then
+            log_info "Servico $service_name ja esta ativo."
+            return 0
+        fi
+    done
+
+    for service_name in "${services[@]}"; do
+        if command -v service >/dev/null 2>&1 && service "$service_name" status >/dev/null 2>&1; then
+            continue
+        fi
+
+        if command -v sudo >/dev/null 2>&1; then
+            if sudo -n service "$service_name" start >/dev/null 2>&1; then
+                log_success "Servico $service_name iniciado."
+                return 0
+            fi
+        elif service "$service_name" start >/dev/null 2>&1; then
+            log_success "Servico $service_name iniciado."
+            return 0
+        fi
+    done
+
+    log_warning "Nao consegui iniciar MariaDB/MySQL automaticamente. Inicie com: sudo service mariadb start"
+    return 1
+}
+
+wait_for_database() {
+    local timeout=${1:-60}
+    local elapsed=0
+
+    if mysql_ping; then
+        log_success "MariaDB respondeu com $DB_USER."
+        return 0
+    fi
+
+    log_warning "MariaDB ainda nao respondeu; tentando iniciar o servico..."
+    start_database_service || true
+
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if mysql_ping; then
+            log_success "MariaDB respondeu com $DB_USER."
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    log_error "MariaDB nao respondeu com $DB_USER apos ${timeout}s."
+    return 1
+}
+
 verify_http_endpoint() {
     local url=$1
     if curl -fsS --max-time 8 "$url" >/tmp/laima-serverlist-check.xml; then
@@ -178,25 +238,32 @@ verify_http_endpoint() {
 }
 
 verify_windows_client_connectivity() {
+    local client_host
+    client_host="$LOCAL_HOST"
+
+    if [ "$SERVER_MODE" != "local" ]; then
+        client_host="$PUBLIC_HOST"
+    fi
+
     if ! command -v powershell.exe >/dev/null 2>&1; then
         log_warning "powershell.exe nao encontrado no WSL; pulando validacao do localhost do Windows."
         return 0
     fi
 
-    log_info "Validando conectividade do cliente Windows em 127.0.0.1..."
+    log_info "Validando conectividade do cliente Windows em ${client_host}..."
 
-    if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri 'http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml'; if (\$r.Content -notmatch 'Server0_IP=\"127\.0\.0\.1\"') { throw 'serverlist nao aponta para 127.0.0.1' }" >/dev/null 2>&1; then
-        log_success "Cliente Windows consegue acessar serverlist em 127.0.0.1:${PUBLIC_WEB_PORT}"
+    if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$hostName='${client_host}'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri \"http://\$(\$hostName):${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml\"; if (-not \$r.Content.Contains('Server0_IP=\"' + \$hostName + '\"')) { throw \"serverlist nao aponta para \$hostName\" }" >/dev/null 2>&1; then
+        log_success "Cliente Windows consegue acessar serverlist em ${client_host}:${PUBLIC_WEB_PORT}"
     else
-        log_error "Cliente Windows nao consegue acessar http://127.0.0.1:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
-        log_error "Sem portproxy no modo local: verifique se o WSL esta encaminhando localhost para o Windows."
+        log_error "Cliente Windows nao consegue acessar http://${client_host}:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
+        log_error "Verifique firewall/antivirus, portproxy do Windows ou encaminhamento localhost do WSL."
         return 1
     fi
 
-    if powershell.exe -NoProfile -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 2000 -InformationLevel Quiet)) { exit 1 }" >/dev/null 2>&1; then
-        log_success "Cliente Windows consegue acessar Barracks em 127.0.0.1:2000"
+    if powershell.exe -NoProfile -Command "if (-not (Test-NetConnection -ComputerName '${client_host}' -Port 2000 -InformationLevel Quiet)) { exit 1 }" >/dev/null 2>&1; then
+        log_success "Cliente Windows consegue acessar Barracks em ${client_host}:2000"
     else
-        log_error "Cliente Windows nao consegue acessar Barracks em 127.0.0.1:2000"
+        log_error "Cliente Windows nao consegue acessar Barracks em ${client_host}:2000"
         return 1
     fi
 }
@@ -285,8 +352,7 @@ if ! command -v mysql >/dev/null 2>&1; then
     exit 1
 fi
 
-if ! mysqladmin -u "$DB_USER" -p"$DB_PASS" ping >/dev/null 2>&1; then
-    log_error "MariaDB nao respondeu com $DB_USER."
+if ! wait_for_database 90; then
     exit 1
 fi
 

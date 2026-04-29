@@ -3829,6 +3829,7 @@ namespace Melia.Zone.Network
 			Send.ZC_LOAD_COMPLETE(conn);
 
 			character.AddonMessage(AddonMessage.RECEIVE_SERVER_NATION);
+			character.RestoreCoreHudState(true, true);
 
 			// Removed: Personal House loading - PersonalHouse type deleted during Laima merge
 			// If character is on a housing map, warp them out since houses aren't available
@@ -5890,7 +5891,7 @@ namespace Melia.Zone.Network
 				// Need to get all possible quest dialogs based on quest state
 				track.Frame = -2;
 				Send.ZC_NORMAL.SetTrackFrame(character, track.Frame);
-				var expectedCount = track.Actors.Length + 4;
+				var expectedCount = track.Actors.Length + 3;
 				if (count != expectedCount && count != track.Actors.Length)
 				{
 					Log.Warning("CZ_DIRECTION_MOVE_STATE: Count mismatch {0} != {1} (or actor-only {2})", count, expectedCount, track.Actors.Length);

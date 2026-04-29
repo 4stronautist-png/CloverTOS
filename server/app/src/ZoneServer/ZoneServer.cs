@@ -393,7 +393,7 @@ namespace Melia.Zone
 			var rates = new ServerRates
 			{
 				ExpRate = this.Conf.World.ExpRate,
-				JobExpRate = this.Conf.World.ExpRate,
+				JobExpRate = this.Conf.World.JobExpRate,
 				DropRate = this.Conf.World.GeneralDropRate,
 				EquipRate = this.Conf.World.EquipmentDropRate,
 				GemRate = this.Conf.World.GemDropRate,
@@ -536,7 +536,8 @@ namespace Melia.Zone
 			try
 			{
 				this.DialogFunctions.LoadMethods();
-				Log.Info("  loaded {0} dialog functions.", this.DialogFunctions.Count);
+				var staticQuestFallbacks = this.DialogFunctions.AddStaticQuestFallbacks(this.Data.QuestDb);
+				Log.Info("  loaded {0} dialog functions ({1} static quest fallbacks).", this.DialogFunctions.Count, staticQuestFallbacks);
 			}
 			catch (Exception ex)
 			{

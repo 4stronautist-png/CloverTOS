@@ -65,11 +65,46 @@ public class SiaulWestDrasius1TrackScript : TrackScript
 
 	public override void OnComplete(Character character, Track track)
 	{
+		RemoveTrackActorsFromClient(character, track);
+
 		base.OnComplete(character, track);
 
-		Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
+		character.RestoreCoreHudState(true, true);
 		SpawnCombatKepas(character);
+		ReenterRealScout(character);
 		character.LookAround();
+	}
+
+	public override void OnCancel(Character character, Track track)
+	{
+		RemoveTrackActorsFromClient(character, track);
+		base.OnCancel(character, track);
+		ReenterRealScout(character);
+	}
+
+	private static void RemoveTrackActorsFromClient(Character character, Track track)
+	{
+		if (character?.Connection == null || track?.Actors == null)
+			return;
+
+		foreach (var actor in track.Actors)
+		{
+			if (actor != null && actor != character)
+				Send.ZC_LEAVE(character.Connection, actor);
+		}
+	}
+
+	private static void ReenterRealScout(Character character)
+	{
+		if (character?.Connection == null || character.MapId != 1021)
+			return;
+
+		if (character.Map.TryGetMonster(m => m is Npc npc && npc.DialogName == "SIALUL_WEST_DRASIUS" && npc.Layer == 0, out var scoutMonster) && scoutMonster is Npc scoutNpc)
+		{
+			character.SetMapNPCState(scoutNpc, NpcState.Normal);
+			Send.ZC_ENTER_MONSTER(character.Connection, scoutNpc);
+			Log.Info("SIAUL_WEST_DRASIUS1_TRACK: re-entered real Scout for '{0}' after track cleanup. handle={1}", character.Name, scoutNpc.Handle);
+		}
 	}
 
 	private static Npc SpawnCutsceneNpc(Character character, int genType, int monsterId, string name, double x, double y, double z, double direction, string dialogName)

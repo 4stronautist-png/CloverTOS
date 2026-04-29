@@ -71,6 +71,14 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			track.Data.OnStartQuestStatus = onStart;
 			track.Data.OnCompleteQuestStatus = onComplete;
 			track.Data.PropertyId = string.IsNullOrEmpty(overrideTrackProperty) ? trackId : overrideTrackProperty;
+
+			if (this.Character.Connection?.CurrentDialog != null && this.Character.Connection.CurrentDialog.State != DialogState.Ended)
+			{
+				Log.Info("TrackComponent.Start: closing active dialog before track '{0}' for '{1}'.", trackId, this.Character.Name);
+				this.Character.Connection.CurrentDialog.Cancel();
+				this.Character.Connection.CurrentDialog = null;
+			}
+
 			track.Dialog = new Dialog(this.Character, null);
 
 			this.ActiveTrack = track;
@@ -82,7 +90,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				actors = Array.Empty<IActor>();
 			track.Actors = actors;
 
-			Send.ZC_NORMAL.SetupCutscene(this.Character, true, false, true);
+			var hideUi = track.Id != "SIAU_WEST_START_TRACK" && track.Id != "SIAUL_WEST_DRASIUS1_TRACK";
+			Send.ZC_NORMAL.SetupCutscene(this.Character, true, false, hideUi);
 			Send.ZC_NORMAL.LoadCutscene(this.Character, 0x77, true, track.Id);
 			Send.ZC_NORMAL.LoadCutscene(this.Character, 0x6B, true, this.Character.Name);
 			Send.ZC_NORMAL.StartCutscene(this.Character, track.Id, actors);
@@ -134,6 +143,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				Send.ZC_NORMAL.SetupCutscene(this.Character, false, false, false);
 			}
 
+			this.Character.RestoreCoreHudState(true, true);
+
 			this.TrackCompleted?.Invoke(this.Character, this.ActiveTrack);
 
 			// Clean up the track dialog to prevent blocking future NPC interactions
@@ -167,6 +178,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			{
 				Send.ZC_NORMAL.SetupCutscene(this.Character, false, false, false);
 			}
+
+			this.Character.RestoreCoreHudState(true, true);
 
 			// Clean up the track dialog to prevent blocking future NPC interactions
 			if (this.ActiveTrack.Dialog != null)

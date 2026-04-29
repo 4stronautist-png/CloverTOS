@@ -2156,15 +2156,12 @@ namespace Melia.Zone.Network
 
 				packet.PutLpString(trackName);
 				packet.PutLong(1);
-				// The payload below sends 4 implicit entries in addition to the
-				// explicit track actors:
-				//   0, 0, 1, <playerHandle>
-				// If the header only advertises actors.Length + 2, the client
-				// still replies with movement states for all 7 entries and the
-				// server falls out of sync (`CZ_DIRECTION_MOVE_STATE: 7 != 3`),
-				// which leaves the HUD hidden and mixes cutscene actors with
-				// unrelated NPCs/mobs on the map.
-				packet.PutInt(actors.Length + 4);
+				// The client reports movement state for the explicit actors plus
+				// three implicit entries from this packet's direction payload. If
+				// we advertise one too many, the client never cleanly settles the
+				// track and the early West Siauliai scenes fall back instead of
+				// playing.
+				packet.PutInt(actors.Length + 3);
 				packet.PutInt(0);
 				packet.PutInt(0);
 				for (var i = 0; i < actors.Length; i++)
