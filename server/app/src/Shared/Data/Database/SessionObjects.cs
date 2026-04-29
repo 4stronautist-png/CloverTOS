@@ -24,6 +24,7 @@ namespace Melia.Shared.Data.Database
 		public List<int> InfoMaxCount { get; set; }
 		public List<string> MapPointGroup { get; set; }
 		public List<int> MapPointView { get; set; }
+		public List<string> MapPointViewTerms { get; set; }
 		public List<string> MonsterNameGroup { get; set; }
 		public List<int> MonsterView { get; set; }
 		public List<string> MonsterViewTerms { get; set; }
@@ -84,6 +85,7 @@ namespace Melia.Shared.Data.Database
 				questData.InfoMaxCount = questEntry.ReadList<int>("infoMaxCount", null);
 				questData.MapPointGroup = questEntry.ReadList<string>("mapPointGroup", null);
 				questData.MapPointView = questEntry.ReadList<int>("mapPointView", null);
+				questData.MapPointViewTerms = questEntry.ReadList<string>("mapPointViewTerms", null);
 				questData.MonsterNameGroup = questEntry.ReadList<string>("monsterNameGroup", null);
 				questData.MonsterView = questEntry.ReadList<int>("monsterView", null);
 				questData.MonsterViewTerms = questEntry.ReadList<string>("monsterViewTerms", null);

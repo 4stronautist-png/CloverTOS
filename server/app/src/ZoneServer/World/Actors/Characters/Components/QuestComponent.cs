@@ -773,6 +773,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return;
 
 			var mapClassName = this.Character.Map.ClassName;
+			this.SyncStaticQuestSessionObjects();
 			this.EnsureStaticQuestNpcActors(mapClassName);
 			this.EnsureStaticQuestObjectiveMonsters(mapClassName);
 
@@ -1957,8 +1958,10 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			var mapPointGroups = this.GetQuestMapPointGroups(quest, questData);
 			var mapPointViews = this.GetQuestMapPointViews(mapPointGroups, questData);
+			var mapPointViewTerms = this.GetQuestMapPointViewTerms(mapPointGroups, questData);
 			this.SetQuestSessionStringList(sessionObject, "QuestMapPointGroup", mapPointGroups, 10, changedProperties);
 			this.SetQuestSessionNumberList(sessionObject, "QuestMapPointView", mapPointViews, 10, changedProperties);
+			this.SetQuestSessionStringList(sessionObject, "QuestMapPointViewTerms", mapPointViewTerms, 10, changedProperties);
 
 			var monsterNameGroups = this.GetQuestMonsterNameGroups(quest, questData);
 			var monsterViews = this.GetQuestMonsterViews(monsterNameGroups, questData);
@@ -1967,6 +1970,12 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			this.SetQuestSessionStringList(sessionObject, "QuestMonViewTerms", questData.MonsterViewTerms, 10, changedProperties);
 
 			return changedProperties;
+		}
+
+		private void SyncStaticQuestSessionObjects()
+		{
+			foreach (var quest in this.GetList().Where(quest => quest.InProgress || quest.Status == QuestStatus.Success))
+				this.SyncStaticQuestSessionObject(quest);
 		}
 
 		private void SyncStaticQuestSessionObject(Quest quest)
@@ -2081,6 +2090,18 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					: 1;
 				result.Add(view == 0 ? 0 : 1);
 			}
+			return result;
+		}
+
+		private List<string> GetQuestMapPointViewTerms(List<string> mapPointGroups, SessionQuestData questData)
+		{
+			var result = questData.MapPointViewTerms != null
+				? questData.MapPointViewTerms.Where(terms => !this.IsNone(terms)).ToList()
+				: new List<string>();
+
+			while (result.Count < mapPointGroups.Count)
+				result.Add("None");
+
 			return result;
 		}
 
