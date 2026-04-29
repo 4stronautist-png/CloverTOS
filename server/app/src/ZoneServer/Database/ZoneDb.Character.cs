@@ -398,15 +398,36 @@ namespace Melia.Zone.Database
 		private void LoadCompanions(Character character)
 		{
 			using (var conn = this.GetConnection())
-			using (var mc = new MySqlCommand("SELECT * FROM `companions` WHERE `characterId` = @characterId", conn))
+			using (var mc = new MySqlCommand("SELECT * FROM `companions` WHERE `accountId` = @accountId ORDER BY `slot`", conn))
 			{
-				mc.Parameters.AddWithValue("@characterId", character.DbId);
+				mc.Parameters.AddWithValue("@accountId", character.AccountDbId);
 				using (var reader = mc.ExecuteReader())
 				{
+					var activeGroundLoaded = false;
+					var activeBirdLoaded = false;
+
 					while (reader.Read())
 					{
+						var characterIdOrdinal = reader.GetOrdinal("characterId");
+						var companionCharacterId = reader.IsDBNull(characterIdOrdinal) ? 0 : reader.GetInt64(characterIdOrdinal);
+						var wantsActive = reader.GetByte("active") == 1 && companionCharacterId == character.DbId;
+
 						var companion = new Companion(character, reader.GetInt32("monsterId"), RelationType.Friendly);
+						var isActive = wantsActive && (companion.IsBird ? !activeBirdLoaded : !activeGroundLoaded);
+						if (isActive)
+						{
+							if (companion.IsBird)
+								activeBirdLoaded = true;
+							else
+								activeGroundLoaded = true;
+						}
+						else if (wantsActive)
+						{
+							companionCharacterId = 0;
+						}
+
 						companion.DbId = reader.GetInt64("companionId");
+						companion.CharacterDbId = companionCharacterId;
 						companion.Name = reader.GetString("name");
 						companion.Properties.SetFloat(PropertyName.HP, reader.GetInt32("hp"));
 						companion.Properties.SetFloat(PropertyName.Stamina, reader.GetInt32("stamina"));
@@ -414,7 +435,7 @@ namespace Melia.Zone.Database
 						companion.MaxExp = reader.GetInt64("maxExp");
 						companion.TotalExp = reader.GetInt64("totalExp");
 						companion.Level = reader.GetInt32("level");
-						companion.IsActivated = reader.GetByte("active") == 1;
+						companion.IsActivated = isActive;
 						companion.Slot = reader.GetByte("slot");
 						companion.IsAggressiveMode = reader.GetByte("isAggressiveMode") == 1;
 						companion.Position = Position.Zero;
@@ -428,6 +449,7 @@ namespace Melia.Zone.Database
 						companion.Properties.SetFloat(PropertyName.Stat_DR, reader.GetInt32("stat_dr"));
 						companion.Properties.InvalidateAll();
 						companion.InitAutoUpdates();
+						companion.ApplyDisplayScale();
 						character.Companions.AddCompanion(companion, true);
 					}
 				}
@@ -560,6 +582,7 @@ namespace Melia.Zone.Database
 				using (var cmd = new InsertCommand("INSERT INTO `companions` {parameters}", conn, trans))
 				{
 					companion.AdoptTime = DateTime.Now;
+					companion.CharacterDbId = characterId;
 
 					cmd.Set("accountId", accountId);
 					cmd.Set("characterId", characterId);
@@ -603,8 +626,9 @@ namespace Melia.Zone.Database
 		public Companion GetCompanion(Character character)
 		{
 			using (var conn = this.GetConnection())
-			using (var mc = new MySqlCommand("SELECT * FROM `companions` WHERE `characterId` = @characterId", conn))
+			using (var mc = new MySqlCommand("SELECT * FROM `companions` WHERE `accountId` = @accountId AND `characterId` = @characterId LIMIT 1", conn))
 			{
+				mc.Parameters.AddWithValue("@accountId", character.AccountDbId);
 				mc.Parameters.AddWithValue("@characterId", character.DbId);
 
 				using (var reader = mc.ExecuteReader())
@@ -612,12 +636,16 @@ namespace Melia.Zone.Database
 					if (!reader.Read())
 						return null;
 
+					var characterIdOrdinal = reader.GetOrdinal("characterId");
+					var companionCharacterId = reader.IsDBNull(characterIdOrdinal) ? 0 : reader.GetInt64(characterIdOrdinal);
+
 					var companion = new Companion(character, reader.GetInt32("monsterId"), RelationType.Friendly)
 					{
 						DbId = reader.GetInt64("companionId"),
+						CharacterDbId = companionCharacterId,
 						Name = reader.GetString("name"),
 						Exp = reader.GetInt64("exp"),
-						IsActivated = reader.GetBoolean("active"),
+						IsActivated = reader.GetBoolean("active") && companionCharacterId == character.DbId,
 						Slot = reader.GetByte("slot"),
 						IsAggressiveMode = reader.GetBoolean("isAggressiveMode"),
 						Position = Position.Zero,
@@ -635,6 +663,7 @@ namespace Melia.Zone.Database
 					companion.Properties.SetFloat(PropertyName.Stat_DR, reader.GetInt32("stat_dr"));
 					companion.Properties.InvalidateAll();
 					companion.InitAutoUpdates();
+					companion.ApplyDisplayScale();
 
 					return companion;
 				}

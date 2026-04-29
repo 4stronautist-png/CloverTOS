@@ -702,19 +702,27 @@ namespace Melia.Zone.Database
 				"ON DUPLICATE KEY UPDATE `circle`=VALUES(`circle`), `skillPoints`=VALUES(`skillPoints`), `totalExp`=VALUES(`totalExp`), `selectionDate`=VALUES(`selectionDate`), `advDate`=VALUES(`advDate`)",
 				conn,
 				trans))
-			{
-				foreach (var job in jobsToSave)
 				{
-					batch.AddRow(new Dictionary<string, object>
+					foreach (var job in jobsToSave)
 					{
-						{ "characterId", character.DbId },
-						{ "jobId", job.Id },
-						{ "circle", job.Circle },
-						{ "skillPoints", job.SkillPoints },
-						{ "totalExp", job.TotalExp },
-						{ "selectionDate", job.SelectionDate },
-						{ "advDate", job.AdvancementDate }
-					});
+						var totalExp = job.TotalExp;
+						if (totalExp <= 0 && job.SkillPoints > 0)
+						{
+							var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints + 1);
+							if (restoredLevel > 1)
+								totalExp = ZoneServer.Instance.Data.ExpDb.GetNextTotalJobExp(character.Jobs.GetJobRank(job.Id), restoredLevel - 1);
+						}
+
+						batch.AddRow(new Dictionary<string, object>
+						{
+							{ "characterId", character.DbId },
+							{ "jobId", job.Id },
+							{ "circle", job.Circle },
+							{ "skillPoints", job.SkillPoints },
+							{ "totalExp", totalExp },
+							{ "selectionDate", job.SelectionDate },
+							{ "advDate", job.AdvancementDate }
+						});
 				}
 
 				if (batch.HasRows)
@@ -1154,7 +1162,8 @@ namespace Melia.Zone.Database
 				{
 					var cmd = new MySqlBatchCommand("UPDATE `companions` SET `characterId`=@characterId, `name`=@name, `hp`=@hp, `stamina`=@stamina, `exp`=@exp, `maxExp`=@maxExp, `totalExp`=@totalExp, `level`=@level, `active`=@active, `isAggressiveMode`=@isAggressiveMode, `stat_mhp`=@stat_mhp, `stat_atk`=@stat_atk, `stat_def`=@stat_def, `stat_mdef`=@stat_mdef, `stat_hr`=@stat_hr, `stat_crthr`=@stat_crthr, `stat_dr`=@stat_dr WHERE `companionId`=@companionId");
 					cmd.Parameters.Add(new MySqlParameter("@companionId", companion.DbId));
-					cmd.Parameters.Add(new MySqlParameter("@characterId", character.DbId));
+					object characterDbId = companion.CharacterDbId > 0 ? companion.CharacterDbId : DBNull.Value;
+					cmd.Parameters.Add(new MySqlParameter("@characterId", characterDbId));
 					cmd.Parameters.Add(new MySqlParameter("@name", companion.Name));
 					cmd.Parameters.Add(new MySqlParameter("@hp", (int)companion.Properties.GetFloat(PropertyName.HP)));
 					cmd.Parameters.Add(new MySqlParameter("@stamina", (int)companion.Properties.GetFloat(PropertyName.Stamina)));

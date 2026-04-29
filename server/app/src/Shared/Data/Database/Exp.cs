@@ -295,6 +295,8 @@ namespace Melia.Shared.Data.Database
 		/// </summary>
 		protected override void AfterLoad()
 		{
+			this.NormalizeBaseExp();
+
 			this.Entries.AddRange(_exp.Cast<object>());
 			this.Entries.AddRange(_jobExp);
 			this.Entries.AddRange(_guildExp);
@@ -303,6 +305,22 @@ namespace Melia.Shared.Data.Database
 			this.Entries.AddRange(_ancientExp);
 
 			this.BuildJobExpCaches();
+		}
+
+		/// <summary>
+		/// Keeps the last entry per level and orders levels for index-based lookups.
+		/// </summary>
+		private void NormalizeBaseExp()
+		{
+			if (_exp.Count == 0)
+				return;
+
+			var byLevel = new Dictionary<int, BaseExpData>();
+			foreach (var entry in _exp)
+				byLevel[entry.Level] = entry;
+
+			_exp.Clear();
+			_exp.AddRange(byLevel.Values.OrderBy(a => a.Level));
 		}
 
 		/// <summary>

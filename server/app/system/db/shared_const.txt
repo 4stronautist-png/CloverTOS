@@ -33,7 +33,7 @@
 { id: 27, className: "SUMMON_ADD_DEF_TRANSFER_RATIO", value: 1.7, desc: "Transfer DEF", useInScript: true },
 { id: 100, className: "PC_INIT_INVINCIBLE_TIME", value: 60000, desc: "N/A", useInScript: false },
 { id: 101, className: "PC_WARP_INVINCIBLE_TIME", value: 10000, desc: "N/A", useInScript: false },
-{ id: 102, className: "PC_MAX_LEVEL", value: 520, desc: "Player's Max Level", useInScript: true },
+{ id: 102, className: "PC_MAX_LEVEL", value: 550, desc: "Player's Max Level", useInScript: true },
 { id: 103, className: "COMPANION_MAX_LEVEL", value: 520, desc: "Set Skill cancel reset times, Time Unit : ms (Test)", useInScript: true },
 { id: 104, className: "BASIC_CLASS_MAX_LEVEL", value: 15, desc: "Maximum level of Basic Class", useInScript: true },
 { id: 105, className: "CLASS_MAX_LEVEL", value: 45, desc: "Maximum level of Normal Class", useInScript: true },
