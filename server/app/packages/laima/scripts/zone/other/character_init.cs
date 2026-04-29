@@ -45,6 +45,13 @@ public class CharacterInitializationScript : GeneralScript
 
 		UpdateCharacter(character);
 		UpdateAccount(character);
+		EnsureInitialClassState(character);
+	}
+
+	[On("PlayerGameReady")]
+	public void OnPlayerGameReady(object sender, PlayerGameReadyEventArgs args)
+	{
+		EnsureInitialClassState(args.Character);
 	}
 
 	private static void EnsureClassicStart(Character character)
@@ -109,6 +116,117 @@ public class CharacterInitializationScript : GeneralScript
 			case JobId.Cleric: InitCleric(character); break;
 			case JobId.Scout: InitScout(character); break;
 		}
+	}
+
+	private static void EnsureInitialClassState(Character character)
+	{
+		if (character == null)
+			return;
+
+		var job = character.Job;
+		if (job != null && character.Jobs.GetJobRank(job.Id) == 1)
+		{
+			if (job.SkillPoints < 1)
+				job.SkillPoints = 1;
+
+			if (job.AdvancementDate == DateTime.MinValue)
+				job.AdvancementDate = job.SelectionDate == DateTime.MinValue ? DateTime.Now : job.SelectionDate;
+		}
+
+		EnsureCommonSkillsAndAbilities(character);
+
+		switch (character.JobId)
+		{
+			case JobId.Swordsman: EnsureSwordsmanSkillsAndAbilities(character); break;
+			case JobId.Wizard: EnsureWizardSkillsAndAbilities(character); break;
+			case JobId.Archer: EnsureArcherSkillsAndAbilities(character); break;
+			case JobId.Cleric: EnsureClericSkillsAndAbilities(character); break;
+			case JobId.Scout: EnsureScoutSkillsAndAbilities(character); break;
+		}
+	}
+
+	private static void EnsureCommonSkillsAndAbilities(Character character)
+	{
+		LearnSkill(character, SkillId.Default);
+		LearnSkill(character, SkillId.Common_shovel);
+		LearnSkill(character, SkillId.Common_otlflag);
+		LearnSkill(character, SkillId.Common_dumbbell);
+		LearnSkill(character, SkillId.Common_vuvuzela);
+		LearnSkill(character, SkillId.Common_snowspray);
+		LearnSkill(character, SkillId.Common_balloonpipe);
+
+		LearnAbility(character, AbilityId.Cloth);
+		LearnAbility(character, AbilityId.Leather);
+		LearnAbility(character, AbilityId.Iron);
+		LearnAbility(character, AbilityId.SwapWeapon);
+	}
+
+	private static void EnsureSwordsmanSkillsAndAbilities(Character character)
+	{
+		LearnSkill(character, SkillId.Normal_Attack);
+		LearnSkill(character, SkillId.Normal_Attack_TH);
+		LearnSkill(character, SkillId.Warrior_Guard);
+		LearnSkill(character, SkillId.Pistol_Attack);
+		LearnSkill(character, SkillId.Common_DaggerAries);
+
+		LearnAbility(character, AbilityId.Sword);
+		LearnAbility(character, AbilityId.Staff);
+		LearnAbility(character, AbilityId.Mace);
+	}
+
+	private static void EnsureWizardSkillsAndAbilities(Character character)
+	{
+		LearnSkill(character, SkillId.Magic_Attack);
+		LearnSkill(character, SkillId.Magic_Attack_TH);
+		LearnSkill(character, SkillId.Common_DaggerAries);
+		LearnSkill(character, SkillId.Common_StaffAttack);
+
+		LearnAbility(character, AbilityId.Sword);
+		LearnAbility(character, AbilityId.Staff);
+		LearnAbility(character, AbilityId.Mace);
+		LearnAbility(character, AbilityId.THStaff);
+	}
+
+	private static void EnsureArcherSkillsAndAbilities(Character character)
+	{
+		LearnSkill(character, SkillId.Bow_Attack);
+		LearnSkill(character, SkillId.CrossBow_Attack);
+		LearnSkill(character, SkillId.Common_DaggerAries);
+		LearnSkill(character, SkillId.Warrior_Guard);
+		LearnSkill(character, SkillId.Pistol_Attack);
+		LearnSkill(character, SkillId.Musket_Attack);
+		LearnSkill(character, SkillId.Sword_Attack);
+		LearnSkill(character, SkillId.Cannon_Normal_Attack);
+
+		LearnAbility(character, AbilityId.THBow);
+		LearnAbility(character, AbilityId.Bow);
+	}
+
+	private static void EnsureClericSkillsAndAbilities(Character character)
+	{
+		LearnSkill(character, SkillId.Hammer_Attack);
+		LearnSkill(character, SkillId.Hammer_Attack_TH);
+		LearnSkill(character, SkillId.Common_DaggerAries);
+
+		LearnAbility(character, AbilityId.Sword);
+		LearnAbility(character, AbilityId.Staff);
+		LearnAbility(character, AbilityId.Mace);
+		LearnAbility(character, AbilityId.THMace);
+		LearnAbility(character, AbilityId.Cleric36);
+	}
+
+	private static void EnsureScoutSkillsAndAbilities(Character character)
+	{
+		LearnSkill(character, SkillId.Normal_Attack);
+		LearnSkill(character, SkillId.Normal_Attack_TH);
+		LearnSkill(character, SkillId.Warrior_Guard);
+		LearnSkill(character, SkillId.War_JustFrameAttack);
+		LearnSkill(character, SkillId.War_JustFrameDagger);
+		LearnSkill(character, SkillId.War_JustFramePistol);
+		LearnSkill(character, SkillId.Pistol_Attack);
+		LearnSkill(character, SkillId.Common_DaggerAries);
+
+		LearnAbility(character, AbilityId.Sword);
 	}
 
 	private void UpdateCharacter(Character character)
