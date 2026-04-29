@@ -212,7 +212,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 		// Battle Commander
 		//-------------------------------------------------------------------------
-		AddNpc(2002, 20016, L("Battle Commander"), "f_siauliai_west", -144, 322, 444, 180, "SIAUL_WEST_SOL3");
+		AddNpc(2002, 20016, L("Battle Commander"), "f_siauliai_west", -663, 322, 503, 0, "SIAUL_WEST_SOL3");
 
 		// Western Woods Scout / Drasius
 		//-------------------------------------------------------------------------
