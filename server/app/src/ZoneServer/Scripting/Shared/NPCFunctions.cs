@@ -2779,8 +2779,29 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIAUL_WEST_SOL3")]
 		public static async Task SIAUL_WEST_SOL3(Dialog dialog)
 		{
+			await RepairWestSiauliaiBattleCommanderChain(dialog.Player);
 			await dialog.Msg("SIAUL_WEST_SOL3_basic1");
 			await COMMON_QUEST_HANDLER(dialog);
+			await RepairWestSiauliaiBattleCommanderChain(dialog.Player);
+		}
+
+		private static async Task RepairWestSiauliaiBattleCommanderChain(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return;
+
+			character.RestoreCoreHudState(true, true);
+
+			if (character.Quests.HasCompleted(1014) && !character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
+				await character.Quests.Start("TUTO_SKILL_RUN");
+
+			if (character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
+				character.Quests.Complete(8350);
+
+			if (character.Quests.HasCompleted(8350) && !character.Quests.IsActive(1020) && !character.Quests.HasCompleted(1020))
+				await character.Quests.Start("SIAUL_WEST_SOLDIER3");
+
+			character.Quests.SyncStaticQuestNpcStates();
 		}
 
 		[DialogFunction("SIAUL1_BOARD2")]

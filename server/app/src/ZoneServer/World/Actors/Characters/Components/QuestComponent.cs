@@ -751,6 +751,13 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				if (minMon is not Npc npc)
 					continue;
 
+				if (this.IsTechnicalStaticQuestNpc(npc.DialogName))
+				{
+					if (this.Character.GetMapNPCState(npc) != NpcState.Invisible)
+						this.Character.SetMapNPCState(npc, NpcState.Invisible);
+					continue;
+				}
+
 				if (!this.StaticNpcIsRelevantForCurrentQuestState(npc.DialogName, mapClassName))
 					continue;
 
@@ -864,6 +871,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (string.IsNullOrWhiteSpace(dialogName))
 				return false;
 
+			if (this.IsTechnicalStaticQuestNpc(dialogName))
+				return false;
+
 			if (!this.StaticQuestNpcBelongsToMap(questData, dialogName, mapClassName))
 				return false;
 
@@ -973,6 +983,16 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return 20041;
 
 			return 20117;
+		}
+
+		private bool IsTechnicalStaticQuestNpc(string dialogName)
+		{
+			if (string.IsNullOrWhiteSpace(dialogName))
+				return true;
+
+			return dialogName.Contains("_AUTO", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("TRIGGER", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("HIDDEN", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private readonly record struct StaticQuestNpcSpawnRequest(string DialogName, string QuestClassName, string Name, double X, double Y, double Z, double Range);
