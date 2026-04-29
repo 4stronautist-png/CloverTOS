@@ -247,9 +247,12 @@ namespace Melia.Zone.Network
 		{
 			using var packet = Packet.Rent(Op.ZC_START_INFO);
 
-			packet.PutInt(1); // count
+			var jobs = conn.SelectedCharacter.Jobs.GetList();
+
+			packet.PutInt(jobs.Length); // count
+			foreach (var job in jobs)
 			{
-				packet.PutShort((short)conn.SelectedCharacter.JobId);
+				packet.PutShort((short)job.Id);
 				packet.PutInt(0); // 1270153646, 2003304878
 				packet.PutInt(0);
 				packet.PutShort(1);
@@ -602,16 +605,33 @@ namespace Melia.Zone.Network
 			}
 
 			var skills = character.Skills.GetList();
+			var skillIds = new HashSet<SkillId>(skills.Select(skill => skill.Id));
+			var packetSkills = new List<Skill>(skills);
+
+			foreach (var job in character.Jobs.GetList())
+			{
+				var skillTree = ZoneServer.Instance.Data.SkillTreeDb.FindSkills(job.Id, job.Level);
+				foreach (var skillTreeData in skillTree)
+				{
+					if (!skillIds.Add(skillTreeData.SkillId))
+						continue;
+
+					if (ZoneServer.Instance.Data.SkillDb.Find(skillTreeData.SkillId) == null)
+						continue;
+
+					packetSkills.Add(new Skill(character, skillTreeData.SkillId, 0));
+				}
+			}
 
 			using var packet = Packet.Rent(Op.ZC_SKILL_LIST);
 			packet.PutInt(character.Handle);
-			packet.PutShort(skills.Length);
+			packet.PutShort(packetSkills.Count);
 			if (Versions.Protocol > 500)
 				packet.PutByte(0);
 
 			packet.Zlib(true, zpacket =>
 			{
-				foreach (var skill in skills)
+				foreach (var skill in packetSkills)
 					zpacket.AddSkill(skill);
 			});
 

@@ -73,6 +73,20 @@ public class CardFunctionsScript : GeneralScript
 	}
 
 	[ScriptableFunction]
+	public static void SCR_CARDEFFECT_ADD_EXPROP_STARVALUE_PC(Character character, ICombatEntity target, Item item, float TypeValue, string arg1, string arg2, string arg3)
+	{
+		var varName = $"Melia.CardExProp.{item.ObjectId}.{arg1}";
+
+		if (TypeValue <= 0)
+		{
+			character.Variables.Perm.Remove(varName);
+			return;
+		}
+
+		character.Variables.Perm.SetFloat(varName, TypeValue);
+	}
+
+	[ScriptableFunction]
 	public static void SCR_CARDEFFECT_ADD_BUFF_MONSTER(Character character, ICombatEntity target, Item item, float TypeValue, string buffName, string buffArg2, string arg3)
 	{
 		if (TypeValue <= 0)

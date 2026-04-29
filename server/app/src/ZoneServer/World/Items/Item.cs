@@ -638,8 +638,6 @@ namespace Melia.Zone.World.Items
 				distance = 0;
 			}
 
-			if (ownerId != 0)
-				itemMonster.UniqueName = $"{ownerId}";
 			itemMonster.Position = position;
 			itemMonster.Direction = direction;
 			itemMonster.FromGround = true;

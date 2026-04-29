@@ -332,13 +332,27 @@ namespace Melia.Zone.Network
 				Send.ZC_HELP_LIST(character);
 				Send.ZC_MYPAGE_MAP(conn);
 				Send.ZC_GUESTPAGE_MAP(conn);
+				foreach (var job in character.Jobs.GetList().OrderBy(j => j.SelectionDate).ThenBy(j => j.Rank))
+				{
+					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.SkillPoints);
+					Send.ZC_JOB_PTS(character, job);
+				}
+				Send.ZC_SESSION_OBJECTS(character);
+				Send.ZC_OBJECT_PROPERTY(character, character.Etc, PropertyName.IS_LEGEND_CARD_OPEN);
+				Send.ZC_NORMAL.AccountProperties(character, PropertyName.IS_GODDESS_CARD_OPEN);
+				Send.ZC_NORMAL.AccountProperties(character, PropertyName.LEGEND_CARD_LIFT_TEAM_COMPLETE_COUNT);
 				Send.ZC_NORMAL.UpdateSkillUI(character);
 				// Official server sends Skintone Object Property around here
 				Send.ZC_ITEM_EQUIP_LIST(character);
 				Send.ZC_NORMAL.SetSkillsProperties(conn);
+				
+				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 0);
+				character.Properties.SetFloat(PropertyName.Job, (int)character.JobId);
+				Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 				Send.ZC_SKILL_LIST(character);
 				Send.ZC_COMMON_SKILL_LIST(character);
 				Send.ZC_NORMAL.UpdateSkillUI(character);
+				Send.ZC_JOB_PTS(character, character.Job);
 				Send.ZC_ABILITY_LIST(character);
 				Send.ZC_COOLDOWN_LIST(character, null);
 				Send.ZC_NORMAL.ItemCollectionList(character);
@@ -380,6 +394,7 @@ namespace Melia.Zone.Network
 				Send.ZC_EQUIP_CARD_INFO(character);
 				Send.ZC_EQUIP_GEM_INFO(character);
 				Send.ZC_NORMAL.HeadgearVisibilityUpdate(character);
+				character.Inventory.RefreshLegendCardVisual();
 
 				// Broadcast briquetting (weapon appearance)
 				foreach (var equipPair in character.Inventory.GetEquip())
@@ -6461,9 +6476,17 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_CHANGE_REPRESENTATION_CLASS: User '{0}' tried to select a class they don't have {1}.", conn.Account.Name, jobId.ToString());
 				return;
 			}
+
 			character.JobId = jobId;
+			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, 0);
+			character.Properties.SetFloat(PropertyName.Job, (int)jobId);
+			Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
+			Send.ZC_SKILL_LIST(character);
+			Send.ZC_COMMON_SKILL_LIST(character);
 			Send.ZC_NORMAL.UpdateSkillUI(character);
+			character.AddonMessage(AddonMessage.JOB_UPDATE);
 			character.AddonMessage(AddonMessage.UPDATE_REPRESENTATION_CLASS_ICON, "None", (int)jobId);
+			character.InvalidateProperties();
 		}
 
 		/// <summary>

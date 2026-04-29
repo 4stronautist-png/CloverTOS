@@ -25,6 +25,32 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		private readonly Dictionary<EquipSlot, Item> _equip = new(InventoryDefaults.EquipSlotCount);
 		private readonly List<Item> _warehouse = new();
 		private readonly Dictionary<int, Item> _cards = new();
+		private const string LegendCardVisualEnabledVar = "Clover.LegendCardVisual.Enabled";
+		private readonly struct LegendCardVisualEffect
+		{
+			public LegendCardVisualEffect(int itemId, EquipSlot slot, string buffClassName = "")
+			{
+				this.ItemId = itemId;
+				this.Slot = slot;
+				this.BuffClassName = buffClassName;
+			}
+
+			public int ItemId { get; }
+			public EquipSlot Slot { get; }
+			public string BuffClassName { get; }
+		}
+
+		private static readonly Dictionary<int, LegendCardVisualEffect> LegendCardVisualEffects = new()
+		{
+			[644914] = new(900023, EquipSlot.Doll, "DOLL_BORUTA_BUFF"),
+			[644931] = new(637025, EquipSlot.Wing),
+			[644934] = new(900018, EquipSlot.Doll, "DOLL_PAULIUS_BUFF"),
+			[644938] = new(11105010, EquipSlot.Wing),
+			[644940] = new(11105013, EquipSlot.Wing),
+			[644944] = new(10300071, EquipSlot.HairAccessory),
+			[644946] = new(11106015, EquipSlot.EffectCostume),
+			[644947] = new(11106015, EquipSlot.EffectCostume),
+		};
 
 		/// <summary>
 		/// Clears all internal collections to release item references
@@ -96,10 +122,143 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					.OrderBy(a => a.Key)
 					.Select(a =>
 					{
+						if (this.TryGetActiveLegendCardVisualId(a.Key, out var legendVisualId))
+							return legendVisualId;
+
 						var briquettingIndex = (int)a.Value.Properties.GetFloat(PropertyName.BriquettingIndex);
 						return briquettingIndex > 0 ? briquettingIndex : a.Value.Id;
 					})
 					.ToArray();
+			}
+		}
+
+		public bool IsLegendCardVisualEnabled()
+			=> this.Character.Variables.Perm.GetBool(LegendCardVisualEnabledVar, false);
+
+		public bool IsLegendCardVisualActive()
+			=> this.IsLegendCardVisualEnabled() && this.HasAvailableLegendCardVisual();
+
+		public void SetLegendCardVisualEnabled(bool enabled)
+		{
+			this.Character.Variables.Perm.SetBool(LegendCardVisualEnabledVar, enabled && this.HasAvailableLegendCardVisual());
+			this.RefreshLegendCardVisual();
+		}
+
+		public bool TryGetAvailableLegendCardVisualId(out int visualItemId)
+		{
+			if (this.TryGetAvailableLegendCardVisual(out var visual))
+			{
+				visualItemId = visual.ItemId;
+				return true;
+			}
+
+			visualItemId = 0;
+			return false;
+		}
+
+		private bool HasAvailableLegendCardVisual()
+			=> this.TryGetAvailableLegendCardVisual(out _);
+
+		private bool TryGetAvailableLegendCardVisual(out LegendCardVisualEffect visual)
+		{
+			lock (_syncLock)
+			{
+				foreach (var card in _cards.Values)
+				{
+					if (card != null && LegendCardVisualEffects.TryGetValue(card.Id, out visual))
+						return true;
+				}
+			}
+
+			visual = default;
+			return false;
+		}
+
+		private bool TryGetActiveLegendCardVisualId(EquipSlot slot, out int visualItemId)
+		{
+			visualItemId = 0;
+
+			if (!this.IsLegendCardVisualEnabled())
+				return false;
+
+			if (!this.TryGetAvailableLegendCardVisual(slot, out var visual))
+				return false;
+
+			lock (_syncLock)
+			{
+				if (_equip.TryGetValue(slot, out var equippedItem) && equippedItem is not DummyEquipItem)
+					return false;
+			}
+
+			visualItemId = visual.ItemId;
+			return true;
+		}
+
+		private bool TryGetEquippedRealItem(EquipSlot slot, out Item item)
+		{
+			lock (_syncLock)
+			{
+				if (_equip.TryGetValue(slot, out item) && item is not DummyEquipItem)
+					return true;
+			}
+
+			item = null;
+			return false;
+		}
+
+		private bool TryGetAvailableLegendCardVisual(EquipSlot slot, out LegendCardVisualEffect visual)
+		{
+			lock (_syncLock)
+			{
+				foreach (var card in _cards.Values)
+				{
+					if (card != null && LegendCardVisualEffects.TryGetValue(card.Id, out visual) && visual.Slot == slot)
+						return true;
+				}
+			}
+
+			visual = default;
+			return false;
+		}
+
+		public void RefreshLegendCardVisual()
+		{
+			Send.ZC_UPDATED_PCAPPEARANCE(this.Character);
+
+			foreach (var slot in LegendCardVisualEffects.Values.Select(a => a.Slot).Distinct())
+			{
+				var equippedItem = this.GetEquip(slot);
+				var visualItemId = this.TryGetActiveLegendCardVisualId(slot, out var activeVisualItemId)
+					? activeVisualItemId
+					: equippedItem is DummyEquipItem ? 0 : equippedItem.Id;
+
+				Send.ZC_NORMAL.UpdateCharacterLook(this.Character, visualItemId, slot);
+			}
+
+			this.RefreshLegendCardVisualBuffs();
+		}
+
+		private void RefreshLegendCardVisualBuffs()
+		{
+			foreach (var effect in LegendCardVisualEffects.Values.Where(a => !string.IsNullOrEmpty(a.BuffClassName)).Distinct())
+			{
+				if (!ZoneServer.Instance.Data.BuffDb.TryFind(effect.BuffClassName, out var buffData))
+					continue;
+
+				if (this.TryGetEquippedRealItem(effect.Slot, out var equippedItem) && equippedItem.Data.Script?.StrArg == effect.BuffClassName)
+				{
+					if (!this.Character.Buffs.Has(buffData.Id))
+						this.Character.StartBuff(buffData.Id, TimeSpan.Zero);
+					continue;
+				}
+
+				if (this.TryGetActiveLegendCardVisualId(effect.Slot, out var activeVisualItemId) && activeVisualItemId == effect.ItemId)
+				{
+					if (!this.Character.Buffs.Has(buffData.Id))
+						this.Character.StartBuff(buffData.Id, TimeSpan.Zero);
+				}
+				else
+					this.Character.Buffs.Remove(buffData.Id);
 			}
 		}
 
@@ -852,6 +1011,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			Send.ZC_UPDATED_PCAPPEARANCE(this.Character);
 
 			this.ProcessCardScript(item);
+			this.RefreshLegendCardVisual();
 
 			this.Equipped?.Invoke(this.Character, item);
 
@@ -883,6 +1043,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			Zone.Items.Effects.ItemHookRegistry.Instance.UnregisterItem(this.Character, item.ObjectId);
 			Zone.Items.Effects.CardMetadataRegistry.Instance.Remove(item.ObjectId);
+			this.RefreshLegendCardVisual();
 
 			Send.ZC_EQUIP_CARD_INFO(this.Character);
 			Send.ZC_UPDATED_PCAPPEARANCE(this.Character);
@@ -1109,6 +1270,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (briquettingIndex > 0)
 				Send.ZC_NORMAL.UpdateCharacterLook(this.Character, briquettingIndex, slot);
 
+			if (LegendCardVisualEffects.Values.Any(a => a.Slot == slot))
+				this.RefreshLegendCardVisual();
+
 			if (this.Character.IsOutOfBody())
 				Send.ZC_NORMAL.SetActorColor(this.Character, 255, 200, 100, 150, 0.01f);
 
@@ -1176,6 +1340,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (briquettingIndex > 0)
 				Send.ZC_NORMAL.UpdateCharacterLook(this.Character, 0, slot);
 
+			if (LegendCardVisualEffects.Values.Any(a => a.Slot == slot))
+				this.RefreshLegendCardVisual();
+
 			if (this.Character.IsOutOfBody())
 				Send.ZC_NORMAL.SetActorColor(this.Character, 255, 200, 100, 150, 0.01f);
 
@@ -1201,6 +1368,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				}
 				scriptFunc(this.Character, item, slot);
 			}
+
+			if (LegendCardVisualEffects.Values.Any(a => a.Slot == slot))
+				this.RefreshLegendCardVisual();
 
 			if (item.HasSockets)
 			{
