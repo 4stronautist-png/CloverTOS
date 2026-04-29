@@ -664,9 +664,6 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return false;
 
 			var anythingChanged = false;
-			var questIdsPresentBeforeDialog = this.GetList()
-				.Select(quest => quest.Data.Id)
-				.ToHashSet();
 
 			for (var pass = 0; pass < 20; pass++)
 			{
@@ -679,9 +676,6 @@ namespace Melia.Zone.World.Actors.Characters.Components
 						continue;
 
 					if (QuestScript.Exists(new QuestId("Laima.Quest", quest.Data.Id.Value)) || QuestScript.Exists(quest.Data.Id))
-						continue;
-
-					if (!questIdsPresentBeforeDialog.Contains(quest.Data.Id))
 						continue;
 
 					if (quest.InProgress &&
@@ -726,7 +720,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 				this.StartStaticQuest(startableQuest, TimeSpan.Zero);
 				anythingChanged = true;
-				break;
+				changedThisPass = true;
 			}
 
 			if (anythingChanged)
@@ -746,6 +740,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return;
 
 			var mapClassName = this.Character.Map.ClassName;
+			this.EnsureStaticQuestNpcActors(mapClassName);
+
 			var npcs = this.Character.Map.GetNpcs(a => a is Npc npc && !string.IsNullOrWhiteSpace(npc.DialogName));
 
 			foreach (var minMon in npcs)
@@ -795,6 +791,189 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			return false;
 		}
+
+		private void EnsureStaticQuestNpcActors(string mapClassName)
+		{
+			var existingDialogNames = this.Character.Map
+				.GetNpcs(a => a is Npc npc && !string.IsNullOrWhiteSpace(npc.DialogName))
+				.OfType<Npc>()
+				.Select(npc => npc.DialogName)
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var request in this.GetRelevantStaticNpcSpawnRequests(mapClassName))
+			{
+				if (existingDialogNames.Contains(request.DialogName))
+					continue;
+
+				var modelId = this.ResolveStaticQuestNpcMonsterId(request.DialogName);
+				var npc = Shortcuts.AddNpc(0, modelId, request.Name, mapClassName, request.X, request.Y, request.Z, 0, request.DialogName, state: (int)NpcState.Invisible, range: request.Range);
+				this.Character.SetMapNPCState(npc, NpcState.Normal);
+				existingDialogNames.Add(request.DialogName);
+
+				Log.Info("Static quest chain: spawned fallback NPC '{0}' for quest '{1}' on map '{2}' at {3:0.##}/{4:0.##}/{5:0.##}.", request.DialogName, request.QuestClassName, mapClassName, request.X, request.Y, request.Z);
+			}
+		}
+
+		private IEnumerable<StaticQuestNpcSpawnRequest> GetRelevantStaticNpcSpawnRequests(string mapClassName)
+		{
+			foreach (var questData in ZoneServer.Instance.Data.QuestDb.GetList().OrderBy(a => a.Id))
+			{
+				if (!this.StaticQuestReferencesMap(questData, mapClassName))
+					continue;
+
+				var questId = new QuestId(questData.Id);
+				if (this.TryGetById(questId, out var quest))
+				{
+					if (quest.Status == QuestStatus.Completed || quest.Status == QuestStatus.Abandoned)
+						continue;
+
+					if (quest.Status == QuestStatus.Success)
+					{
+						if (this.TryCreateStaticNpcSpawnRequest(questData, questData.EndNPC, mapClassName, out var endRequest))
+							yield return endRequest;
+						continue;
+					}
+
+					if (quest.InProgress)
+					{
+						if (this.TryCreateStaticNpcSpawnRequest(questData, questData.ProgNPC, mapClassName, out var progressRequest))
+							yield return progressRequest;
+						if (this.TryCreateStaticNpcSpawnRequest(questData, questData.EndNPC, mapClassName, out var endRequest))
+							yield return endRequest;
+						continue;
+					}
+				}
+
+				if (string.Equals(questData.QuestStartMode, "NPCDIALOG", StringComparison.OrdinalIgnoreCase) &&
+					string.Equals(questData.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase) &&
+					!this.Has(questId) &&
+					this.MeetsStaticPrerequisites(questData) &&
+					this.TryCreateStaticNpcSpawnRequest(questData, questData.StartNPC, mapClassName, out var startRequest))
+				{
+					yield return startRequest;
+				}
+			}
+		}
+
+		private bool TryCreateStaticNpcSpawnRequest(QuestStaticData questData, string dialogName, string mapClassName, out StaticQuestNpcSpawnRequest request)
+		{
+			request = default;
+
+			if (string.IsNullOrWhiteSpace(dialogName))
+				return false;
+
+			if (!this.StaticQuestNpcBelongsToMap(questData, dialogName, mapClassName))
+				return false;
+
+			if (!this.TryResolveStaticNpcPosition(questData, dialogName, mapClassName, out var x, out var y, out var z, out var range))
+			{
+				x = this.Character.Position.X;
+				y = this.Character.Position.Y;
+				z = this.Character.Position.Z;
+				range = 100;
+			}
+
+			request = new StaticQuestNpcSpawnRequest(dialogName, questData.ClassName, dialogName, x, y, z, range);
+			return true;
+		}
+
+		private bool StaticQuestNpcBelongsToMap(QuestStaticData questData, string dialogName, string mapClassName)
+		{
+			return this.StaticQuestNpcRoleBelongsToMap(questData.StartNPC, questData.StartMap, questData.StartLocation, dialogName, mapClassName) ||
+				this.StaticQuestNpcRoleBelongsToMap(questData.ProgNPC, questData.ProgMap, questData.ProgLocation, dialogName, mapClassName) ||
+				this.StaticQuestNpcRoleBelongsToMap(questData.EndNPC, questData.EndMap, questData.EndLocation, dialogName, mapClassName);
+		}
+
+		private bool StaticQuestNpcRoleBelongsToMap(string roleNpc, string roleMap, string roleLocation, string dialogName, string mapClassName)
+		{
+			if (!this.StaticNpcDialogMatches(roleNpc, dialogName))
+				return false;
+
+			return this.StaticQuestMapMatches(roleMap, mapClassName) ||
+				this.StaticQuestLocationReferencesMap(roleLocation, mapClassName);
+		}
+
+		private bool TryResolveStaticNpcPosition(QuestStaticData questData, string dialogName, string mapClassName, out double x, out double y, out double z, out double range)
+		{
+			if (this.TryResolveStaticNpcPositionFromLocation(questData.StartLocation, dialogName, mapClassName, out x, out y, out z, out range))
+				return true;
+			if (this.TryResolveStaticNpcPositionFromLocation(questData.ProgLocation, dialogName, mapClassName, out x, out y, out z, out range))
+				return true;
+			if (this.TryResolveStaticNpcPositionFromLocation(questData.EndLocation, dialogName, mapClassName, out x, out y, out z, out range))
+				return true;
+
+			x = 0;
+			y = 0;
+			z = 0;
+			range = 100;
+			return false;
+		}
+
+		private bool TryResolveStaticNpcPositionFromLocation(string location, string dialogName, string mapClassName, out double x, out double y, out double z, out double range)
+		{
+			x = 0;
+			y = 0;
+			z = 0;
+			range = 100;
+
+			if (string.IsNullOrWhiteSpace(location))
+				return false;
+
+			var parts = location.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			for (var i = 0; i < parts.Length; i++)
+			{
+				if (!string.Equals(parts[i], mapClassName, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				if (i + 4 < parts.Length &&
+					double.TryParse(parts[i + 1], out x) &&
+					double.TryParse(parts[i + 2], out y) &&
+					double.TryParse(parts[i + 3], out z))
+				{
+					double.TryParse(parts[i + 4], out range);
+					if (range <= 0)
+						range = 100;
+					return true;
+				}
+
+				if (i + 2 < parts.Length && this.StaticNpcDialogMatches(parts[i + 1], dialogName))
+				{
+					double.TryParse(parts[i + 2], out range);
+					if (range <= 0)
+						range = 100;
+					return false;
+				}
+			}
+
+			return false;
+		}
+
+		private int ResolveStaticQuestNpcMonsterId(string dialogName)
+		{
+			if (string.IsNullOrWhiteSpace(dialogName))
+				return 20117;
+
+			if (dialogName.Contains("BOX", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("CHEST", StringComparison.OrdinalIgnoreCase))
+				return 147392;
+
+			if (dialogName.Contains("BOOK", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("MAIL", StringComparison.OrdinalIgnoreCase))
+				return 155005;
+
+			if (dialogName.Contains("STONE", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("ROCK", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("CRYSTAL", StringComparison.OrdinalIgnoreCase))
+				return 12080;
+
+			if (dialogName.Contains("TRIGGER", StringComparison.OrdinalIgnoreCase) ||
+				dialogName.Contains("HIDDEN", StringComparison.OrdinalIgnoreCase))
+				return 20041;
+
+			return 20117;
+		}
+
+		private readonly record struct StaticQuestNpcSpawnRequest(string DialogName, string QuestClassName, string Name, double X, double Y, double Z, double Range);
 
 		private bool StaticQuestReferencesMap(QuestStaticData questData, string mapClassName)
 		{
