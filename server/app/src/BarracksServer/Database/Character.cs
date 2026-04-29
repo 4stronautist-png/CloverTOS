@@ -14,6 +14,31 @@ namespace Melia.Barracks.Database
 	/// </summary>
 	public class Character : IBarrackPc
 	{
+		private const string LegendCardVisualEnabledVar = "Clover.LegendCardVisual.Enabled";
+		private readonly struct LegendCardVisualEffect
+		{
+			public LegendCardVisualEffect(int itemId, EquipSlot slot)
+			{
+				this.ItemId = itemId;
+				this.Slot = slot;
+			}
+
+			public int ItemId { get; }
+			public EquipSlot Slot { get; }
+		}
+
+		private static readonly Dictionary<int, LegendCardVisualEffect> LegendCardVisualEffects = new()
+		{
+			[644914] = new(900023, EquipSlot.Doll),
+			[644931] = new(637025, EquipSlot.Wing),
+			[644934] = new(900018, EquipSlot.Doll),
+			[644938] = new(11105010, EquipSlot.Wing),
+			[644940] = new(11105013, EquipSlot.Wing),
+			[644944] = new(10300071, EquipSlot.HairAccessory),
+			[644946] = new(11106015, EquipSlot.EffectCostume),
+			[644947] = new(11106015, EquipSlot.EffectCostume),
+		};
+
 		/// <summary>
 		/// Gets or sets the character's unique database id.
 		/// </summary>
@@ -123,6 +148,11 @@ namespace Melia.Barracks.Database
 		/// Returns a list of equipped items.
 		/// </summary>
 		public EquipItem[] Equipment { get; private set; }
+
+		/// <summary>
+		/// Returns ids of cards equipped by the character.
+		/// </summary>
+		public List<int> EquippedCardIds { get; } = new();
 
 		/// <summary>
 		/// Returns a list of the character's jobs.
@@ -300,9 +330,35 @@ namespace Melia.Barracks.Database
 		{
 			return this.Equipment.Select(a =>
 			{
+				if (this.TryGetActiveLegendCardVisualId(a.Slot, out var legendVisualId))
+					return legendVisualId;
+
 				var briquettingIndex = (int)a.Properties.GetFloat(PropertyName.BriquettingIndex);
 				return briquettingIndex > 0 ? briquettingIndex : a.Id;
 			}).ToArray();
+		}
+
+		private bool TryGetActiveLegendCardVisualId(EquipSlot slot, out int visualItemId)
+		{
+			visualItemId = 0;
+
+			if (!this.Variables.Perm.GetBool(LegendCardVisualEnabledVar, false))
+				return false;
+
+			var equippedItem = this.Equipment[(int)slot];
+			if (equippedItem.Id != InventoryDefaults.EquipItems[(int)slot])
+				return false;
+
+			foreach (var cardId in this.EquippedCardIds)
+			{
+				if (LegendCardVisualEffects.TryGetValue(cardId, out var visual) && visual.Slot == slot)
+				{
+					visualItemId = visual.ItemId;
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		/// <summary>

@@ -394,6 +394,7 @@ namespace Melia.Zone.Network
 				Send.ZC_EQUIP_CARD_INFO(character);
 				Send.ZC_EQUIP_GEM_INFO(character);
 				Send.ZC_NORMAL.HeadgearVisibilityUpdate(character);
+				character.Inventory.RefreshLegendCardVisual();
 
 				// Broadcast briquetting (weapon appearance)
 				foreach (var equipPair in character.Inventory.GetEquip())

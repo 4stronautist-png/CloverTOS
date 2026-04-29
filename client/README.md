@@ -4,8 +4,7 @@ Este pacote nao inclui os 50 GB do jogo. Ele reutiliza a instalacao oficial do T
 
 ## Requisitos
 
-- Tree of Savior instalado pela Steam.
-- PowerShell no Windows.
+- Tree of Savior instalado pela Steam e aberto pelo menos 1x para instalar as dependências.
 - Espaco livre suficiente para uma copia local do jogo.
 - Internet durante a instalacao, caso faltem DirectX legado ou Visual C++ Redistributable.
 

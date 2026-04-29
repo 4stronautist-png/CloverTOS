@@ -449,7 +449,16 @@ namespace Melia.Barracks.Database
 								var itemId = reader.GetInt32("itemId");
 								var equipSlot = reader.GetByte("equipSlot");
 
-								if (!BarracksServer.Instance.Data.ItemDb.Exists(itemId) || equipSlot >= InventoryDefaults.EquipSlotCount)
+								if (!BarracksServer.Instance.Data.ItemDb.Exists(itemId))
+									continue;
+
+								if (equipSlot >= 100 && equipSlot <= 115)
+								{
+									character.EquippedCardIds.Add(itemId);
+									continue;
+								}
+
+								if (equipSlot >= InventoryDefaults.EquipSlotCount)
 									continue;
 
 								character.Equipment[equipSlot] = new EquipItem(itemId, (EquipSlot)equipSlot);
