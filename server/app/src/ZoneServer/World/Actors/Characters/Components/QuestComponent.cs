@@ -4,6 +4,7 @@ using System.Linq;
 using Melia.Shared.ObjectProperties;
 using Melia.Shared.Scripting;
 using Melia.Shared.Game.Const;
+using Melia.Shared.Game.Properties;
 using Melia.Zone.Events.Arguments;
 using Melia.Zone.Network;
 using Melia.Zone.Scripting;
@@ -18,6 +19,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using Yggdrasil.Logging;
 using QuestStaticData = Melia.Shared.Data.Database.QuestStaticData;
+using SessionQuestData = Melia.Shared.Data.Database.QuestData;
 
 namespace Melia.Zone.World.Actors.Characters.Components
 {
@@ -1700,8 +1702,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					var questSessionObject = this.Character.SessionObjects.GetOrCreate(quest.SessionObjectStaticData.Id);
 					if (questSessionObject != null)
 					{
-						if (quest.SessionObjectStaticData.QuestData.InfoMaxCount != null)
-							questSessionObject.Properties.SetFloat(PropertyName.QuestInfoValue1, 0f);
+						this.ApplyStaticQuestSessionObjectProperties(quest, questSessionObject);
 						Send.ZC_SESSION_OBJ_ADD(this.Character, questSessionObject, quest.QuestStaticData.Id);
 					}
 					UpdateClient_UpdateQuest(quest);
@@ -1743,12 +1744,154 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				Send.ZC_OBJECT_PROPERTY(this.Character, main, quest.QuestStaticData.QuestProperty);
 			}
 
+			if (questDataFound && quest.SessionObjectStaticData != null)
+			{
+				var questSessionObject = this.Character.SessionObjects.GetOrCreate(quest.SessionObjectStaticData.Id);
+				foreach (var propertyName in this.ApplyStaticQuestSessionObjectProperties(quest, questSessionObject))
+					Send.ZC_OBJECT_PROPERTY(this.Character, questSessionObject, propertyName);
+			}
+
 			var lua = "Melia.Quests.Update(" + questTable.Serialize() + ")";
 			Send.ZC_EXEC_CLIENT_SCP(this.Character.Connection, lua);
 			this.SyncStaticQuestNpcStates();
 
 			//Log.Debug(lua);
 		}
+
+		private List<string> ApplyStaticQuestSessionObjectProperties(Quest quest, SessionObject sessionObject)
+		{
+			var changedProperties = new List<string>();
+			var questData = quest.SessionObjectStaticData?.QuestData;
+			if (questData == null)
+				return changedProperties;
+
+			this.SetQuestSessionStringList(sessionObject, "QuestInfoName", questData.InfoName, 10, changedProperties);
+			this.SetQuestSessionStringList(sessionObject, "QuestInfoViewType", questData.InfoViewType, 10, changedProperties);
+			this.SetQuestSessionNumberList(sessionObject, "QuestInfoMaxCount", questData.InfoMaxCount, 10, changedProperties);
+			this.SetQuestInfoValueDefaults(sessionObject, questData.InfoMaxCount?.Count ?? 0, changedProperties);
+
+			var mapPointGroups = this.GetQuestMapPointGroups(quest, questData);
+			var mapPointViews = this.GetQuestMapPointViews(mapPointGroups, questData);
+			this.SetQuestSessionStringList(sessionObject, "QuestMapPointGroup", mapPointGroups, 10, changedProperties);
+			this.SetQuestSessionNumberList(sessionObject, "QuestMapPointView", mapPointViews, 10, changedProperties);
+
+			this.SetQuestSessionStringList(sessionObject, "QuestMonNameGroup", questData.MonsterNameGroup, 10, changedProperties);
+			this.SetQuestSessionNumberList(sessionObject, "QuestMonView", questData.MonsterView, 10, changedProperties);
+			this.SetQuestSessionStringList(sessionObject, "QuestMonViewTerms", questData.MonsterViewTerms, 10, changedProperties);
+
+			return changedProperties;
+		}
+
+		private List<string> GetQuestMapPointGroups(Quest quest, SessionQuestData questData)
+		{
+			var result = questData.MapPointGroup != null
+				? questData.MapPointGroup.Where(group => !this.IsNone(group)).ToList()
+				: new List<string>();
+
+			if (result.Count != 0)
+				return result;
+
+			var questStaticData = quest.QuestStaticData;
+			if (questStaticData == null)
+				return result;
+
+			if (quest.Status == QuestStatus.Success)
+			{
+				this.AddQuestMapPointGroup(result, questStaticData.EndLocation, questStaticData.EndMap, questStaticData.EndNPC);
+				return result;
+			}
+
+			if (quest.InProgress)
+				this.AddQuestMapPointGroup(result, questStaticData.ProgLocation, questStaticData.ProgMap, questStaticData.ProgNPC);
+
+			return result;
+		}
+
+		private List<int> GetQuestMapPointViews(List<string> mapPointGroups, SessionQuestData questData)
+		{
+			var result = new List<int>();
+			for (var i = 0; i < mapPointGroups.Count; i++)
+			{
+				var view = questData.MapPointView != null && i < questData.MapPointView.Count
+					? questData.MapPointView[i]
+					: 1;
+				result.Add(view == 0 ? 0 : 1);
+			}
+			return result;
+		}
+
+		private void AddQuestMapPointGroup(List<string> result, string location, string mapName, string npcName)
+		{
+			if (!this.IsNone(location))
+			{
+				result.Add(location.Trim());
+				return;
+			}
+
+			if (!this.IsNone(mapName) && !this.IsNone(npcName))
+				result.Add($"{mapName.Trim()} {npcName.Trim()} 100");
+		}
+
+		private void SetQuestInfoValueDefaults(SessionObject sessionObject, int count, List<string> changedProperties)
+		{
+			for (var i = 1; i <= count && i <= 10; i++)
+			{
+				var propertyName = $"QuestInfoValue{i}";
+				if (!sessionObject.Properties.Has(propertyName))
+					this.SetQuestSessionNumber(sessionObject, propertyName, 0, changedProperties);
+			}
+		}
+
+		private void SetQuestSessionStringList(SessionObject sessionObject, string propertyPrefix, List<string> values, int maxCount, List<string> changedProperties)
+		{
+			for (var i = 1; i <= maxCount; i++)
+			{
+				var propertyName = $"{propertyPrefix}{i}";
+				var value = values != null && i <= values.Count && !this.IsNone(values[i - 1])
+					? values[i - 1]
+					: "None";
+
+				this.SetQuestSessionString(sessionObject, propertyName, value, changedProperties);
+			}
+		}
+
+		private void SetQuestSessionNumberList(SessionObject sessionObject, string propertyPrefix, List<int> values, int maxCount, List<string> changedProperties)
+		{
+			for (var i = 1; i <= maxCount; i++)
+			{
+				var propertyName = $"{propertyPrefix}{i}";
+				var value = values != null && i <= values.Count ? values[i - 1] : 0;
+				this.SetQuestSessionNumber(sessionObject, propertyName, value, changedProperties);
+			}
+		}
+
+		private void SetQuestSessionString(SessionObject sessionObject, string propertyName, string value, List<string> changedProperties)
+		{
+			if (!PropertyTable.Exists("SessionObject", propertyName))
+				return;
+
+			value ??= "None";
+			if (sessionObject.Properties.Has(propertyName) && sessionObject.Properties.GetString(propertyName) == value)
+				return;
+
+			sessionObject.Properties.SetString(propertyName, value);
+			changedProperties.Add(propertyName);
+		}
+
+		private void SetQuestSessionNumber(SessionObject sessionObject, string propertyName, float value, List<string> changedProperties)
+		{
+			if (!PropertyTable.Exists("SessionObject", propertyName))
+				return;
+
+			if (sessionObject.Properties.Has(propertyName) && Math.Abs(sessionObject.Properties.GetFloat(propertyName) - value) < 0.001f)
+				return;
+
+			sessionObject.Properties.SetFloat(propertyName, value);
+			changedProperties.Add(propertyName);
+		}
+
+		private bool IsNone(string value)
+			=> string.IsNullOrWhiteSpace(value) || value.Equals("None", StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>
 		/// Removes the quest from the client's quest log.
