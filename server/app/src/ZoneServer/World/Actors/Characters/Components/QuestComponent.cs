@@ -1388,6 +1388,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 			questScript?.OnStart(this.Character, quest);
 
+			this.EnsureStaticQuestLayerState(quest);
 
 			this.UpdateClient_AddQuest(quest);
 		}
@@ -1956,6 +1957,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			var lua = "Melia.Quests.Add(" + questTable.Serialize() + ")";
 			Send.ZC_EXEC_CLIENT_SCP(this.Character.Connection, lua);
+			this.NotifyNativeQuestTracking(quest, true);
 			this.SyncStaticQuestNpcStates();
 
 			//Log.Debug(lua);
@@ -1998,10 +2000,70 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			var lua = "Melia.Quests.Update(" + questTable.Serialize() + ")";
 			Send.ZC_EXEC_CLIENT_SCP(this.Character.Connection, lua);
+			this.NotifyNativeQuestTracking(quest, false);
 			this.SyncStaticQuestNpcStates();
 
 			//Log.Debug(lua);
 		}
+
+		private void NotifyNativeQuestTracking(Quest quest, bool isNewQuest)
+		{
+			if (quest?.QuestStaticData == null || this.Character.Connection == null)
+				return;
+
+			var questId = (int)quest.Data.Id.Value;
+
+			if (isNewQuest)
+				this.Character.AddonMessage("GET_NEW_QUEST", "None", questId);
+
+			this.Character.AddonMessage("S_OBJ_UPDATE", "None", questId);
+			this.Character.AddonMessage("QUEST_UPDATE", "None", questId);
+			this.Character.AddonMessage(AddonMessage.ON_QUEST_UPDATED, "None", questId);
+
+			var monsterTargets = this.GetActiveQuestMonsterTargets(quest).ToList();
+			var monsterRegistration = string.Join(" ", monsterTargets.Select(target =>
+				$"if ADD_QUEST_CHECK_MONSTER_CUSTOM_EXEC ~= nil then pcall(ADD_QUEST_CHECK_MONSTER_CUSTOM_EXEC, {questId}, '{this.EscapeLuaString(target)}'); end;"));
+
+			var lua =
+				monsterRegistration +
+				" local mm=ui.GetFrame('minimap'); if mm ~= nil and REQUEST_UPDATE_MINIMAP ~= nil then pcall(REQUEST_UPDATE_MINIMAP, mm); end;" +
+				" local mp=ui.GetFrame('map'); if mp ~= nil and mp:IsVisible()==1 and REQUEST_MAP_UPDATE ~= nil then pcall(REQUEST_MAP_UPDATE, mp); end;";
+
+			Send.ZC_EXEC_CLIENT_SCP(this.Character.Connection, lua);
+		}
+
+		private IEnumerable<string> GetActiveQuestMonsterTargets(Quest quest)
+		{
+			var questStaticData = quest?.QuestStaticData;
+			if (questStaticData?.Objectives == null || !quest.InProgress)
+				yield break;
+
+			foreach (var objectiveData in questStaticData.Objectives)
+			{
+				if (objectiveData == null || !quest.TryGetProgress(objectiveData.Ident, out var progress))
+					continue;
+
+				if (progress.Done || !progress.Unlocked)
+					continue;
+
+				var isKill = string.Equals(objectiveData.Type, "Kill", StringComparison.OrdinalIgnoreCase);
+				var isCollect = string.Equals(objectiveData.Type, "Collect", StringComparison.OrdinalIgnoreCase);
+				if (!isKill && !isCollect)
+					continue;
+
+				var target = isCollect && !this.IsNone(objectiveData.DropTarget)
+					? objectiveData.DropTarget
+					: objectiveData.Target;
+
+				if (this.IsNone(target) || string.Equals(target, "ALL", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				yield return target.Trim();
+			}
+		}
+
+		private string EscapeLuaString(string value)
+			=> (value ?? string.Empty).Replace("\\", "\\\\").Replace("'", "\\'");
 
 		private List<string> ApplyStaticQuestSessionObjectProperties(Quest quest, SessionObject sessionObject)
 		{
