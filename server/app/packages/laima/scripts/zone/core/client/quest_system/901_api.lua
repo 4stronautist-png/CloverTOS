@@ -18,6 +18,7 @@ Melia.Quests.Update = function(quest)
 		existingQuest.Status = quest.Status
 		existingQuest.Done = quest.Done
 		existingQuest.Objectives = quest.Objectives
+		existingQuest.TrackingPoints = quest.TrackingPoints
 		
 		M_QUESTS_UPDATE_LIST()
 		M_QUESTS_DETAILS_UPDATE(existingQuest)

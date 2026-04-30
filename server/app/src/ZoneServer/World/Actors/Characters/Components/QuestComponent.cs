@@ -2420,6 +2420,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			/// }
 
 			var objectivesTable = this.ObjectivesToTable(quest);
+			var trackingPointsTable = this.TrackingPointsToTable(quest);
 
 			var rewardsTable = new LuaTable();
 			foreach (var reward in quest.Data.Rewards)
@@ -2474,6 +2475,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			questTable.Insert("Cancelable", quest.Data.Cancelable);
 			questTable.Insert("Tracked", quest.Tracked);
 			questTable.Insert("Objectives", objectivesTable);
+			questTable.Insert("TrackingPoints", trackingPointsTable);
 			questTable.Insert("Rewards", rewardsTable);
 
 			// Add quest giver information if available
@@ -2485,6 +2487,29 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				questTable.Insert("QuestGiverLocation", questGiverLocationName);
 
 			return questTable;
+		}
+
+		private LuaTable TrackingPointsToTable(Quest quest)
+		{
+			var result = new LuaTable();
+			if (quest?.QuestStaticData == null)
+				return result;
+
+			var questData = quest.SessionObjectStaticData?.QuestData ?? new SessionQuestData();
+			var groups = this.GetQuestMapPointGroups(quest, questData);
+			var views = this.GetQuestMapPointViews(groups, questData);
+
+			for (var i = 0; i < groups.Count; i++)
+			{
+				if (i < views.Count && views[i] == 0)
+					continue;
+
+				var point = new LuaTable();
+				point.Insert("Group", groups[i]);
+				result.Insert(point);
+			}
+
+			return result;
 		}
 
 		/// <summary>
