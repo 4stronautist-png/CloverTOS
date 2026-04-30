@@ -5861,20 +5861,20 @@ function SSMIV_CLICK() ui.Chat('/memberinfovis toggle') end;
 function SSMIV_DRAW()
  local inv=ui.GetFrame('inventory');
  if inv==nil then return end;
- local b=inv:CreateOrGetControl('button','ssmiv_memberinfo_switch',386,341,88,24);
+ local b=inv:CreateOrGetControl('picture','ssmiv_memberinfo_switch',386,341,88,24);
  AUTO_CAST(b);
  if inv:IsVisible()==0 then b:ShowWindow(0); return end;
  b:ShowWindow(1);
+ b:SetEnableStretch(1);
+ b:EnableHitTest(1);
  b:SetEventScript(ui.LBUTTONUP,'SSMIV_CLICK');
  b:SetGravity(ui.LEFT,ui.TOP);
  b:SetOffset(386,341);
  if SSMIV.e==true then
-  b:SetSkinName('test_gray_button');
-  b:SetText('{#FFFFFF}{s14}          ON{/}');
+  b:SetImage('test_com_ability_on');
   if b.SetTextTooltip~=nil then b:SetTextTooltip('{@st59}Desabilitar Memberinfo{/}') end;
  else
-  b:SetSkinName('test_red_button');
-  b:SetText('{#FFFFFF}{s14}         OFF{/}');
+  b:SetImage('test_com_ability_off');
   if b.SetTextTooltip~=nil then b:SetTextTooltip('{@st59}Habilitar Memberinfo{/}') end;
  end;
  end;
