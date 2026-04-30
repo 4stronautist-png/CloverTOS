@@ -1263,4 +1263,46 @@ public class CombatCalculationsScript : GeneralScript
 			Log.Debug($"Resistance Duration applied to {initialValue} * {resistanceMultiplier} = {finalValue}");
 		return Math.Max(0, finalValue);
 	}
+	
+		
+	/// <summary>
+	/// Determines the result of the skill being used on the target,
+	/// returning the damage that should be dealt and information
+	/// about the hit, such as whether it was a crit.
+	/// </summary>
+	/// <param name="attacker"></param>
+	/// <param name="target"></param>
+	/// <param name="skill"></param>
+	/// <returns></returns>
+	[ScriptableFunction]
+	public SkillHitResult SCR_NakSkillHit(ICombatEntity attacker, ICombatEntity target, Skill skill, SkillModifier modifier)
+	{
+		var SCR_CalculateDamage = ScriptableFunctions.Combat.Get("SCR_CalculateDamage");
+
+		if (attacker is { Components: not null }
+		    && attacker.IsBuffActiveByKeyword(BuffTag.Cloaking))
+			attacker.StopBuffByTag(BuffTag.Cloaking);
+
+		var result = new SkillHitResult();
+		
+		result.Damage = SCR_CalculateDamage(attacker, target, skill, modifier, result);
+		if (attacker.TryGetBuff(BuffId.MuayThai_Buff, out var buff))
+		{
+			var level = Math.Max(1, (int)buff.NumArg1);
+			float ratio = 12 + level * 2;
+			
+			if (attacker.IsBuffActive(BuffId.MuayThai_Buff) &&
+			    attacker.TryGetActiveAbility(AbilityId.NakMuay12, out _))
+			{
+				var count = 0;
+				if (attacker.TryGetSkill(SkillId.NakMuay_KhaoLoi, out _)) count += 1;
+				if (attacker.TryGetSkill(SkillId.NakMuay_SokChiang, out _)) count += 1;
+				if (attacker.TryGetSkill(SkillId.NakMuay_TeKha, out _)) count += 1;
+				ratio = (float)(10 + level * count * 0.35);
+			}
+			result.Damage *= (ratio / 100);
+		}
+		
+		return result;
+	}
 }
