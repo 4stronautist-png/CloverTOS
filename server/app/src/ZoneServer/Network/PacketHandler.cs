@@ -559,6 +559,7 @@ namespace Melia.Zone.Network
 
 			character.IsWarping = false;
 			character.OpenEyes();
+			Send.ZC_MEMBERINFO_VISIBILITY_UI(character);
 
 			ZoneServer.Instance.ServerEvents.PlayerReady.Raise(new PlayerEventArgs(character));
 		}
@@ -4979,7 +4980,18 @@ namespace Melia.Zone.Network
 			// information from the relation server, as there's a request
 			// op for it. This is not sent currently though.
 
-			Send.ZC_PROPERTY_COMPARE(conn, targetCharacter, openWindow, like);
+			var showEquipment = character.Connection?.Account?.Authority >= 99 || targetCharacter.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			if (!showEquipment)
+			{
+				var language = conn.SelectedLanguage ?? "";
+				var message = language.Equals("English", StringComparison.OrdinalIgnoreCase)
+					? "This character has not enabled memberinfo."
+					: "Este personagem não habilitou o memberinfo.";
+				character.MsgBox(message);
+				return;
+			}
+
+			Send.ZC_PROPERTY_COMPARE(conn, targetCharacter, openWindow, like, showEquipment);
 			if (like)
 			{
 				//TODO Send poses and rotate?

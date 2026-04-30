@@ -72,6 +72,7 @@ namespace Melia.Zone.Commands
 			this.Add("mic", "<message>", "", this.HandleMic);
 			this.Add("hairgacha", "<type>", "", this.HandleHairGacha);
 			this.Add("memberinfo", "<team name>", "Displays another character's public information.", this.HandleMemberInfo);
+			this.Add("memberinfovis", "<on|off|toggle|status>", "Toggles whether other players can view your member info.", this.HandleMemberInfoVisibility);
 
 			// Client Party Commands
 			this.Add("memberinfoForAct", "<team name>", "", this.HandleMemberInfoForAct);
@@ -2953,10 +2954,68 @@ namespace Melia.Zone.Commands
 				return CommandResult.Okay;
 			}
 
-			Send.ZC_PROPERTY_COMPARE(sender.Connection, character, !quiet, false);
+			var showEquipment = sender.Connection?.Account?.Authority >= 99 || character.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			if (!showEquipment)
+			{
+				this.SendMemberInfoDisabledMessage(sender);
+				return CommandResult.Okay;
+			}
+
+			Send.ZC_PROPERTY_COMPARE(sender.Connection, character, !quiet, false, showEquipment);
 			this.SendMemberInfoSupplement(sender, character);
 
 			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleMemberInfoVisibility(Character sender, Character target, string message, string commandName, Arguments args)
+		{
+			var enabled = sender.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			var action = args.Count > 0 ? args.Get(0).ToLowerInvariant() : "status";
+			var shouldSave = false;
+
+			switch (action)
+			{
+				case "on":
+					shouldSave = !enabled;
+					enabled = true;
+					break;
+				case "off":
+					shouldSave = enabled;
+					enabled = false;
+					break;
+				case "toggle":
+					enabled = !enabled;
+					shouldSave = true;
+					break;
+				case "status":
+					break;
+				default:
+					return CommandResult.InvalidArgument;
+			}
+
+			if (shouldSave)
+			{
+				sender.Variables.Perm.SetBool("SoulSociety.MemberInfo.ShowEquipment", enabled);
+				ZoneServer.Instance.Database.SavePlayerData(sender, sender.Connection?.Account);
+				sender.MsgBox(enabled ? "Memberinfo habilitado." : "Memberinfo desabilitado.");
+			}
+			else
+			{
+				sender.MsgBox(enabled ? "Memberinfo esta habilitado." : "Memberinfo esta desabilitado.");
+			}
+
+			Send.ZC_MEMBERINFO_VISIBILITY_UI(sender);
+			return CommandResult.Okay;
+		}
+
+		private void SendMemberInfoDisabledMessage(Character sender)
+		{
+			var language = sender.Connection?.SelectedLanguage ?? "";
+			var message = language.Equals("English", StringComparison.OrdinalIgnoreCase)
+				? "This character has not enabled memberinfo."
+				: "Este personagem não habilitou o memberinfo.";
+
+			sender.MsgBox(message);
 		}
 
 		private void SendMemberInfoSupplement(Character sender, Character target)
