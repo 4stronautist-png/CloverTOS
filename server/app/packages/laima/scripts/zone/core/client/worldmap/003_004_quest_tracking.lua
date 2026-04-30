@@ -73,6 +73,16 @@ local function M_QUEST_TRACKING_ACTIVE(quest)
 	return true
 end
 
+local function M_SET_QUEST_TRACKING_CIRCLE(picture)
+	tolua.cast(picture, "ui::CPicture")
+	picture:SetEnable(1)
+	picture:SetEnableStretch(1)
+	picture:SetAlpha(60)
+	picture:SetImage("questmap")
+	picture:ShowWindow(1)
+	picture:SetAngleLoop(-3)
+end
+
 local function M_DRAW_QUEST_TRACKING_POINT(parent, prefix, quest, idx, point, mapProp, mapWidth, mapHeight, offsetX, offsetY)
 	local mapPos = mapProp:WorldPosToMinimapPos(point.X, point.Z, mapWidth, mapHeight)
 	local range = point.Range or 100
@@ -81,8 +91,7 @@ local function M_DRAW_QUEST_TRACKING_POINT(parent, prefix, quest, idx, point, ma
 	local circleX = offsetX + mapPos.x - rangeX / 2
 	local circleY = offsetY + mapPos.y - rangeY / 2
 	local circle = parent:CreateOrGetControl("picture", prefix .. "_CIR_" .. quest.ClassId .. "_" .. idx, circleX, circleY, rangeX, rangeY)
-	tolua.cast(circle, "ui::CPicture")
-	SET_PICTURE_QUESTMAP(circle, 30)
+	M_SET_QUEST_TRACKING_CIRCLE(circle)
 
 	local iconSize = iconW or 24
 	local iconX = offsetX + mapPos.x - iconSize / 2
