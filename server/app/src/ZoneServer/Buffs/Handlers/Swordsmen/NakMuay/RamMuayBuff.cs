@@ -17,10 +17,7 @@ namespace Melia.Zone.Buffs.Handlers.Swordsmen.NakMuay
 		private const string AddedNakMuaySokChiangNormal = "RamMuay.AddedNakMuaySokChiangNormal";
 		private const string AddedNakMuayTeKhaNormal = "RamMuay.AddedNakMuayTeKhaNormal";
 		private const string AddedNakMuayTeTrongNormal = "RamMuay.AddedNakMuayTeTrongNormal";
-
-
-
-
+		
 		public override void OnActivate(Buff buff, ActivationType activationType)
 		{
 			var target = buff.Target;

@@ -1300,7 +1300,7 @@ public class CombatCalculationsScript : GeneralScript
 				if (attacker.TryGetSkill(SkillId.NakMuay_TeKha, out _)) count += 1;
 				ratio = (float)(10 + level * count * 0.35);
 			}
-			result.Damage *= (ratio / 100);
+			result.Damage += result.Damage * (ratio / 100);
 		}
 		
 		return result;
