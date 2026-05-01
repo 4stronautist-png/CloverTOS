@@ -20,6 +20,7 @@ SSGM_PANEL_DESCRIPTIONS = {
 	silver = "Adiciona ou remove silver.",
 	medals = "Adiciona ou remove medals/TP.",
 	clearinv = "Remove todos os itens do seu inventario.",
+	earring = "Cria um Fire Flame Earring com linhas fixas de skill.",
 	pos = "Copia a posicao atual para a area de transferencia.",
 	warp = "Teleporta para o mapa informado.",
 	jump = "Teleporta para coordenadas do mapa atual.",
@@ -80,6 +81,7 @@ SSGM_PANEL_COMMANDS = {
 	{ cat = "items", cmd = "silver", title = "/silver", fields = { "quantidade" } },
 	{ cat = "items", cmd = "medals", title = "/medals", fields = { "quantidade" } },
 	{ cat = "items", cmd = "clearinv", title = "/clearinv", fields = {}, tip = "Remove todos os itens do inventario." },
+	{ cat = "items", cmd = "earring", title = "/earring", fields = { "classeId", "linha1", "linha2", "linha3" } },
 
 	{ cat = "move", cmd = "pos", title = "/pos", fields = {}, tip = "Copia a posicao para a area de transferencia." },
 	{ cat = "move", cmd = "warp", title = "/warp", fields = { "id do mapa", "x", "y", "z" } },

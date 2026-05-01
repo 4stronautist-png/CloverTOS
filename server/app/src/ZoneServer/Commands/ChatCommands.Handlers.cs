@@ -134,6 +134,7 @@ namespace Melia.Zone.Commands
 			this.Add("jump", "<x> <y> <z> | <x> <z>", "Teleports to given location on the same map.", this.HandleJump);
 			this.Add("warp", "<map id> <x> <y> <z>", "Warps to another map.", this.HandleWarp);
 			this.Add("item", "<item id> [amount] [grade] [unidentified]", "Spawns item. 'true' as grade = random grade unidentified.", this.HandleItem);
+			this.Add("earring", "<job id> [line1] [line2] [line3]", "Creates a Fire Flame Earring with fixed skill line bonuses.", this.HandleEarring);
 			this.Add("identify", "", "Identifies all unidentified items in inventory.", this.HandleIdentify);
 			this.Add("appraise", "", "Identifies all unidentified items in inventory.", this.HandleIdentify);
 			this.Add("refine", "<slot> <amount>", "Refines equipment. Slot 0 = all equipped items.", this.HandleRefine);
@@ -1295,6 +1296,120 @@ namespace Melia.Zone.Commands
 				target.ServerMessage(Localization.Get("An item was added to your inventory by {0}."), sender.TeamName);
 
 			return CommandResult.Okay;
+		}
+
+		/// <summary>
+		/// Creates a Fire Flame Earring with fixed skill line bonuses.
+		/// </summary>
+		private CommandResult HandleEarring(Character sender, Character target, string message, string commandName, Arguments args)
+		{
+			const int RequiredAuthority = 99;
+			const int FireFlameEarringId = 11100001;
+
+			if (sender.Connection?.Account?.Authority < RequiredAuthority)
+			{
+				sender.ServerMessage(Localization.Get("You're not authorized to use this command."));
+				return CommandResult.Okay;
+			}
+
+			if (args.IndexedCount < 2)
+				return CommandResult.InvalidArgument;
+
+			if (!int.TryParse(args.Get(0), out var rawJobId))
+				return CommandResult.InvalidArgument;
+
+			var job = ZoneServer.Instance.Data.JobDb.Find((JobId)rawJobId);
+			if (!IsPlayableEarringJob(job))
+			{
+				sender.ServerMessage(Localization.Get("Invalid or unsupported class id."));
+				return CommandResult.Okay;
+			}
+
+			var lineLevels = new[] { 0, 0, 0 };
+			for (var i = 0; i < lineLevels.Length; i++)
+			{
+				if (args.IndexedCount <= i + 1)
+					continue;
+
+				if (!int.TryParse(args.Get(i + 1), out var level) || level < 0 || level > 5)
+				{
+					sender.ServerMessage(Localization.Get("Line values must be between 0 and 5."));
+					return CommandResult.Okay;
+				}
+
+				lineLevels[i] = level;
+			}
+
+			if (lineLevels.All(level => level == 0))
+			{
+				sender.ServerMessage(Localization.Get("At least one line must be greater than 0."));
+				return CommandResult.Okay;
+			}
+
+			var item = new Item(FireFlameEarringId, 1);
+			AddGmEarringBaseOptions(item);
+
+			var optionIndex = 1;
+			for (var line = 1; line <= 3; line++)
+			{
+				var level = lineLevels[line - 1];
+				if (level == 0)
+					continue;
+
+				item.Properties.SetString($"EarringSpecialOption_{optionIndex}", job.ClassName);
+				item.Properties.SetFloat($"EarringSpecialOptionLevelValue_{optionIndex}", level);
+				item.Properties.SetFloat($"EarringSpecialOptionRankValue_{optionIndex}", line);
+				optionIndex++;
+			}
+
+			target.Inventory.Add(item, InventoryAddType.New, reason: "GmEarringCommand");
+			sender.ServerMessage(Localization.Get("Created Fire Flame Earring for {0}: {1} lines [{2}/{3}/{4}]."), target.TeamName, job.Name, lineLevels[0], lineLevels[1], lineLevels[2]);
+			if (sender != target)
+				target.ServerMessage(Localization.Get("A custom Fire Flame Earring was added to your inventory by {0}."), sender.TeamName);
+
+			return CommandResult.Okay;
+		}
+
+		private static bool IsPlayableEarringJob(JobData job)
+		{
+			return job != null
+				&& job.Rank > 1
+				&& job.Id != JobId.Swordsman
+				&& job.Id != JobId.Wizard
+				&& job.Id != JobId.Archer
+				&& job.Id != JobId.Cleric
+				&& job.Id != JobId.Scout
+				&& job.Id != JobId.Centurion
+				&& job.Id != JobId.GM
+				&& job.JobClassId != JobClass.GM;
+		}
+
+		private static void AddGmEarringBaseOptions(Item item)
+		{
+			var random = RandomProvider.Get();
+			var statOptions = new[] { "STR", "DEX", "INT", "MNA", "CON" };
+			var optionCount = RollGmEarringStatCount(random);
+
+			foreach (var stat in statOptions.OrderBy(_ => random.Next()).Take(optionCount).Select((stat, index) => new { stat, index }))
+				SetGmEarringRandomOption(item, stat.index + 1, "STAT", stat.stat, random.Next(50, 151));
+		}
+
+		private static int RollGmEarringStatCount(Random random)
+		{
+			var roll = random.Next(100);
+			if (roll < 85)
+				return 1;
+			if (roll < 95)
+				return 2;
+			return 3;
+		}
+
+		private static void SetGmEarringRandomOption(Item item, int optionIndex, string group, string option, float value)
+		{
+			item.Properties.SetString($"RandomOptionGroup_{optionIndex}", group);
+			item.Properties.SetString($"RandomOption_{optionIndex}", option);
+			item.Properties.SetFloat($"RandomOptionValue_{optionIndex}", value);
+			item.Properties.Modify(option, value);
 		}
 
 		/// <summary>
@@ -4757,11 +4872,17 @@ namespace Melia.Zone.Commands
 			var prefix = ZoneServer.Instance.Conf.Commands.SelfPrefix;
 
 			sender.ServerMessage("SoulSociety GM Panel");
-			sender.ServerMessage("{0}aviso <mensagem> - aviso central para todos", prefix);
+			sender.ServerMessage("[ITENS]");
+			sender.ServerMessage("/earring <classeId> <linha1> <linha2> <linha3> - cria brinco Fire Flame customizado");
+			sender.ServerMessage("{0}item <itemId> [quantidade] [grade] - cria item", prefix);
 			sender.ServerMessage("{0}give <itemId> <quantidade> <player> - envia item para jogador online", prefix);
 			sender.ServerMessage("{0}removeitem <itemId> <quantidade> <player> - remove item de jogador online", prefix);
+			sender.ServerMessage("[AVISOS]");
+			sender.ServerMessage("{0}aviso <mensagem> - aviso central para todos", prefix);
+			sender.ServerMessage("[CORREIO]");
 			sender.ServerMessage("{0}mail <itemId[:qtd][,itemId:qtd]> <player> <titulo> <mensagem> - envia correio", prefix);
 			sender.ServerMessage("{0}mailall <itemId[:qtd][,itemId:qtd]> <titulo> <mensagem> <dias> - envia correio global", prefix);
+			sender.ServerMessage("[GERAL]");
 			sender.ServerMessage("{0}godmode <player> - alterna invulnerabilidade", prefix);
 			sender.ServerMessage("{0}serialkiller - alterna one-hit kill para voce", prefix);
 			sender.ServerMessage("{0}summon <player>, {0}kick <player|map>, {0}warp, {0}item, {0}buff - atalhos GM comuns", prefix);
