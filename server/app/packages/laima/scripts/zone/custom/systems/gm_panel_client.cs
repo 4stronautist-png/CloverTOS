@@ -49,6 +49,7 @@ public class CloverGmPanelClientScript : ClientScript
 		if (sender.Connection?.Account?.Authority < 50)
 			return CommandResult.Okay;
 
+		this.SendPanelLua(sender);
 		Send.ZC_EXEC_CLIENT_SCP(sender.Connection, "if SSGM_PANEL_OPEN ~= nil then SSGM_PANEL_OPEN() else ui.SysMsg('GM Panel Lua nao carregado. Relogue e tente novamente.') end");
 		return CommandResult.Okay;
 	}
