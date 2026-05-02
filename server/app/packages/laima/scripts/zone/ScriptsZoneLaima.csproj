@@ -15,6 +15,11 @@
 	</PropertyGroup>
 	<Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 	<ItemGroup>
+		<Compile Remove="obj\**\*.cs" />
+		<Compile Remove="bin\**\*.cs" />
+		<Compile Remove="..\..\..\..\user\tmp\build\scripts\zone_laima\**\*.cs" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\..\..\..\src\ZoneServer\ZoneServer.csproj" />
 		<ProjectReference Include="..\..\..\..\src\Shared\Shared.csproj" />
 	</ItemGroup>
