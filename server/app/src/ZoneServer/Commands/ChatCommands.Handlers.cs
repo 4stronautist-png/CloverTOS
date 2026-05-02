@@ -2954,7 +2954,7 @@ namespace Melia.Zone.Commands
 				return CommandResult.Okay;
 			}
 
-			var showEquipment = sender.Connection?.Account?.Authority >= 99 || character.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			var showEquipment = character.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
 			if (!showEquipment)
 			{
 				this.SendMemberInfoDisabledMessage(sender);
