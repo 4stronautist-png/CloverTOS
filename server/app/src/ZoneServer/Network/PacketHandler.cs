@@ -4980,7 +4980,7 @@ namespace Melia.Zone.Network
 			// information from the relation server, as there's a request
 			// op for it. This is not sent currently though.
 
-			var showEquipment = targetCharacter.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			var showEquipment = character.Connection?.Account?.Authority >= 99 || targetCharacter.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
 			if (!showEquipment)
 			{
 				var language = conn.SelectedLanguage ?? "";
