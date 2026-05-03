@@ -5,6 +5,7 @@
 //---------------------------------------------------------------------------
 
 using Melia.Zone.Scripting;
+using Melia.Zone;
 using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Items;
 
@@ -24,6 +25,7 @@ public class AchievementItemScripts : GeneralScript
 	public ItemUseResult SCR_USE_ITEM_ACHIEVE_WEEKLY_RANK_STRING(Character character, Item item, string achievementPointName, float numArg1, float numArg2)
 	{
 		character.Achievements.AddAchievementPoints(achievementPointName, 1);
+		ZoneServer.Instance.Database.SavePlayerData(character, character.Connection.Account);
 
 		return ItemUseResult.Okay;
 	}

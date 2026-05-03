@@ -318,7 +318,7 @@ namespace Melia.Zone.Network
 			packet.PutShort(0);
 			packet.PutShort(0);
 			packet.PutShort(0); // Seen values: 7
-			packet.PutInt(-1); // titleAchievementId
+			packet.PutInt(character.EquippedTitleId); // titleAchievementId
 			packet.PutByte(0);
 			packet.AddAppearancePc(character);
 			if (Versions.Client == KnownVersions.ClosedBeta1)
@@ -376,7 +376,7 @@ namespace Melia.Zone.Network
 			if (Versions.Client >= 364853)
 			{
 				packet.PutInt(character.EquippedTitleId); // Equippable Title Id
-				packet.PutInt(-1); // titleAchievementId
+				packet.PutInt(character.EquippedTitleId); // titleAchievementId
 			}
 			else
 			{
@@ -664,10 +664,10 @@ namespace Melia.Zone.Network
 		/// </summary>
 		/// <param name="character"></param>
 		/// <param name="skill"></param>
-		public static void ZC_SKILL_ADD(Character character, Skill skill)
+		public static void ZC_SKILL_ADD(Character character, Skill skill, bool shouldDisplayQuickBar = true)
 		{
 			// Passive skills and basic attack replacements aren't added to the quickbar
-			var addToQuickbar = skill.Data.ActivationType == SkillActivationType.ActiveSkill && !skill.Data.Tags.Has("NormalSkill");
+			var addToQuickbar = skill.Data.ActivationType == SkillActivationType.ActiveSkill && !skill.Data.Tags.Has("NormalSkill") &&  shouldDisplayQuickBar;
 
 			using var packet = Packet.Rent(Op.ZC_SKILL_ADD);
 
@@ -1264,7 +1264,7 @@ namespace Melia.Zone.Network
 			packet.PutInt(0);
 			packet.PutInt(character.Handle);
 			packet.PutInt(character.EquippedTitleId);
-			packet.PutInt(-1);
+			packet.PutInt(character.EquippedTitleId);
 
 			character.Map.Broadcast(packet);
 		}
@@ -6544,6 +6544,50 @@ if ok~=true then ui.SysMsg('SSMIV '..tostring(err)) end;");
 
 				character.Connection.Send(packet);
 			}
+		}
+
+		public static void ZC_MEMBERINFO_VISIBILITY_UI(Character character)
+		{
+			var enabled = character.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			var luaBool = enabled ? "true" : "false";
+			ZC_EXEC_CLIENT_SCP(character.Connection, @"
+local ok,err=pcall(function()
+ SSMIV=SSMIV or {e=false};
+ function SSMIV_CLICK() ui.Chat('/memberinfovis toggle') end;
+ function SSMIV_DRAW()
+  local inv=ui.GetFrame('inventory');
+  if inv==nil then return end;
+  local b=inv:CreateOrGetControl('picture','ssmiv_memberinfo_switch',386,341,88,24);
+  AUTO_CAST(b);
+  if inv:IsVisible()==0 then b:ShowWindow(0); return end;
+  b:ShowWindow(1);
+  b:SetEnableStretch(1);
+  b:EnableHitTest(1);
+  b:SetEventScript(ui.LBUTTONUP,'SSMIV_CLICK');
+  b:SetGravity(ui.LEFT,ui.TOP);
+  b:SetOffset(386,341);
+  if SSMIV.e==true then
+   b:SetImage('test_com_ability_on');
+   if b.SetTextTooltip~=nil then b:SetTextTooltip('{@st59}Desabilitar Memberinfo{/}') end;
+  else
+   b:SetImage('test_com_ability_off');
+   if b.SetTextTooltip~=nil then b:SetTextTooltip('{@st59}Habilitar Memberinfo{/}') end;
+  end;
+ end;
+ function SSMIV_TICK() SSMIV_DRAW(); return 1 end;
+ function SSMIV_START()
+  local h=ui.GetFrame('sysmenu');
+  if h==nil then h=ui.GetFrame('inventory') end;
+  if h==nil then return end;
+  local t=h:CreateOrGetControl('timer','ssmiv_memberinfo_timer',0,0,1,1);
+  AUTO_CAST(t);
+  t:SetUpdateScript('SSMIV_TICK');
+  t:Start(0.25);
+ end;
+ function SSMIV_SYNC(v) SSMIV.e=v==true; SSMIV_START(); SSMIV_DRAW(); end;
+ SSMIV_SYNC(" + luaBool + @");
+end);
+if ok~=true then ui.SysMsg('SSMIV '..tostring(err)) end;");
 		}
 
 		/// <summary>

@@ -1,4 +1,4 @@
-// Melia
+﻿// Melia
 // Database file
 // 
 // This database is partially reference only, as the client will show only
@@ -731,7 +731,7 @@
 { jobId: 5017, skillId: 51606, skillName: "Infinite Assault", unlockLevel: 31, maxLevel: 10 },
 { jobId: 5018, skillId: 51701, skillName: "Jaguar Stance", unlockLevel: 1, maxLevel: 10 },
 { jobId: 5018, skillId: 51702, skillName: "Wild Rush", unlockLevel: 1, maxLevel: 10 },
-{ jobId: 5018, skillId: 51703, skillName: "Hunter’s Target", unlockLevel: 1, maxLevel: 10 },
+{ jobId: 5018, skillId: 51703, skillName: "Hunterâ€™s Target", unlockLevel: 1, maxLevel: 10 },
 { jobId: 5018, skillId: 51704, skillName: "Wild Howling", unlockLevel: 16, maxLevel: 10 },
 { jobId: 5018, skillId: 51705, skillName: "Wild Thorn", unlockLevel: 16, maxLevel: 10 },
 { jobId: 5018, skillId: 51706, skillName: "Wild Claw", unlockLevel: 16, maxLevel: 10 },

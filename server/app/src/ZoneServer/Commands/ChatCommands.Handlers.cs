@@ -135,6 +135,8 @@ namespace Melia.Zone.Commands
 			this.Add("warp", "<map id> <x> <y> <z>", "Warps to another map.", this.HandleWarp);
 			this.Add("item", "<item id> [amount] [grade] [unidentified]", "Spawns item. 'true' as grade = random grade unidentified.", this.HandleItem);
 			this.Add("earring", "<job id> [line1] [line2] [line3]", "Creates a Fire Flame Earring with fixed skill line bonuses.", this.HandleEarring);
+			this.Add("effect", "<effect id> [sound id|sound name|none]", "Plays a visual effect by packet string id.", this.HandleEffect);
+			this.Add("sfx", "<sfx id>", "Plays a sound effect by packet string id.", this.HandleSfx);
 			this.Add("identify", "", "Identifies all unidentified items in inventory.", this.HandleIdentify);
 			this.Add("appraise", "", "Identifies all unidentified items in inventory.", this.HandleIdentify);
 			this.Add("refine", "<slot> <amount>", "Refines equipment. Slot 0 = all equipped items.", this.HandleRefine);
@@ -1410,6 +1412,99 @@ namespace Melia.Zone.Commands
 			item.Properties.SetString($"RandomOption_{optionIndex}", option);
 			item.Properties.SetFloat($"RandomOptionValue_{optionIndex}", value);
 			item.Properties.Modify(option, value);
+		}
+
+		/// <summary>
+		/// Plays a visual effect from packetstrings.txt by id, with an optional sound.
+		/// </summary>
+		private CommandResult HandleEffect(Character sender, Character target, string message, string command, Arguments args)
+		{
+			if (args.IndexedCount == 0)
+				return CommandResult.InvalidArgument;
+
+			if (!int.TryParse(args.Get(0), out var effectId) || effectId <= 0)
+				return CommandResult.InvalidArgument;
+
+			if (!ZoneServer.Instance.Data.PacketStringDb.TryFind(effectId, out var effectData))
+			{
+				sender.ServerMessage(Localization.Get("Effect id {0} not found."), effectId);
+				return CommandResult.Okay;
+			}
+
+			if (!IsVisualEffectPacketString(effectData.Name))
+			{
+				sender.ServerMessage(Localization.Get("Packet string id {0} is not listed as a visual effect: {1}"), effectId, effectData.Name);
+				return CommandResult.Okay;
+			}
+
+			var playSound = !effectData.Name.Contains("nosound", StringComparison.InvariantCultureIgnoreCase);
+			var soundName = effectData.Name;
+
+			if (args.IndexedCount >= 2)
+			{
+				var soundArg = args.Get(1);
+
+				if (soundArg.Equals("none", StringComparison.InvariantCultureIgnoreCase) ||
+					soundArg.Equals("nosound", StringComparison.InvariantCultureIgnoreCase) ||
+					soundArg.Equals("off", StringComparison.InvariantCultureIgnoreCase))
+				{
+					playSound = false;
+				}
+				else
+				{
+					PacketStringData soundData;
+					if (int.TryParse(soundArg, out var soundId))
+					{
+						if (!ZoneServer.Instance.Data.PacketStringDb.TryFind(soundId, out soundData))
+						{
+							sender.ServerMessage(Localization.Get("Sound id {0} not found."), soundId);
+							return CommandResult.Okay;
+						}
+					}
+					else if (!ZoneServer.Instance.Data.PacketStringDb.TryFind(soundArg, out soundData))
+					{
+						sender.ServerMessage(Localization.Get("Sound packet string not found: {0}"), soundArg);
+						return CommandResult.Okay;
+					}
+
+					soundName = soundData.Name;
+					playSound = true;
+				}
+			}
+
+			sender.PlayEffect(effectData.Name, 1f);
+			if (playSound)
+				sender.PlaySound(soundName);
+
+			if (playSound)
+				sender.ServerMessage(Localization.Get("Played effect {0}: {1} with sound {2}"), effectId, effectData.Name, soundName);
+			else
+				sender.ServerMessage(Localization.Get("Played effect {0}: {1} without sound"), effectId, effectData.Name);
+
+			return CommandResult.Okay;
+		}
+
+		/// <summary>
+		/// Plays a sound effect from packetstrings.txt by id.
+		/// </summary>
+		private CommandResult HandleSfx(Character sender, Character target, string message, string command, Arguments args)
+		{
+			if (args.IndexedCount == 0)
+				return CommandResult.InvalidArgument;
+
+			if (!int.TryParse(args.Get(0), out var sfxId) || sfxId <= 0)
+				return CommandResult.InvalidArgument;
+
+			if (!ZoneServer.Instance.Data.PacketStringDb.TryFind(sfxId, out var sfxData))
+			{
+				sender.ServerMessage(Localization.Get("SFX id {0} not found."), sfxId);
+				return CommandResult.Okay;
+			}
+
+			sender.PlaySound(sfxData.Name);
+			sender.ServerMessage(Localization.Get("Played SFX {0}: {1}"), sfxId, sfxData.Name);
+
+			return CommandResult.Okay;
 		}
 
 		/// <summary>
@@ -3070,14 +3165,14 @@ namespace Melia.Zone.Commands
 			}
 
 			var showEquipment = sender.Connection?.Account?.Authority >= 99 || character.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
-			if (!showEquipment)
-			{
-				this.SendMemberInfoDisabledMessage(sender);
-				return CommandResult.Okay;
-			}
+				if (!showEquipment)
+				{
+					this.SendMemberInfoDisabledMessage(sender);
+					return CommandResult.Okay;
+				}
 
-			Send.ZC_PROPERTY_COMPARE(sender.Connection, character, !quiet, false, showEquipment);
-			this.SendMemberInfoSupplement(sender, character);
+				Send.ZC_PROPERTY_COMPARE(sender.Connection, character, !quiet, false, showEquipment);
+				this.SendMemberInfoSupplement(sender, character);
 
 			return CommandResult.Okay;
 		}
@@ -3119,11 +3214,11 @@ namespace Melia.Zone.Commands
 				sender.MsgBox(enabled ? "Memberinfo esta habilitado." : "Memberinfo esta desabilitado.");
 			}
 
-			Send.ZC_MEMBERINFO_VISIBILITY_UI(sender);
-			return CommandResult.Okay;
-		}
+				Send.ZC_MEMBERINFO_VISIBILITY_UI(sender);
+				return CommandResult.Okay;
+			}
 
-		private void SendMemberInfoDisabledMessage(Character sender)
+			private void SendMemberInfoDisabledMessage(Character sender)
 		{
 			var language = sender.Connection?.SelectedLanguage ?? "";
 			var message = language.Equals("English", StringComparison.OrdinalIgnoreCase)
@@ -4700,6 +4795,20 @@ namespace Melia.Zone.Commands
 			mailMessage = null;
 			durationDays = 0;
 
+			if (args.Count == 2)
+			{
+				if (!int.TryParse(args.Get(0), out var itemId) || itemId <= 0)
+					return false;
+
+				if (!int.TryParse(args.Get(1), out durationDays) || durationDays <= 0)
+					return false;
+
+				items = new List<(int ItemId, int Amount)> { (itemId, 1) };
+				title = "Reward";
+				mailMessage = "Please claim your reward.";
+				return true;
+			}
+
 			if (args.Count < 5)
 				return false;
 
@@ -4751,6 +4860,31 @@ namespace Melia.Zone.Commands
 
 		private static bool IsInventoryEquipment(Item item)
 			=> item?.Data?.Type == ItemType.Equip;
+
+		private static bool IsVisualEffectPacketString(string name)
+		{
+			if (string.IsNullOrWhiteSpace(name))
+				return false;
+
+			var value = name.Trim().Trim('"');
+			var lower = value.ToLowerInvariant();
+
+			if (lower.Contains("sound") || lower.Contains("bgm") || lower.StartsWith("snd_") ||
+				lower.StartsWith("ui") || lower.Contains("anim") || lower.Contains("motion") ||
+				lower.StartsWith("run_") || lower.StartsWith("walk_") || lower.StartsWith("std_"))
+				return false;
+
+			if (lower.Contains("eff") || lower.Contains("effect") || lower.Contains("aura") ||
+				lower.Contains("explosion") || lower.Contains("projectile") || lower.Contains("shoot") ||
+				lower.Contains("slash") || lower.Contains("hit_") || lower.Contains("magiccircle") ||
+				lower.Contains("shockwave") || lower.Contains("portal") || lower.Contains("smoke") ||
+				lower.Contains("flash") || lower.Contains("cast") || lower.Contains("buff") ||
+				lower.Contains("debuff") || lower.Contains("pad") || lower.Contains("groundimpact") ||
+				lower.Contains("groundaura") || lower.Contains("bodyaura") || lower.Contains("shield"))
+				return true;
+
+			return lower.StartsWith("f_") || lower.StartsWith("i_") || lower.StartsWith("e_") || lower.StartsWith("skl_");
+		}
 
 		private static void UnlockSpeakCompletely(Character character)
 		{
@@ -4873,7 +5007,7 @@ namespace Melia.Zone.Commands
 
 			sender.ServerMessage("SoulSociety GM Panel");
 			sender.ServerMessage("[ITENS]");
-			sender.ServerMessage("/earring <classeId> <linha1> <linha2> <linha3> - cria brinco Fire Flame customizado");
+			sender.ServerMessage("{0}earring <classeId> <linha1> <linha2> <linha3> - cria brinco Fire Flame customizado", prefix);
 			sender.ServerMessage("{0}item <itemId> [quantidade] [grade] - cria item", prefix);
 			sender.ServerMessage("{0}give <itemId> <quantidade> <player> - envia item para jogador online", prefix);
 			sender.ServerMessage("{0}removeitem <itemId> <quantidade> <player> - remove item de jogador online", prefix);
@@ -5006,18 +5140,13 @@ namespace Melia.Zone.Commands
 			if (!this.TryValidateMailItems(sender, items))
 				return CommandResult.Okay;
 
-			var accountIds = ZoneServer.Instance.Database.GetRegisteredTeamAccountIds();
-			var sent = 0;
-			foreach (var accountId in accountIds)
-			{
-				ZoneServer.Instance.Database.SendItemMail(accountId, items, sender.TeamName, title, mailMessage, durationDays);
-				sent++;
-			}
+			var accountIds = ZoneServer.Instance.Database.GetAllAccountIds();
+			var sent = ZoneServer.Instance.Database.SendGlobalItemMail(accountIds, items, sender.TeamName, title, mailMessage, durationDays);
 
 			foreach (var onlinePlayer in ZoneServer.Instance.World.GetCharacters())
 				onlinePlayer.ServerMessage(Localization.Get("{0} sent {1} item stack(s) to everyone's Message Box."), sender.TeamName, items.Count);
 
-			sender.ServerMessage(Localization.Get("Sent {0} item stack(s) to {1} registered teams. Expires in {2} days."), items.Count, sent, durationDays);
+			sender.ServerMessage(Localization.Get("Sent {0} item stack(s) to {1} account(s). Expires in {2} days."), items.Count, sent, durationDays);
 			return CommandResult.Okay;
 		}
 

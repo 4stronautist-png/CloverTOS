@@ -325,6 +325,8 @@ namespace Melia.Zone.Network
 				//Send.ZC_ACHIEVE_POINT_LIST(character);
 				Send.ZC_SPLIT_ACHIEVE_POINT_LIST(character);
 				Send.ZC_SPLIT_ACHIEVE_SET(character);
+				if (character.EquippedTitleId != -1)
+					Send.ZC_ACHIEVE_EQUIP(character, character.EquippedTitleId);
 				Send.ZC_CHAT_MACRO_LIST(character);
 				Send.ZC_MAP_REVEAL_LIST(conn);
 				character.Quests.SyncStaticQuestNpcStates();
@@ -5867,10 +5869,17 @@ namespace Melia.Zone.Network
 
 			var character = conn.SelectedCharacter;
 
+			if (achievementId <= 0 && character.EquippedTitleId != -1)
+			{
+				Send.ZC_ACHIEVE_EQUIP(character, character.EquippedTitleId);
+				return;
+			}
+
 			// Validate and equip the title
 			if (character.EquipTitle(achievementId))
 			{
 				Send.ZC_ACHIEVE_EQUIP(character, achievementId);
+				ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 			}
 			else
 			{

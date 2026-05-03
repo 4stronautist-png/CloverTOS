@@ -432,7 +432,7 @@ public class SkillCalculationsScript : GeneralScript
 		if (skill.Data.SpeedRateAffectedByDex)
 		{
 			var dex = skill.Owner.Properties.GetFloat(PropertyName.DEX);
-			byDex = (float)dex / 500;
+			byDex = (float)Math.Sqrt(dex / 10000);
 		}
 
 		if (skill.Data.SpeedRateAffectedByBuff)

@@ -540,6 +540,8 @@ namespace Melia.Barracks.Database
 		/// <param name="account"></param>
 		public void LoadMailbox(Account account)
 		{
+			this.DeliverPendingGlobalMail(account.Id);
+
 			using (var conn = this.GetConnection())
 			using (var mc = new MySqlCommand("SELECT * FROM `mail` WHERE `accountId` = @accountId", conn))
 			{
@@ -663,6 +665,184 @@ namespace Melia.Barracks.Database
 			}
 		}
 
+		private void DeliverPendingGlobalMail(long accountId)
+		{
+			using (var conn = this.GetConnection())
+			{
+				this.EnsureGlobalMailTables(conn);
+
+				using (var trans = conn.BeginTransaction())
+				{
+					this.DeleteExpiredMail(conn, trans);
+
+					var globalMailIds = new List<long>();
+					using (var cmd = new MySqlCommand(@"
+						SELECT gm.`globalMailId`
+						FROM `global_mail` gm
+						LEFT JOIN `global_mail_deliveries` gmd
+							ON gmd.`globalMailId` = gm.`globalMailId` AND gmd.`accountId` = @accountId
+						WHERE gm.`expirationDate` > @now AND gmd.`globalMailId` IS NULL", conn, trans))
+					{
+						cmd.Parameters.AddWithValue("@accountId", accountId);
+						cmd.Parameters.AddWithValue("@now", DateTime.Now);
+
+						using (var reader = cmd.ExecuteReader())
+						{
+							while (reader.Read())
+								globalMailIds.Add(reader.GetInt64("globalMailId"));
+						}
+					}
+
+					foreach (var globalMailId in globalMailIds)
+					{
+						if (!this.TryInsertGlobalMailForAccount(conn, trans, globalMailId, accountId))
+							continue;
+
+						using (var deliveryCmd = new InsertCommand("INSERT INTO `global_mail_deliveries` {parameters}", conn, trans))
+						{
+							deliveryCmd.Set("globalMailId", globalMailId);
+							deliveryCmd.Set("accountId", accountId);
+							deliveryCmd.Set("deliveredDate", DateTime.Now);
+							deliveryCmd.Execute();
+						}
+					}
+
+					trans.Commit();
+				}
+			}
+		}
+
+		private bool TryInsertGlobalMailForAccount(MySqlConnection conn, MySqlTransaction trans, long globalMailId, long accountId)
+		{
+			string sender, subject, message;
+			DateTime startDate, expirationDate, createdDate;
+
+			using (var cmd = new MySqlCommand("SELECT * FROM `global_mail` WHERE `globalMailId` = @globalMailId AND `expirationDate` > @now", conn, trans))
+			{
+				cmd.Parameters.AddWithValue("@globalMailId", globalMailId);
+				cmd.Parameters.AddWithValue("@now", DateTime.Now);
+
+				using (var reader = cmd.ExecuteReader())
+				{
+					if (!reader.Read())
+						return false;
+
+					sender = reader.GetStringSafe("sender");
+					subject = reader.GetStringSafe("subject");
+					message = reader.GetStringSafe("message");
+					startDate = reader.GetDateTimeSafe("startDate");
+					expirationDate = reader.GetDateTimeSafe("expirationDate");
+					createdDate = reader.GetDateTimeSafe("createdDate");
+				}
+			}
+
+			var items = new List<(int ItemId, int Amount)>();
+			using (var cmd = new MySqlCommand("SELECT `itemId`, `amount` FROM `global_mail_items` WHERE `globalMailId` = @globalMailId", conn, trans))
+			{
+				cmd.Parameters.AddWithValue("@globalMailId", globalMailId);
+
+				using (var reader = cmd.ExecuteReader())
+				{
+					while (reader.Read())
+						items.Add((reader.GetInt32("itemId"), reader.GetInt32("amount")));
+				}
+			}
+
+			if (items.Count == 0)
+				return false;
+
+			using var mailCmd = new InsertCommand("INSERT INTO `mail` {parameters}", conn, trans);
+			mailCmd.Set("accountId", accountId);
+			mailCmd.Set("status", (byte)MailboxMessageState.Unread);
+			mailCmd.Set("sender", sender);
+			mailCmd.Set("subject", subject);
+			mailCmd.Set("message", message);
+			mailCmd.Set("startDate", startDate);
+			mailCmd.Set("expirationDate", expirationDate);
+			mailCmd.Set("createdDate", createdDate);
+			mailCmd.Execute();
+
+			var mailId = mailCmd.LastId;
+
+			foreach (var item in items)
+			{
+				if (!BarracksServer.Instance.Data.ItemDb.Exists(item.ItemId))
+					continue;
+
+				using var itemCmd = new InsertCommand("INSERT INTO `items` {parameters}", conn, trans);
+				itemCmd.Set("itemId", item.ItemId);
+				itemCmd.Set("amount", item.Amount);
+				itemCmd.Set("locked", 0);
+				itemCmd.Execute();
+
+				using var mailItemCmd = new InsertCommand("INSERT INTO `mail_items` {parameters}", conn, trans);
+				mailItemCmd.Set("mailId", mailId);
+				mailItemCmd.Set("itemId", itemCmd.LastId);
+				mailItemCmd.Set("id", item.ItemId);
+				mailItemCmd.Set("amount", item.Amount);
+				mailItemCmd.Set("status", 0);
+				mailItemCmd.Execute();
+			}
+
+			return true;
+		}
+
+		private void DeleteExpiredMail(MySqlConnection conn, MySqlTransaction trans)
+		{
+			using (var mailCmd = new MySqlCommand("DELETE FROM `mail` WHERE `expirationDate` <= @now", conn, trans))
+			{
+				mailCmd.Parameters.AddWithValue("@now", DateTime.Now);
+				mailCmd.ExecuteNonQuery();
+			}
+
+			using (var globalCmd = new MySqlCommand("DELETE FROM `global_mail` WHERE `expirationDate` <= @now", conn, trans))
+			{
+				globalCmd.Parameters.AddWithValue("@now", DateTime.Now);
+				globalCmd.ExecuteNonQuery();
+			}
+		}
+
+		private void EnsureGlobalMailTables(MySqlConnection conn)
+		{
+			using (var cmd = new MySqlCommand(@"
+				CREATE TABLE IF NOT EXISTS `global_mail` (
+					`globalMailId` bigint(20) NOT NULL AUTO_INCREMENT,
+					`sender` varchar(128) NOT NULL,
+					`subject` varchar(128) NOT NULL,
+					`message` varchar(2048) DEFAULT NULL,
+					`startDate` datetime DEFAULT '2016-04-01 00:00:00',
+					`expirationDate` datetime DEFAULT '2038-01-01 00:00:00',
+					`createdDate` datetime DEFAULT CURRENT_TIMESTAMP,
+					PRIMARY KEY (`globalMailId`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8", conn))
+			{
+				cmd.ExecuteNonQuery();
+			}
+
+			using (var cmd = new MySqlCommand(@"
+				CREATE TABLE IF NOT EXISTS `global_mail_items` (
+					`globalMailItemId` bigint(20) NOT NULL AUTO_INCREMENT,
+					`globalMailId` bigint(20) NOT NULL,
+					`itemId` int(11) NOT NULL,
+					`amount` int(11) NOT NULL,
+					PRIMARY KEY (`globalMailItemId`),
+					KEY `globalMailId` (`globalMailId`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8", conn))
+			{
+				cmd.ExecuteNonQuery();
+			}
+
+			using (var cmd = new MySqlCommand(@"
+				CREATE TABLE IF NOT EXISTS `global_mail_deliveries` (
+					`globalMailId` bigint(20) NOT NULL,
+					`accountId` bigint(20) NOT NULL,
+					`deliveredDate` datetime DEFAULT CURRENT_TIMESTAMP,
+					PRIMARY KEY (`globalMailId`, `accountId`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8", conn))
+			{
+				cmd.ExecuteNonQuery();
+			}
+		}
 
 		/// <summary>
 		/// Changes the name of a character on an account.
@@ -845,7 +1025,7 @@ namespace Melia.Barracks.Database
 			using (var conn = this.GetConnection())
 			using (var trans = conn.BeginTransaction())
 			{
-				using (var cmd = new InsertCommand("INSERT INTO `inventory` {parameters}", conn))
+				using (var cmd = new InsertCommand("INSERT INTO `inventory` {parameters}", conn, trans))
 				{
 					cmd.Set("characterId", character.DbId);
 					cmd.Set("itemId", itemId);
