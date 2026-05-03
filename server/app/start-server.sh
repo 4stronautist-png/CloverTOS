@@ -21,6 +21,7 @@ WINDOWS_CLIENT_ROOT="${WINDOWS_CLIENT_ROOT:-/mnt/c/CloverTOS-Local}"
 WINDOWS_CLIENT_XML="${WINDOWS_CLIENT_XML:-$WINDOWS_CLIENT_ROOT/release/client.xml}"
 WINDOWS_USER_XML="${WINDOWS_USER_XML:-$WINDOWS_CLIENT_ROOT/release/user.xml}"
 WINDOWS_START_BAT="${WINDOWS_START_BAT:-$WINDOWS_CLIENT_ROOT/release/Start-CloverTOS-Local.bat}"
+WINDOWS_CLIENT_PATCH_RELEASE="${WINDOWS_CLIENT_PATCH_RELEASE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)/client/patches/loading-screen/release}"
 DB_NAME="${DB_NAME:-clover_local}"
 DB_USER="${DB_USER:-melia}"
 DB_PASS="${DB_PASS:-melia123}"
@@ -103,11 +104,16 @@ ensure_windows_client_config() {
 </client>
 EOF
 
-cat > "$WINDOWS_START_BAT" <<'EOF'
+    if [ -d "$WINDOWS_CLIENT_PATCH_RELEASE" ]; then
+        cp -rf "$WINDOWS_CLIENT_PATCH_RELEASE"/. "$WINDOWS_CLIENT_ROOT/release/"
+    else
+        log_warning "Patch de loading screen nao encontrado em $WINDOWS_CLIENT_PATCH_RELEASE; criando launcher basico."
+        cat > "$WINDOWS_START_BAT" <<'EOF'
 @echo off
 cd /d "%~dp0"
 start "CloverTOS" "%~dp0Client_tos_x64.exe" -SERVICE GLOBAL
 EOF
+    fi
 
     if [ -f "$WINDOWS_USER_XML" ]; then
         rm -f "$WINDOWS_USER_XML"
