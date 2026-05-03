@@ -489,6 +489,9 @@ public static class EarringSkillLineEffects
 			if (!ZoneServer.Instance.Data.JobDb.TryFind(jobClassName, out var job))
 				continue;
 
+			if (!character.Jobs.Has(job.Id))
+				continue;
+
 			var line = (int)item.Properties.GetFloat($"EarringSpecialOptionRankValue_{optionIndex}", 0);
 			var levelBonus = (int)item.Properties.GetFloat($"EarringSpecialOptionLevelValue_{optionIndex}", 0);
 			if (line < 1 || line > 3 || levelBonus == 0)
@@ -496,7 +499,7 @@ public static class EarringSkillLineEffects
 
 			foreach (var skillTree in ZoneServer.Instance.Data.SkillTreeDb.Entries.Where(entry => entry.JobId == job.Id && GetSkillLine(entry.UnlockLevel) == line))
 			{
-				if (!character.Skills.TryGet(skillTree.SkillId, out var skill))
+				if (!TryGetOrCreateEarringSkill(character, skillTree.SkillId, out var skill))
 					continue;
 
 				var currentBonus = skill.Vars.GetFloat("EarringLevel_BM", 0);
@@ -511,7 +514,11 @@ public static class EarringSkillLineEffects
 				if (character.Connection != null)
 					Send.ZC_NORMAL.SkillProperties(character.Connection, 0, skill);
 
-				if (sign < 0 && skill.Level == 0 && skill.LevelByDB == 0)
+				if (sign < 0
+					&& skill.IsEquipSkill
+					&& skill.LevelByDB == 0
+					&& skill.Vars.GetFloat("EarringLevel_BM", 0) <= 0
+					&& skill.Properties.GetFloat(PropertyName.GemLevel_BM, 0) <= 0)
 					character.Skills.Remove(skill.Id);
 
 				changedSkills = true;
@@ -534,5 +541,18 @@ public static class EarringSkillLineEffects
 		if (unlockLevel >= 16)
 			return 2;
 		return 1;
+	}
+
+	private static bool TryGetOrCreateEarringSkill(Character character, SkillId skillId, out Skill skill)
+	{
+		if (character.Skills.TryGet(skillId, out skill))
+			return true;
+
+		if (ZoneServer.Instance.Data.SkillDb.Find(skillId) == null)
+			return false;
+
+		skill = new Skill(character, skillId, 0, isEquipSkill: true);
+		character.Skills.AddSilent(skill);
+		return true;
 	}
 }
