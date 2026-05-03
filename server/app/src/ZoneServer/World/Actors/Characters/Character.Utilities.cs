@@ -254,6 +254,9 @@ namespace Melia.Zone.World.Actors.Characters
 				return true;
 			}
 
+			if (this.TryResolveTitleAchievementId(achievementId, out var resolvedAchievementId))
+				achievementId = resolvedAchievementId;
+
 			// Validate that character has unlocked the achievement
 			if (this.Achievements != null && this.Achievements.HasAchievement(achievementId))
 			{
@@ -262,6 +265,36 @@ namespace Melia.Zone.World.Actors.Characters
 			}
 
 			return false;
+		}
+
+		private bool TryResolveTitleAchievementId(int value, out int achievementId)
+		{
+			achievementId = value;
+
+			if (this.Achievements != null && this.Achievements.HasAchievement(value))
+				return true;
+
+			var data = ZoneServer.Instance.Data;
+			string pointName = null;
+
+			if (data.ItemDb.TryFind(value, out var itemData))
+				pointName = itemData.Script?.StrArg;
+
+			if (pointName == null && data.AchievementPointDb.TryFind(value, out var pointDataById))
+				pointName = pointDataById.ClassName;
+
+			if (pointName == null)
+				return false;
+
+			var achievement = data.AchievementDb
+				.FindAll(a => a.PointName == pointName)
+				.FirstOrDefault(a => this.Achievements != null && this.Achievements.HasAchievement(a.Id));
+
+			if (achievement == null)
+				return false;
+
+			achievementId = achievement.Id;
+			return true;
 		}
 
 		/// <summary>
