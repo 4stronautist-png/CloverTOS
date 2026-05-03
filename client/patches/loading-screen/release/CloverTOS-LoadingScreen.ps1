@@ -8,7 +8,9 @@ $imagePath = Join-Path $clientDir "assets\tos-clover-loadscreen.png"
 if (-not (Test-Path -LiteralPath $imagePath)) {
     $imagePath = "C:\Users\Jean\Pictures\CloverTOS\tos-clover-loadscreen.png"
 }
-$targetSeconds = 28
+$fillSeconds = 32
+$minVisibleSeconds = 40
+$maxWaitSeconds = 75
 
 if (-not (Test-Path -LiteralPath $clientExe)) {
     [System.Windows.MessageBox]::Show("Client_tos_x64.exe nao encontrado em $clientDir", "CloverTOS")
@@ -85,6 +87,7 @@ $barGrid.Children.Add($percentText) | Out-Null
 
 $started = $null
 $startTime = Get-Date
+$closing = $false
 
 $window.Add_SourceInitialized({
     try {
@@ -99,8 +102,13 @@ $window.Add_SourceInitialized({
 $timer = New-Object System.Windows.Threading.DispatcherTimer
 $timer.Interval = [TimeSpan]::FromMilliseconds(120)
 $timer.Add_Tick({
+    if ($script:closing) {
+        return
+    }
+
     $elapsed = ((Get-Date) - $script:startTime).TotalSeconds
-    $pct = [Math]::Min(99, [Math]::Floor(($elapsed / $script:targetSeconds) * 100))
+    $pct = [Math]::Min(95, [Math]::Floor(($elapsed / $script:fillSeconds) * 95))
+    $clientLooksReady = $false
 
     if ($script:started -ne $null) {
         try {
@@ -110,6 +118,8 @@ $timer.Add_Tick({
                 $script:window.Close()
                 return
             }
+
+            $clientLooksReady = ($script:started.MainWindowHandle -ne [IntPtr]::Zero -and $script:started.Responding)
         }
         catch {
         }
@@ -119,10 +129,17 @@ $timer.Add_Tick({
         }
     }
 
+    if ($elapsed -ge $script:fillSeconds) {
+        $extraWait = [Math]::Min(1, ($elapsed - $script:fillSeconds) / [Math]::Max(1, ($script:minVisibleSeconds - $script:fillSeconds)))
+        $pct = [Math]::Max($pct, 95 + [Math]::Floor($extraWait * 4))
+    }
+
     $script:barFill.Width = ($script:barGrid.ActualWidth * $pct) / 100
     $script:percentText.Text = "$pct%"
 
-    if ($elapsed -ge $script:targetSeconds) {
+    $canClose = (($elapsed -ge $script:minVisibleSeconds -and $clientLooksReady) -or $elapsed -ge $script:maxWaitSeconds)
+    if ($canClose) {
+        $script:closing = $true
         $script:barFill.Width = $script:barGrid.ActualWidth
         $script:percentText.Text = "100%"
         $script:timer.Stop()
