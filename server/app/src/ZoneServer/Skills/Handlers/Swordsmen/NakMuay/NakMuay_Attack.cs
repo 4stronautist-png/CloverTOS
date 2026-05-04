@@ -8,7 +8,6 @@ using Melia.Zone.Network;
 using Melia.Zone.Skills.Combat;
 using Melia.Zone.Skills.Handlers.Base;
 using Melia.Zone.World.Actors;
-using Yggdrasil.Logging;
 using Yggdrasil.Util;
 using static Melia.Zone.Skills.SkillUseFunctions;
 
@@ -20,6 +19,8 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay;
 [SkillHandler(SkillId.NakMuay_Attack, SkillId.NakMuay_Attack2)]
 public class NakMuay_Attack : IMeleeGroundSkillHandler
 {
+	private const string MuayThaiAbilityEnabled = "RamMuay.MuayThaiAbilityEnabled";
+
 	/// <summary>
 	///     Handles usage of the skill.
 	/// </summary>
@@ -86,12 +87,16 @@ public class NakMuay_Attack : IMeleeGroundSkillHandler
 		}
 
 		Send.ZC_SKILL_HIT_INFO(caster, hits);
-
-		if (caster.IsBuffActive(BuffId.MuayThai_Buff) && caster.TryGetActiveAbility(AbilityId.NakMuay12, out _))
+		
+		if (caster.TryGetBuff(BuffId.MuayThai_Buff, out var buff))
 		{
-			await this.ExecuteSkill(SkillId.NakMuay_SokChiang_Normal, caster, castPosition, targetPosition, targets);
-			await this.ExecuteSkill(SkillId.NakMuay_TeKha_Normal, caster, castPosition, targetPosition, targets);
-			await this.ExecuteSkill(SkillId.NakMuay_TeTrong_Normal, caster, castPosition, targetPosition, targets);
+			buff.Vars.TryGetBool(MuayThaiAbilityEnabled, out var enabled);
+			if (enabled)
+			{
+				await this.ExecuteSkill(SkillId.NakMuay_SokChiang_Normal, caster, castPosition, targetPosition, targets);
+				await this.ExecuteSkill(SkillId.NakMuay_TeKha_Normal, caster, castPosition, targetPosition, targets);
+				await this.ExecuteSkill(SkillId.NakMuay_TeTrong_Normal, caster, castPosition, targetPosition, targets);
+			}
 		}
 	}
 
@@ -101,7 +106,6 @@ public class NakMuay_Attack : IMeleeGroundSkillHandler
 	{
 		if (caster.TryGetSkill(skillId, out var skill))
 		{
-			Log.Debug("Got skill");
 			if (ZoneServer.Instance.SkillHandlers.TryGetHandler<IMeleeGroundSkillHandler>(skillId, out var handler)
 			    && !skill.IsOnCooldown)
 				handler.Handle(skill, caster, castPosition, targetPosition, targets);

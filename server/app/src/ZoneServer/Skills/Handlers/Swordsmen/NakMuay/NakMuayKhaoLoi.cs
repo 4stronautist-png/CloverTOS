@@ -10,8 +10,6 @@ using Melia.Zone.Skills.Combat;
 using Melia.Zone.Skills.Handlers.Base;
 using Melia.Zone.Skills.SplashAreas;
 using Melia.Zone.World.Actors;
-using Yggdrasil.Util;
-using static Melia.Shared.Util.TaskHelper;
 using static Melia.Zone.Skills.SkillUseFunctions;
 
 namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
@@ -23,8 +21,7 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
     public class NakMuay_KhaoLoi : IGroundSkillHandler
     {
 	    
-	    private const float JumpDistance = 80;
-	    private const float MaxJumpDistance = 80;
+	    private const float JumpDistance = 50;
 
         /// <summary>
         /// Handles usage of the skill.
@@ -42,13 +39,13 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
 		        return;
 	        }
 
+	        if (caster.TryGetActiveAbility(AbilityId.NakMuay13, out _)) JumpToTarget(caster, target);
+
 	        skill.IncreaseOverheat();
 	        caster.SetAttackState(true);
 	        
-	        if (caster.TryGetActiveAbility(AbilityId.NakMuay13, out _))
-	        {
-		        JumpToTarget(caster, target);
-	        }
+	        if (caster.TryGetSkill(SkillId.NakMuay_MuayThai, out var skillMuayThai)) 
+		        skillMuayThai.ReduceCooldown(TimeSpan.FromSeconds(3));
 
 	        Send.ZC_SKILL_READY(caster, skill, originPos, farPos);
 	        Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, null);
@@ -91,6 +88,8 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
         
         private void JumpToTarget(ICombatEntity caster, ICombatEntity target)
         {
+	        if (target == null) return;
+	        
 	        var casterPos = caster.Position;
 	        var targetPos = target.Position;
 
@@ -100,7 +99,7 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
 		        return;
 
 	        var dist = casterPos.Get2DDistance(jumpDest);
-	        if (dist is <= 0 or > MaxJumpDistance)
+	        if (dist is <= 0 or > JumpDistance)
 		        return;
 
 	        caster.Position = jumpDest;

@@ -40,6 +40,9 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
 
             skill.IncreaseOverheat();
             caster.SetAttackState(true);
+            
+            if (caster.TryGetSkill(SkillId.NakMuay_MuayThai, out var skillMuayThai)) 
+	            skillMuayThai.ReduceCooldown(TimeSpan.FromSeconds(3));
 
             Send.ZC_SKILL_READY(caster, skill, originPos, farPos);
             Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, null);

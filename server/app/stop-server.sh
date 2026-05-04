@@ -40,11 +40,54 @@ else
     log_warning "pids.txt nao encontrado."
 fi
 
+if command -v docker >/dev/null 2>&1; then
+    for port in 2000 7001 7002 8080 9001 9002; do
+        containers=$(docker ps --filter "publish=$port" -q 2>/dev/null || true)
+        if [ -n "$containers" ]; then
+            log_info "Parando containers Docker na porta $port"
+            docker stop $containers >/dev/null 2>&1 || true
+        fi
+    done
+fi
+
 for port in 2000 7001 7002 8080 9001 9002; do
     pids=$(lsof -ti tcp:"$port" 2>/dev/null || true)
     if [ -n "$pids" ]; then
         log_info "Limpando processos remanescentes na porta $port"
         kill $pids 2>/dev/null || true
+    fi
+done
+
+for pattern in \
+    "src/BarracksServer/BarracksServer.csproj" \
+    "src/ZoneServer/ZoneServer.csproj" \
+    "src/SocialServer/SocialServer.csproj" \
+    "src/WebServer/WebServer.csproj" \
+    "bin/Release/net8.0/BarracksServer" \
+    "bin/Release/net8.0/ZoneServer" \
+    "bin/Release/net8.0/SocialServer" \
+    "bin/Release/net8.0/WebServer"; do
+    pids=$(pgrep -f "$pattern" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        log_info "Limpando processos remanescentes: $pattern"
+        kill $pids 2>/dev/null || true
+    fi
+done
+
+sleep 1
+
+for pattern in \
+    "src/BarracksServer/BarracksServer.csproj" \
+    "src/ZoneServer/ZoneServer.csproj" \
+    "src/SocialServer/SocialServer.csproj" \
+    "src/WebServer/WebServer.csproj" \
+    "bin/Release/net8.0/BarracksServer" \
+    "bin/Release/net8.0/ZoneServer" \
+    "bin/Release/net8.0/SocialServer" \
+    "bin/Release/net8.0/WebServer"; do
+    pids=$(pgrep -f "$pattern" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        kill -9 $pids 2>/dev/null || true
     fi
 done
 

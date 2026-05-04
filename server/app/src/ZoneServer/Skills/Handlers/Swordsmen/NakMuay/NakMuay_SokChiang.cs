@@ -39,6 +39,9 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
 
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
+			
+			if (caster.TryGetSkill(SkillId.NakMuay_MuayThai, out var skillMuayThai)) 
+				skillMuayThai.ReduceCooldown(TimeSpan.FromSeconds(3));
 
 			Send.ZC_SKILL_READY(caster, skill, originPos, farPos);
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, null);
@@ -66,11 +69,11 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.NakMuay
 				target.TakeDamage(skillHitResult.Damage, caster);
 
 				// Apply Bleeding debuff
-				var bleedingDuration = TimeSpan.FromSeconds(9);
+				var bleedingDuration = TimeSpan.FromSeconds(6 + skill.Level);
 				if (target is Mob mob && mob.Data.Rank == MonsterRank.Boss)
 					bleedingDuration = TimeSpan.FromSeconds(3);
 
-				target.StartBuff(BuffId.HeavyBleeding, skill.Level, 0, bleedingDuration, caster);
+				target.StartBuff(BuffId.HeavyBleeding, skill.Level, skillHitResult.Damage, bleedingDuration, caster);
 
 				var skillHit = new SkillHitInfo(caster, target, skill, skillHitResult, damageDelay, TimeSpan.Zero)
 				{

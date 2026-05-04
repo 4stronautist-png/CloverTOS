@@ -50,6 +50,7 @@ public class SkillCalculationsScript : GeneralScript
 			value += skill.Properties.GetFloat(PropertyName.Level_BM, 0);
 
 		value += skill.Properties.GetFloat(PropertyName.GemLevel_BM, 0);
+		value += skill.Vars.GetFloat("EarringLevel_BM", 0);
 
 		if (skill.Owner is Character character)
 			value += ItemEquipEffects.GetSkillBonus(character, skill.Id);
@@ -431,7 +432,7 @@ public class SkillCalculationsScript : GeneralScript
 		if (skill.Data.SpeedRateAffectedByDex)
 		{
 			var dex = skill.Owner.Properties.GetFloat(PropertyName.DEX);
-			byDex = (float)dex / 500;
+			byDex = (float)Math.Sqrt(dex / 10000);
 		}
 
 		if (skill.Data.SpeedRateAffectedByBuff)

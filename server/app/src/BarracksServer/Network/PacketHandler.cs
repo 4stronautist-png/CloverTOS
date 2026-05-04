@@ -884,8 +884,18 @@ namespace Melia.Barracks.Network
 				if (!message.TryGetItem(mailItemId, out var item) || item.WasReceived)
 					continue;
 
-				BarracksServer.Instance.Database.SaveItem(character, item.ItemDbId);
-				item.WasReceived = true;
+				try
+				{
+					BarracksServer.Instance.Database.SaveItem(character, item.ItemDbId);
+					item.WasReceived = true;
+				}
+				catch (Exception ex)
+				{
+					Log.Error("CB_REQ_GET_POSTBOX_ITEM: Failed to receive mail item '{0}' from mail '{1}' for character '{2}' on account '{3}'. Exception: {4}",
+						item.DbId, message.Id, character.Name, conn.Account.Name, ex);
+					Send.BC_MESSAGE(conn, Localization.Get("Failed to receive mail item. Please try again."));
+					return;
+				}
 			}
 
 			if (message.ReceivableItemsCount > 0 && !message.IsExpired)
@@ -936,8 +946,18 @@ namespace Melia.Barracks.Network
 					if (item.WasReceived)
 						continue;
 
-					BarracksServer.Instance.Database.SaveItem(character, item.ItemDbId);
-					item.WasReceived = true;
+					try
+					{
+						BarracksServer.Instance.Database.SaveItem(character, item.ItemDbId);
+						item.WasReceived = true;
+					}
+					catch (Exception ex)
+					{
+						Log.Error("CB_REQ_GET_POSTBOX_ITEM_LIST: Failed to receive mail item '{0}' from mail '{1}' for character '{2}' on account '{3}'. Exception: {4}",
+							item.DbId, message.Id, character.Name, conn.Account.Name, ex);
+						Send.BC_MESSAGE(conn, Localization.Get("Failed to receive mail item. Please try again."));
+						return;
+					}
 				}
 
 				message.State = MailboxMessageState.Read;
