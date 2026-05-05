@@ -18,10 +18,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Melia.Shared.Game.Const;
+using Melia.Shared.Game.Properties;
 using Melia.Zone;
 using Melia.Zone.Scripting;
 using Melia.Zone.World.Actors;
 using Melia.Zone.World.Actors.Characters;
+using Yggdrasil.Logging;
 
 public enum ItemEffectType
 {
@@ -310,10 +312,22 @@ public static class ItemEquipEffects
 			switch (effect.Type)
 			{
 				case ItemEffectType.ExProp:
+					if (!PropertyTable.Exists(character.Properties.Namespace, effect.PropName))
+					{
+						Log.Warning("ItemEquipEffects.ApplyEffects: Item '{0}' tried to add unknown property '{1}' in namespace '{2}'.", itemId, effect.PropName, character.Properties.Namespace);
+						break;
+					}
+
 					var current = character.Properties.GetFloat(effect.PropName);
 					character.Properties.SetFloat(effect.PropName, current + effect.Value);
 					break;
 				case ItemEffectType.PropMod:
+					if (!PropertyTable.Exists(character.Properties.Namespace, effect.PropName))
+					{
+						Log.Warning("ItemEquipEffects.ApplyEffects: Item '{0}' tried to modify unknown property '{1}' in namespace '{2}'.", itemId, effect.PropName, character.Properties.Namespace);
+						break;
+					}
+
 					character.Properties.Modify(effect.PropName, effect.Value);
 					break;
 				case ItemEffectType.Buff:
@@ -337,10 +351,22 @@ public static class ItemEquipEffects
 			switch (effect.Type)
 			{
 				case ItemEffectType.ExProp:
+					if (!PropertyTable.Exists(character.Properties.Namespace, effect.PropName))
+					{
+						Log.Warning("ItemEquipEffects.RemoveEffects: Item '{0}' tried to remove unknown property '{1}' in namespace '{2}'.", itemId, effect.PropName, character.Properties.Namespace);
+						break;
+					}
+
 					var current = character.Properties.GetFloat(effect.PropName);
 					character.Properties.SetFloat(effect.PropName, current - effect.Value);
 					break;
 				case ItemEffectType.PropMod:
+					if (!PropertyTable.Exists(character.Properties.Namespace, effect.PropName))
+					{
+						Log.Warning("ItemEquipEffects.RemoveEffects: Item '{0}' tried to unmodify unknown property '{1}' in namespace '{2}'.", itemId, effect.PropName, character.Properties.Namespace);
+						break;
+					}
+
 					character.Properties.Modify(effect.PropName, -effect.Value);
 					break;
 				case ItemEffectType.Buff:
