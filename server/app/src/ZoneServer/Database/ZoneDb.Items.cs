@@ -79,6 +79,7 @@ namespace Melia.Zone.Database
 			{
 				// Fix incorrectly set GemLevel properties on cards/gems
 				item.MigrateProperties();
+				item.EnsureHairAccessoryEnchantRank();
 
 				if (item.Data.Type == ItemType.Equip)
 				{
@@ -140,6 +141,7 @@ namespace Melia.Zone.Database
 
 						// Fix incorrectly set GemLevel properties on cards/gems
 						item.MigrateProperties();
+						item.EnsureHairAccessoryEnchantRank();
 
 						if (item.Data.Type == ItemType.Equip)
 						{

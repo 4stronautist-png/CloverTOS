@@ -278,16 +278,17 @@ start "$ServerName" "%~dp0Client_tos_x64.exe" -SERVICE
 function Apply-ClientPatches {
     param([string]$ReleasePath)
 
-    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-    $patchReleasePath = Join-Path $repoRoot "client\patches\loading-screen\release"
+    $launcher = @"
+@echo off
+cd /d "%~dp0"
+start "CloverTOS" "%~dp0Client_tos_x64.exe" -SERVICE GLOBAL
+"@
 
-    if (-not (Test-Path -LiteralPath $patchReleasePath)) {
-        throw "Patch de loadscreen nao encontrado em $patchReleasePath."
-    }
-
-    Write-Step "Aplicando patch do client: loading screen CloverTOS"
-    Get-ChildItem -LiteralPath $patchReleasePath -Force | Copy-Item -Destination $ReleasePath -Recurse -Force
-    Write-Ok "Patch de loading screen aplicado"
+    Write-Step "Configurando launcher direto do client"
+    Set-Content -LiteralPath (Join-Path $ReleasePath "Start-CloverTOS-Local.bat") -Value $launcher -Encoding ASCII
+    Remove-Item -LiteralPath (Join-Path $ReleasePath "CloverTOS-LoadingScreen.ps1") -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $ReleasePath "loading-screen.png") -Force -ErrorAction SilentlyContinue
+    Write-Ok "Launcher direto configurado"
 }
 
 function Disable-Reshade {

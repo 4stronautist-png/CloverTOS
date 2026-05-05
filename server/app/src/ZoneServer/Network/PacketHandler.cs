@@ -1087,18 +1087,13 @@ namespace Melia.Zone.Network
 			}
 
 			// Validate item is headgear
-			if (item.Data.EquipType1 != EquipType.Hat)
+			if (!item.IsHairAccessory())
 			{
 				character.ServerMessage("Enchant scrolls can only be used on headgear.");
 				return;
 			}
 
-			// Check potential
-			if (Feature.IsEnabled("HeadgearEnchantsConsumePotential") && item.Potential <= 0)
-			{
-				character.SystemMessage("NoMorePotential");
-				return;
-			}
+			item.EnsureHairAccessoryEnchantRank();
 
 			// Item Lock
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.REINFORCE_131014_ITEM_LOCK, itemId, "YES"));
@@ -1108,11 +1103,10 @@ namespace Melia.Zone.Network
 			var maxOptions = (int)enchantItem.Data.Script.NumArg2;
 			if (minOptions <= 0) minOptions = 1;
 			if (maxOptions <= 0) maxOptions = 2;
+			item.AddHairAccessoryEnchantRankProgress(GetHairAccessoryEnchantRankGain(enchantItem));
 			item.GenerateRandomHatOptions(minOptions, maxOptions + 1);
 
-			// Reduce potential by 1
-			if (Feature.IsEnabled("HeadgearEnchantsConsumePotential"))
-				item.Properties.Modify(PropertyName.PR, -1);
+			// Hair accessory scrolls must work on every hair accessory slot.
 
 			// Update item properties
 			Send.ZC_OBJECT_PROPERTY(character.Connection, item);
@@ -1124,6 +1118,23 @@ namespace Melia.Zone.Network
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.REINFORCE_131014_ITEM_LOCK, "None", "YES"));
 
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.HAIRENCHANT_SUCCESS, itemId, enchantItem.DbId));
+		}
+
+		/// <summary>
+		/// Returns how much rank-up progress a hair accessory enchant scroll gives.
+		/// </summary>
+		/// <param name="enchantItem"></param>
+		/// <returns></returns>
+		private static int GetHairAccessoryEnchantRankGain(Item enchantItem)
+		{
+			return enchantItem.Id switch
+			{
+				11201102 => 1,
+				495185 => 5,
+				495186 => 5,
+				495188 => 5,
+				_ => 0,
+			};
 		}
 
 		/// <summary>
@@ -1572,18 +1583,13 @@ namespace Melia.Zone.Network
 			else if (itemUsed.Data.ClassName.Contains("Enchantchip"))
 			{
 				// Enchant scrolls can only be used on headgear (hats)
-				if (itemUsedOn.Data.EquipType1 != EquipType.Hat)
+				if (!itemUsedOn.IsHairAccessory())
 				{
 					character.ServerMessage("Enchant scrolls can only be used on headgear.");
 					return;
 				}
 
-				// Check potential
-				if (Feature.IsEnabled("HeadgearEnchantsConsumePotential") && itemUsedOn.Potential <= 0)
-				{
-					character.SystemMessage("NoMorePotential");
-					return;
-				}
+				itemUsedOn.EnsureHairAccessoryEnchantRank();
 
 				// Get min/max options from item script args
 				var minOptions = (int)itemUsed.Data.Script.NumArg1;
@@ -1591,11 +1597,10 @@ namespace Melia.Zone.Network
 				if (minOptions <= 0) minOptions = 1;
 				if (maxOptions <= 0) maxOptions = 2;
 
+				itemUsedOn.AddHairAccessoryEnchantRankProgress(GetHairAccessoryEnchantRankGain(itemUsed));
 				itemUsedOn.GenerateRandomHatOptions(minOptions, maxOptions + 1);
 
-				// Reduce potential by 1
-				if (Feature.IsEnabled("HeadgearEnchantsConsumePotential"))
-					itemUsedOn.Properties.Modify(PropertyName.PR, -1);
+				// Hair accessory scrolls must work on every hair accessory slot.
 
 				character.Inventory.Remove(item1WorldId);
 				Send.ZC_OBJECT_PROPERTY(conn, itemUsedOn);
