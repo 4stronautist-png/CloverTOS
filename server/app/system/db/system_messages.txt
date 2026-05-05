@@ -15597,7 +15597,7 @@
 { classId: 201066, className: "FishingBag", text: "Tackle Box" },
 { classId: 201067, className: "guildinfo", text: "Guild Info" },
 { classId: 201069, className: "PartyMemberInfo", text: "Party member summon info" },
-{ classId: 201070, className: "AutoMove", text: "Auto Move" },
+{ classId: 201070, className: "AutoMove", text: "Walk" },
 { classId: 201071, className: "ZoomIn", text: "Zoom In" },
 { classId: 201072, className: "ZoomOut", text: "Zoom Out" },
 { classId: 201083, className: "DirectionSkipAndStart", text: "Skip Spawn Cutscene" },

@@ -4526,6 +4526,13 @@ namespace Melia.Zone.Network
 			if (start != 1 && start != 3)
 				return;
 
+			if (character.Variables.Temp.GetBool("SoulSociety.Walk.Enabled", false))
+			{
+				character.StopBuff(BuffId.DashRun);
+				character.Movement.SetFixedMoveSpeed(18f);
+				return;
+			}
+
 			// For some reason this packet is sent multiple times while
 			// the character is dashing, which is a potential problem if
 			// DashRun gets stacked and started again, but the buff manager
