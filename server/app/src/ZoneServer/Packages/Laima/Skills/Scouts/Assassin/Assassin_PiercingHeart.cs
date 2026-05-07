@@ -50,6 +50,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 			Send.ZC_SKILL_READY(caster, skill, originPos, farPos);
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos);
+			caster.SetAttackState(false);
 
 			skill.Run(this.Attack(skill, caster, splashArea));
 		}
@@ -115,6 +116,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			}
 
 			Send.ZC_SKILL_HIT_INFO(caster, hits);
+			caster.SetAttackState(false);
 		}
 
 		private bool IsBackOrCloaked(ICombatEntity caster, ICombatEntity target, SkillModifier modifier)

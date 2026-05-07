@@ -145,10 +145,39 @@ namespace Melia.Zone.Skills
 			this.Create(new RFloatProperty(PropertyName.EnableSkillCancel, () => this.Skill.Data.CastInterruptible ? 1f : 0f));
 			this.Create(new RFloatProperty(PropertyName.CancelSkill, () => this.Skill.Data.CastInterruptible ? 1f : 0f));
 
-			this.Create(new RFloatProperty(PropertyName.CaptionTime, () => 0f)); // Needs to be calculated if used, uses lua script
-			this.Create(new RFloatProperty(PropertyName.CaptionRatio, () => 0f)); // Needs to be calculated if used, uses lua script
+			this.Create(new RFloatProperty(PropertyName.CaptionTime, () => this.GetCaptionTime()));
+			this.Create(new RFloatProperty(PropertyName.CaptionRatio, () => this.GetCaptionRatio()));
 			this.Create(new RFloatProperty(PropertyName.CaptionRatio2, () => 0f)); // Needs to be calculated if used, uses lua script
-			this.Create(new RFloatProperty(PropertyName.CaptionRatio3, () => 0f)); // Needs to be calculated if used, uses lua script
+			this.Create(new RFloatProperty(PropertyName.CaptionRatio3, () => this.GetCaptionRatio3()));
+		}
+
+		private float GetCaptionTime()
+		{
+			return this.Skill.Id switch
+			{
+				SkillId.Assassin_PiercingHeart or SkillId.Assassin_PiercingHeart_2 => 5f,
+				SkillId.Assassin_HallucinationSmoke or SkillId.Assassin_HallucinationSmoke_2 => 8f,
+				_ => 0f,
+			};
+		}
+
+		private float GetCaptionRatio()
+		{
+			return this.Skill.Id switch
+			{
+				SkillId.Assassin_Hasisas or SkillId.Common_Assassin_Hasisas => 175f + (20f * (this.Skill.Level - 1)),
+				SkillId.Assassin_HallucinationSmoke or SkillId.Assassin_HallucinationSmoke_2 => 20f,
+				_ => 0f,
+			};
+		}
+
+		private float GetCaptionRatio3()
+		{
+			return this.Skill.Id switch
+			{
+				SkillId.Assassin_Hasisas or SkillId.Common_Assassin_Hasisas => 10f + (2f * (this.Skill.Level - 1)),
+				_ => 0f,
+			};
 		}
 
 		/// <summary>

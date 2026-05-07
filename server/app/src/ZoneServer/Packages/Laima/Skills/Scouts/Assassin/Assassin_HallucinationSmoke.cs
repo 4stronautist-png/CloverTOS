@@ -61,6 +61,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			var pad = new Pad(PadName.Assassin_HallucinationSmoke, caster, skill, new Circle(caster.Position, 50));
 
 			caster.Map.AddPad(pad);
+			caster.SetAttackState(false);
 			await Task.CompletedTask;
 		}
 	}

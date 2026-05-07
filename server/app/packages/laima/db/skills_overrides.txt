@@ -1060,12 +1060,12 @@
 
 // Assassin
 //---------------------------------------------------------------------------
-{ skillId: 50101, className: "Assassin_Hasisas", name: "Hasisas", basicSp: 48, factor: 100, factorByLevel: 0, cooldownTime: 10000, overheatCount: "0" },
-{ skillId: 50102, className: "Assassin_Behead", name: "Behead", basicSp: 18, splashRate: -99, factor: 56, factorByLevel: 5.6, cooldownTime: 4000, speedRateAffectedByDex: true, overheatCount: "2" },
-{ skillId: 50103, className: "Assassin_InstantaneousAcceleration", name: "Instant Acceleration", basicSp: 23, splashRate: 3, factor: 63, factorByLevel: 6.3, cooldownTime: 8000, overheatCount: "2" },
-{ skillId: 50104, className: "Assassin_HallucinationSmoke", name: "Hallucination Smoke", basicSp: 45, factor: 100, factorByLevel: 0, cooldownTime: 5000, overheatCount: "0" },
-{ skillId: 50105, className: "Assassin_PiercingHeart", name: "Piercing Heart", basicSp: 19, splashRate: -99, factor: 109, factorByLevel: 10.9, speedRateAffectedByDex: true, cooldownTime: 4000, overheatCount: "3" },
-{ skillId: 50106, className: "Assassin_Annihilation", name: "Annihilation", basicSp: 50, splashRate: 15, factor: 43, factorByLevel: 4.3, cooldownTime: 15000, overheatCount: "0" },
+{ skillId: 50101, className: "Assassin_Hasisas", name: "Hasisas", basicSp: 134, factor: 100, factorByLevel: 0, shootTime: 150, cancelTime: 100, cooldownTime: 30000, overheatCount: "0" },
+{ skillId: 50102, className: "Assassin_Behead", name: "Behead", basicSp: 114, splashRate: 3, factor: 1184.4, factorByLevel: 197.4, shootTime: 150, cancelTime: 100, cooldownTime: 15000, speedRateAffectedByDex: false, overheatCount: "2" },
+{ skillId: 50103, className: "Assassin_InstantaneousAcceleration", name: "Instant Acceleration", basicSp: 99, splashRate: 2, factor: 1864.4, factorByLevel: 310.8, cooldownTime: 12000, overheatCount: "1" },
+{ skillId: 50104, className: "Assassin_HallucinationSmoke", name: "Hallucination Smoke", basicSp: 98, factor: 100, factorByLevel: 0, cooldownTime: 30000, overheatCount: "2" },
+{ skillId: 50105, className: "Assassin_PiercingHeart", name: "Piercing Heart", basicSp: 56, splashRate: -99, factor: 1731.9, factorByLevel: 399.9, shootTime: 150, cancelTime: 100, speedRateAffectedByDex: true, cooldownTime: 22000, overheatCount: "1" },
+{ skillId: 50106, className: "Assassin_Annihilation", name: "Annihilation", basicSp: 128, splashRate: 30, factor: 1372.6, factorByLevel: 514.4, shootTime: 400, cancelTime: 400, cooldownTime: 30000, overheatCount: "0" },
 
 // Outlaw
 //---------------------------------------------------------------------------
@@ -1223,9 +1223,9 @@
 { skillId: 100112, className: "Assassin_ViboraAtk", name: "Gasp Up", splashRate: 0, factor: 100, hitCount: 1, multiHitCount: 11 },
 { skillId: 100113, className: "Assassin_Vibora", name: "Gasp Up", splashRate: 0, hitCount: 1, multiHitCount: 1 },
 { skillId: 142000, className: "Scout_DaggerSlash_2", name: "Dagger Slash", basicSp: 6, splashRate: 3, factor: 10, hitCount: 1, multiHitCount: 1, cooldownTime: 1000, overheatCount: "0" },
-{ skillId: 142001, className: "Assassin_InstantaneousAcceleration_2", name: "Instant Acceleration", basicSp: 50, splashRate: 8, factor: 93, hitCount: 1, multiHitCount: 1, cooldownTime: 10000, overheatCount: "2" },
-{ skillId: 142002, className: "Assassin_PiercingHeart_2", name: "Piercing Heart", basicSp: 28, splashRate: -99, factor: 50, hitCount: 1, multiHitCount: 1, cooldownTime: 10000, overheatCount: "0" },
-{ skillId: 142003, className: "Assassin_Annihilation_2", name: "Annihilation", basicSp: 32, splashRate: 15, factor: 15, hitCount: 1, multiHitCount: 1, cooldownTime: 15000 },
+{ skillId: 142001, className: "Assassin_InstantaneousAcceleration_2", name: "Instant Acceleration", basicSp: 99, splashRate: 2, factor: 93, hitCount: 1, multiHitCount: 1, cooldownTime: 12000, overheatCount: "1" },
+{ skillId: 142002, className: "Assassin_PiercingHeart_2", name: "Piercing Heart", basicSp: 56, splashRate: -99, factor: 50, hitCount: 1, multiHitCount: 1, cooldownTime: 22000, overheatCount: "1" },
+{ skillId: 142003, className: "Assassin_Annihilation_2", name: "Annihilation", basicSp: 128, splashRate: 15, factor: 15, hitCount: 1, multiHitCount: 1, shootTime: 400, cancelTime: 400, cooldownTime: 30000 },
 { skillId: 142004, className: "Assassin_HallucinationSmoke_2", name: "Hallucination Smoke", basicSp: 49, splashRate: 0, factor: 100, hitCount: 1, multiHitCount: 1, cooldownTime: 15000, overheatCount: "2" },
 { skillId: 142005, className: "OutLaw_SprinkleSands_2", name: "Throw Sand", basicSp: 26, splashRate: 10, factor: 100, factorByLevel: 15, hitCount: 1, multiHitCount: 1, cooldownTime: 15000, overheatCount: "3" },
 { skillId: 142006, className: "OutLaw_BreakBrick_2", name: "Brick Smash", basicSp: 36, splashRate: 6, factor: 50, factorByLevel: 11, hitCount: 1, multiHitCount: 1, cooldownTime: 10000, overheatCount: "3" },

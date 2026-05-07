@@ -40,13 +40,17 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 			var attackTarget = this.GetAssassinationTarget(caster) ?? target;
 			if (attackTarget != null)
+			{
+				this.TryTeleportBehindAssassinationTarget(caster, attackTarget);
 				farPos = attackTarget.Position;
+			}
 
 			var splashParam = skill.GetSplashParameters(caster, originPos, farPos, length: 40, width: 20, angle: 0);
 			var splashArea = skill.GetSplashArea(SplashType.Square, splashParam);
 
 			Send.ZC_SKILL_READY(caster, skill, originPos, farPos);
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, null);
+			caster.SetAttackState(false);
 
 			skill.Run(this.Attack(skill, caster, splashArea));
 		}
@@ -77,6 +81,9 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 					target.TakeDamage(skillHitResult.Damage, caster);
 					hits.Add(new SkillHitInfo(caster, target, skill, skillHitResult, TimeSpan.FromMilliseconds(120), TimeSpan.Zero) { HitEffect = HitEffect.Impact });
 
+					if (skillHitResult.Damage > 0 && this.HasAbility(caster, AbilityId.Assassin5))
+						target.StartBuff(BuffId.Common_Silence, skill.Level, 0, SilenceDuration, caster, skill.Id);
+
 					if (skillHitResult.Damage <= 0 || !isBackOrCloaked)
 						continue;
 
@@ -91,11 +98,10 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 					target.StartBuff(BuffId.Behead_Debuff, skill.Level, bleedingDamage, bleedingDuration, caster, skill.Id);
 
-					if (this.HasAbility(caster, AbilityId.Assassin5))
-						target.StartBuff(BuffId.Common_Silence, skill.Level, 0, SilenceDuration, caster, skill.Id);
 				}
 
 			Send.ZC_SKILL_HIT_INFO(caster, hits);
+			caster.SetAttackState(false);
 		}
 
 		private ICombatEntity GetAssassinationTarget(ICombatEntity caster)
@@ -103,7 +109,37 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			if (caster is not Character character || !character.Variables.Temp.TryGetInt("Melia.AssassinationTarget", out var targetHandle))
 				return null;
 
-			return caster.Map.TryGetCombatEntity(targetHandle, out var target) ? target : null;
+			if (!caster.Map.TryGetCombatEntity(targetHandle, out var target))
+			{
+				character.Variables.Temp.Remove("Melia.AssassinationTarget");
+				return null;
+			}
+
+			if (!target.TryGetBuff(BuffId.Assassin_Target_Debuff, out var debuff) || debuff.Caster != caster)
+			{
+				character.Variables.Temp.Remove("Melia.AssassinationTarget");
+				return null;
+			}
+
+			return target;
+		}
+
+		private void TryTeleportBehindAssassinationTarget(ICombatEntity caster, ICombatEntity target)
+		{
+			if (!target.TryGetBuff(BuffId.Assassin_Target_Debuff, out var debuff) || debuff.Caster != caster)
+				return;
+
+			var desiredPos = target.Position.GetRelative(target.Direction.Backwards, 25f);
+			if (caster.Map.Ground.TryGetNearestValidPosition(desiredPos, out var validPos, maxDistance: 40f))
+				desiredPos = validPos;
+			else if (caster.Map.Ground.TryGetHeightAt(desiredPos, out var height))
+				desiredPos.Y = height;
+			else
+				return;
+
+			caster.Position = desiredPos;
+			caster.Direction = caster.Position.GetDirection(target.Position);
+			Send.ZC_SET_POS(caster, desiredPos);
 		}
 
 		private void ApplyAssassinationTargetBonus(ICombatEntity caster, ICombatEntity target, SkillModifier modifier)

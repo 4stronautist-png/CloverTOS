@@ -57,13 +57,15 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			}
 
 			skill.IncreaseOverheat();
-			caster.SetAttackState(true);
+			var isFastVariant = caster.IsAbilityActive(AbilityId.Assassin23);
+			caster.SetAttackState(!isFastVariant);
 
 			var splashParam = skill.GetSplashParameters(caster, originPos, farPos, length: 0, width: 100, angle: 0);
 			var splashArea = skill.GetSplashArea(SplashType.Circle, splashParam);
 
 			Send.ZC_SKILL_READY(caster, skill, originPos, farPos);
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos);
+			caster.SetAttackState(false);
 
 			skill.Run(this.Attack(skill, caster, splashArea));
 		}
@@ -81,9 +83,9 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 			var hits = new List<SkillHitInfo>();
 
-			// Assassin23 changes Annihilation to a fast 40-hit version.
+			// Assassin23 changes Annihilation to a fast double-hit version.
 			var isFastVariant = caster.IsAbilityActive(AbilityId.Assassin23);
-			var delayBetweenHits = TimeSpan.FromMilliseconds(isFastVariant ? 80 : 400);
+			var delayBetweenHits = TimeSpan.FromMilliseconds(isFastVariant ? 20 : 400);
 			var totalHits = isFastVariant ? HighSpeedHitCount : NormalHitCount;
 			var waveCount = totalHits / HitsPerWave;
 			var consumedPiercingHeartMarks = new HashSet<ICombatEntity>();

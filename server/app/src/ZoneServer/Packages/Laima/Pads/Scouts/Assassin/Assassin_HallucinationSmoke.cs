@@ -36,7 +36,7 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 			pad.SetUpdateInterval(1000);
 			pad.Position = creator.Position;
 			pad.Trigger.MaxConcurrentUseCount = 8;
-			pad.Trigger.LifeTime = TimeSpan.FromSeconds(skill.Level + 5);
+			pad.Trigger.LifeTime = TimeSpan.FromSeconds(8);
 			Send.ZC_NORMAL.PadUpdate(args.Creator, args.Trigger, PadName.Assassin_HallucinationSmoke, -0.7853982f, 0, 30, true);
 		}
 
@@ -90,7 +90,7 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 
 		private void ApplySmokeEffects(ICombatEntity creator, ICombatEntity target, Skill skill)
 		{
-			target.StartBuff(BuffId.HallucinationSmoke_Debuff, skill.Level, 0, TimeSpan.FromSeconds(20), creator, skill.Id);
+			target.StartBuff(BuffId.HallucinationSmoke_Debuff, skill.Level, 0, TimeSpan.FromSeconds(10), creator, skill.Id);
 
 			if (!this.HasAbility(creator, AbilityId.Assassin18))
 				return;
@@ -99,7 +99,7 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 				return;
 
 			character.Variables.Temp.SetInt("Melia.AssassinationTarget", target.Handle);
-			target.StartBuff(BuffId.Assassin_Target_Debuff, skill.Level, 0, TimeSpan.FromSeconds(15), creator, skill.Id);
+			target.StartBuff(BuffId.Assassin_Target_Debuff, skill.Level, 0, TimeSpan.FromSeconds(10), creator, skill.Id);
 		}
 
 		private bool HasAbility(ICombatEntity caster, AbilityId abilityId)

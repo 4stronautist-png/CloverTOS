@@ -51,6 +51,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			caster.StartBuff(BuffId.Hasisas_Buff, skill.Level, evasionVariant, BuffDuration, caster, skill.Id);
 
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, caster.Position);
+			caster.SetAttackState(false);
 		}
 
 		/// <summary>

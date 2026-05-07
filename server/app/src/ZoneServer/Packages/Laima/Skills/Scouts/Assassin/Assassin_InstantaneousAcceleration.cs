@@ -62,6 +62,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 			caster.Position = endingPosition;
 			Send.ZC_SET_POS(caster);
+			caster.SetAttackState(false);
 
 			skill.Run(this.Attack(skill, caster, splashArea));
 		}
@@ -116,6 +117,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			}
 
 			Send.ZC_SKILL_HIT_INFO(caster, hits);
+			caster.SetAttackState(false);
 		}
 	}
 }
