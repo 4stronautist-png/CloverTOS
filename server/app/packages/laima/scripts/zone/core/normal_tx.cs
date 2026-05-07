@@ -57,6 +57,11 @@ public class NormalTxFunctionsScript : GeneralScript
 				// to open the help panel or show a tooltip or something.
 				return NormalTxResult.Okay;
 			}
+			case "market":
+			{
+				// Sent by the classic client after opening the market UI.
+				return NormalTxResult.Okay;
+			}
 		}
 
 		return NormalTxResult.Fail;

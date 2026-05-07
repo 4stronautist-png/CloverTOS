@@ -111,6 +111,16 @@ namespace Melia.Zone.Database
 			foreach (var kvp in cards) character.Inventory.AddSilentCard(kvp.Key, kvp.Value);
 		}
 
+		public void SaveItemProperties(Item item)
+		{
+			using (var conn = this.GetConnection())
+			using (var trans = conn.BeginTransaction())
+			{
+				this.InternalSaveProperties("item_properties", "itemId", item.DbId, item.Properties, conn, trans);
+				trans.Commit();
+			}
+		}
+
 		internal void LoadStorage(Storage storage, string tableName, string idFieldName, long id)
 		{
 			using (var conn = this.GetConnection())

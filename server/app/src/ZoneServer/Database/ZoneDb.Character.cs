@@ -221,6 +221,16 @@ namespace Melia.Zone.Database
 			}
 			if (character.Jobs.Count == 0 || character.Jobs.Get(character.JobId) == null)
 				character.Jobs.AddSilent(new Job(character, character.JobId));
+
+			foreach (var job in character.Jobs.GetList())
+			{
+				if (job.TotalExp > 0 || job.SkillPoints <= 0)
+					continue;
+
+				var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints + 1);
+				if (restoredLevel > 1)
+					job.TotalExp = ZoneServer.Instance.Data.ExpDb.GetNextTotalJobExp(character.Jobs.GetJobRank(job.Id), restoredLevel - 1);
+			}
 		}
 
 		private void LoadSessionObjects(Character character)

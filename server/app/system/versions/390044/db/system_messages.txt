@@ -11573,7 +11573,7 @@
 { classId: 106005, className: "BuyCount", text: "Quantity" },
 { classId: 106006, className: "SellPriceMustOverThenZeroSilver", text: "Your selling price must be at least 0 silver." },
 { classId: 106007, className: "SellCountMustOverThenZeo", text: "Your selling quantity must be higher than 0." },
-{ classId: 106008, className: "MarketItemRegisterSucceeded", text: "Successfully registered the item.{nl}Please allow up to 2 hours for items, excluding Tokens, to be shown on the Market." },
+{ classId: 106008, className: "MarketItemRegisterSucceeded", text: "Successfully registered the item.{nl}Please allow up to 1 minute for items, excluding Tokens, to be shown on the Market." },
 { classId: 106009, className: "MarketBuySucceeded_CheckInCabinet", text: "You have successfully purchased an item from the Market.{nl}Please check if you've received the item." },
 { classId: 106010, className: "TooMuchItemsMatched_InputMoreDetailFindText", text: "There are too many search results. Use detailed search queries to narrow down your search." },
 { classId: 106011, className: "ReallyCancelRegisteredItem", text: "Are you sure you want to cancel the registration of this item?" },

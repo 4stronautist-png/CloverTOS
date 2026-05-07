@@ -49,6 +49,19 @@ public class CKlaipeNpcScript : GeneralScript
 
 		});
 
+		AddNpc(20169, L("[Market Manager] Lydia"), "Lydia", "c_Klaipe", 250.21234, 225.45662, 90.0, async dialog =>
+		{
+			dialog.SetTitle(L("Lydia"));
+
+			var response = await dialog.Select(L("Would you like to use the market?"),
+				Option(L("Open Market"), "market"),
+				Option(L("Cancel"), "cancel")
+			);
+
+			if (response == "market")
+				await dialog.OpenCustomDialog(CustomDialog.MARKET);
+		});
+
 		// [Item Merchant] Mirina
 		//-------------------------------------------------------------------------
 		var itemMerchant = AddNpc(20115, L("[Item Merchant] Mirina"), "Mirina", "c_Klaipe", 510.7029, -349.3194, 90.0, async dialog =>

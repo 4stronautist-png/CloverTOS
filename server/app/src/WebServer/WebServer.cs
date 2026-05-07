@@ -352,6 +352,7 @@ namespace Melia.Web
 				_server.WithWebApi("/toslive/patch/", m => m.WithController<LaunchController>());
 				_server.WithWebApi("/api/info/", m => m.WithController<InfoController>());
 				_server.WithWebApi("/api/account/", m => m.WithController<AccountController>());
+				_server.WithWebApi("/", m => m.WithController<MarketController>());
 
 				_server.WithModule(new AuthModule("/api/admin/"));
 				_server.WithWebApi("/api/admin/", m => m.WithController<AdminController>());
@@ -434,6 +435,7 @@ namespace Melia.Web
 					webFolder = "user/web/";
 
 				_guildServer
+					.WithWebApi("/", m => m.WithController<MarketController>())
 					.WithWebApi("/", m => m.WithController<TosGuildController>())
 					.WithStaticFolder("/", webFolder, false, fm =>
 					{

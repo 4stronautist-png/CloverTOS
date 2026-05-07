@@ -336,7 +336,7 @@ namespace Melia.Zone.Network
 				Send.ZC_GUESTPAGE_MAP(conn);
 				foreach (var job in character.Jobs.GetList().OrderBy(j => j.SelectionDate).ThenBy(j => j.Rank))
 				{
-					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.SkillPoints);
+					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.Level);
 					Send.ZC_JOB_PTS(character, job);
 				}
 				Send.ZC_SESSION_OBJECTS(character);
@@ -348,7 +348,7 @@ namespace Melia.Zone.Network
 				Send.ZC_ITEM_EQUIP_LIST(character);
 				Send.ZC_NORMAL.SetSkillsProperties(conn);
 				
-				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 0);
+				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 1);
 				character.Properties.SetFloat(PropertyName.Job, (int)character.JobId);
 				Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 				Send.ZC_SKILL_LIST(character);
@@ -934,6 +934,8 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_ITEM_EQUIP: User '{0}' tried to equip item he doesn't have ({1}).", conn.Account.Name, worldId);
 			else if (result == InventoryResult.InvalidSlot)
 				Log.Warning("CZ_ITEM_EQUIP: User '{0}' tried to equip item in invalid slot ({1}).", conn.Account.Name, worldId);
+			else
+				character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -953,6 +955,8 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_ITEM_UNEQUIP: User '{0}' tried to unequip non-existent item from {1}.", conn.Account.Name, slot);
 			else if (result == InventoryResult.InvalidSlot)
 				Log.Warning("CZ_ITEM_UNEQUIP: User '{0}' tried to unequip item from invalid slot ({1}).", conn.Account.Name, slot);
+			else
+				character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -965,6 +969,7 @@ namespace Melia.Zone.Network
 		{
 			var character = conn.SelectedCharacter;
 			character.Inventory.UnequipAll();
+			character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -3753,6 +3758,7 @@ namespace Melia.Zone.Network
 			//Send.ZC_NORMAL.PlayEffect(character, "F_pc_class_change");
 
 			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(character));
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 
 			// The intended behavior is to trigger a clean DC from the
 			// client with a move to barracks, but if we *need* the
@@ -6499,7 +6505,7 @@ namespace Melia.Zone.Network
 			}
 
 			character.JobId = jobId;
-			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, 0);
+			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, character.Job?.Level ?? 1);
 			character.Properties.SetFloat(PropertyName.Job, (int)jobId);
 			Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 			Send.ZC_SKILL_LIST(character);
@@ -6508,6 +6514,7 @@ namespace Melia.Zone.Network
 			character.AddonMessage(AddonMessage.JOB_UPDATE);
 			character.AddonMessage(AddonMessage.UPDATE_REPRESENTATION_CLASS_ICON, "None", (int)jobId);
 			character.InvalidateProperties();
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 		}
 
 		/// <summary>
@@ -6751,6 +6758,7 @@ namespace Melia.Zone.Network
 
 			// Set the briquetting appearance on the target item
 			targetItem.Properties.SetFloat(PropertyName.BriquettingIndex, sourceItem.Id);
+			ZoneServer.Instance.Database.SaveItemProperties(targetItem);
 
 			// Update item properties to client
 			Send.ZC_OBJECT_PROPERTY(character.Connection, targetItem);
@@ -6760,6 +6768,15 @@ namespace Melia.Zone.Network
 
 			// Broadcast appearance update so other players see the change
 			Send.ZC_UPDATED_PCAPPEARANCE(character);
+
+			foreach (var equipPair in character.Inventory.GetEquip())
+			{
+				if (equipPair.Value == targetItem)
+				{
+					Send.ZC_NORMAL.UpdateCharacterLook(character, sourceItem.Id, equipPair.Key);
+					break;
+				}
+			}
 		}
 
 		/// <summary>
