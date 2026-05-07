@@ -1364,6 +1364,9 @@ public class CharacterCalculationsScript : GeneralScript
 
 		var value = byStat + byLevel + byItem;
 
+		var byItemRareOption = properties.GetFloat(PropertyName.EnchantCriticalHitRate);
+		value += (float)Math.Floor(value * (byItemRareOption / 1000));
+
 		var byBuffs = character.Properties.GetFloat(PropertyName.CRTHR_BM);
 
 		var rate = character.Properties.GetFloat(PropertyName.CRTHR_RATE_BM);
@@ -1399,6 +1402,9 @@ public class CharacterCalculationsScript : GeneralScript
 		byItem += character.Inventory.GetEquipProperties(PropertyName.CRTDR);
 
 		var value = byStat + byLevel + byItem;
+
+		var byItemRareOption = properties.GetFloat(PropertyName.EnchantCriticalDodgeRate);
+		value += (float)Math.Floor(value * (byItemRareOption / 1000));
 
 		var byBuffs = character.Properties.GetFloat(PropertyName.CRTDR_BM);
 
@@ -1478,6 +1484,9 @@ public class CharacterCalculationsScript : GeneralScript
 
 		var value = byLevel + byStat + byItem;
 
+		var byItemRareOption = properties.GetFloat(PropertyName.EnchantDodgeRate);
+		value += (float)Math.Floor(value * (byItemRareOption / 1000));
+
 		var byBuffs = character.Properties.GetFloat(PropertyName.DR_BM);
 
 		var rate = character.Properties.GetFloat(PropertyName.DR_RATE_BM);
@@ -1527,6 +1536,9 @@ public class CharacterCalculationsScript : GeneralScript
 		byItem += character.Inventory.GetEquipProperties(PropertyName.BLK);
 
 		var value = byLevel + byStat + byItem;
+
+		var byItemRareOption = properties.GetFloat(PropertyName.EnchantBlockRate);
+		value += (float)Math.Floor(value * (byItemRareOption / 1000));
 
 		// The 'Increases final block rate by x%' on shields
 		var byItemBlockRate = character.Inventory.GetEquipProperties(PropertyName.BlockRate);
@@ -1584,6 +1596,9 @@ public class CharacterCalculationsScript : GeneralScript
 		byItem += character.Inventory.GetEquipProperties(PropertyName.BLK_BREAK);
 
 		var value = byLevel + byStat + byItem;
+
+		var byItemRareOption = properties.GetFloat(PropertyName.EnchantBlockBreakRate);
+		value += (float)Math.Floor(value * (byItemRareOption / 1000));
 
 		var byBuffs = character.Properties.GetFloat(PropertyName.BLK_BREAK_BM);
 
@@ -1698,6 +1713,7 @@ public class CharacterCalculationsScript : GeneralScript
 		var byBuff = properties.GetFloat(PropertyName.MSPD_BM);
 		var byBonus = properties.GetFloat(PropertyName.MSPD_Bonus);
 		var byItem = character.Inventory.GetEquipProperties(PropertyName.MSPD);
+		byItem += properties.GetFloat(PropertyName.EnchantMSPD);
 		var value = (baseValue + byBuff + byItem + byBonus);
 
 		var nowWeight = properties.GetFloat(PropertyName.NowWeight);

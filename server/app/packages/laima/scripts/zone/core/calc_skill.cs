@@ -50,6 +50,7 @@ public class SkillCalculationsScript : GeneralScript
 			value += skill.Properties.GetFloat(PropertyName.Level_BM, 0);
 
 		value += skill.Properties.GetFloat(PropertyName.GemLevel_BM, 0);
+		value += skill.Vars.GetFloat("EarringLevel_BM", 0);
 
 		if (skill.Owner is Character character)
 			value += ItemEquipEffects.GetSkillBonus(character, skill.Id);

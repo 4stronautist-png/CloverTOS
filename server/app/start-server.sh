@@ -12,10 +12,24 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+detect_local_host() {
+    local host_ip
+
+    if command -v powershell.exe >/dev/null 2>&1 && command -v ip >/dev/null 2>&1; then
+        host_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -n 1)
+        if [ -n "$host_ip" ]; then
+            echo "$host_ip"
+            return 0
+        fi
+    fi
+
+    echo "127.0.0.1"
+}
+
 SERVER_MODE="${SERVER_MODE:-local}"
 PUBLIC_HOST="${PUBLIC_HOST:-127.0.0.1}"
 PUBLIC_WEB_PORT="${PUBLIC_WEB_PORT:-8080}"
-LOCAL_HOST="${LOCAL_HOST:-127.0.0.1}"
+LOCAL_HOST="${LOCAL_HOST:-$(detect_local_host)}"
 LOCAL_WEB_PORT="${LOCAL_WEB_PORT:-8080}"
 WINDOWS_CLIENT_ROOT="${WINDOWS_CLIENT_ROOT:-/mnt/c/CloverTOS-Local}"
 WINDOWS_CLIENT_XML="${WINDOWS_CLIENT_XML:-$WINDOWS_CLIENT_ROOT/release/client.xml}"
@@ -279,7 +293,7 @@ verify_account_api() {
     if curl -fsS \
         -H "Content-Type: application/json" \
         -d "$body" \
-        "http://127.0.0.1:8080/api/account/create" >/tmp/clovertos-account-api-check.json 2>/tmp/clovertos-account-api-check.err; then
+        "http://${LOCAL_HOST}:${LOCAL_WEB_PORT}/api/account/create" >/tmp/clovertos-account-api-check.json 2>/tmp/clovertos-account-api-check.err; then
         if mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" -N -B -e "SELECT COUNT(*) FROM accounts WHERE name='${account_name}';" 2>/dev/null | grep -q '^1$'; then
             log_success "API de conta gravou no banco corretamente."
             return 0
@@ -363,14 +377,15 @@ fi
 
 repair_barracks_database
 
-log_info "Compilando Release para garantir binarios atualizados..."
-dotnet build Melia.sln -c Release
-
 if [ -f "./stop-server.sh" ]; then
-    ./stop-server.sh >/dev/null 2>&1 || true
+    log_info "Parando servidores antigos antes de compilar..."
+    bash ./stop-server.sh >/dev/null 2>&1 || true
 fi
 
 rm -f pids.txt
+
+log_info "Compilando Release para garantir binarios atualizados..."
+dotnet build Melia.sln -c Release
 
 for port in 2000 7001 7002 8080 9001 9002; do
     if lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
@@ -402,7 +417,7 @@ for port in 2000 7001 7002 8080 9001 9002; do
     fi
 done
 
-if verify_http_endpoint "http://127.0.0.1:8080/toslive/patch/serverlist.xml"; then
+if verify_http_endpoint "http://${LOCAL_HOST}:${LOCAL_WEB_PORT}/toslive/patch/serverlist.xml"; then
     :
 else
     final_check_failed=1

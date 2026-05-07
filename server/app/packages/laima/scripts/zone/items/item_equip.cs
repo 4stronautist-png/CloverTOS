@@ -45,6 +45,7 @@ public class ItemEquipScript : GeneralScript
 
 		// Apply item-specific equip effects
 		this.ApplyEquipEffects(character, item);
+		EarringSkillLineEffects.Apply(character, item);
 
 		return ItemEquipResult.Okay;
 	}
@@ -63,6 +64,7 @@ public class ItemEquipScript : GeneralScript
 
 		// Remove item-specific equip effects
 		this.RemoveEquipEffects(character, item);
+		EarringSkillLineEffects.Remove(character, item);
 
 		return ItemUnequipResult.Okay;
 	}

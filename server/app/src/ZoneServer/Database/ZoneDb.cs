@@ -73,6 +73,9 @@ namespace Melia.Zone.Database
 			// Calls to partial class methods for loading components
 			this.LoadCharacterComponentData(character, charNameForLog);
 
+			if (character.EquippedTitleId != -1)
+				character.EquipTitle(character.EquippedTitleId);
+
 			character.InitProperties();
 			character.Properties.Stamina = (int)character.Properties.GetFloat(PropertyName.MaxSta);
 			character.UpdateStance();

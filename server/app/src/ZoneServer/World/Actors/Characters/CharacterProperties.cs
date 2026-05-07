@@ -20,6 +20,26 @@ namespace Melia.Zone.World.Actors.Characters
 	/// </summary>
 	public class CharacterProperties : Properties
 	{
+		private static readonly string[] HeadgearEnchantProperties =
+		[
+			PropertyName.EnchantHitRate,
+			PropertyName.EnchantMainWeaponDamageRate,
+			PropertyName.EnchantMeleeReducedRate,
+			PropertyName.EnchantPVPReducedRate,
+			PropertyName.EnchantDodgeRate,
+			PropertyName.EnchantMagicReducedRate,
+			PropertyName.EnchantSubWeaponDamageRate,
+			PropertyName.EnchantCriticalDodgeRate,
+			PropertyName.EnchantBlockBreakRate,
+			PropertyName.EnchantCriticalHitRate,
+			PropertyName.EnchantBlockRate,
+			PropertyName.EnchantSR,
+			PropertyName.EnchantBossDamageRate,
+			PropertyName.EnchantPVPDamageRate,
+			PropertyName.EnchantCriticalDamage_Rate,
+			PropertyName.EnchantMSPD,
+		];
+
 		/// <summary>
 		/// Returns the owner of the properties.
 		/// </summary>
@@ -167,6 +187,9 @@ namespace Melia.Zone.World.Actors.Characters
 			this.Create(PropertyName.SkillRange, "SCR_Get_Character_SkillRange");
 			this.Create(PropertyName.Guardable, "SCR_Get_Character_Guardable");
 			this.Create(PropertyName.LootingChance, "SCR_Get_Character_LootingChance");
+
+			foreach (var propertyName in HeadgearEnchantProperties)
+				this.Create(new CFloatProperty(propertyName, () => this.GetHeadgearEnchantProperty(propertyName)));
 
 			// Elemental-Type Attack
 			this.Create(PropertyName.Fire_Atk, "SCR_GET_FIRE_ATK");
@@ -604,6 +627,11 @@ namespace Melia.Zone.World.Actors.Characters
 				return 0;
 
 			return func(this.Character);
+		}
+
+		private float GetHeadgearEnchantProperty(string propertyName)
+		{
+			return this.Character.Inventory.GetEquipProperties(propertyName);
 		}
 
 		/// <summary>
