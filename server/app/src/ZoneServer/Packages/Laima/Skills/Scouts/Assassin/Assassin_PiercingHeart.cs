@@ -20,10 +20,12 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 	/// </summary>
 	[Package("laima")]
 	[SkillHandler(SkillId.Assassin_PiercingHeart)]
-	public class Assassin_PiercingHeartOverride : IGroundSkillHandler
-	{
-		private const float BackAttackAngle = 90f;
-		private const float BackAttackDamageMultiplier = 0.5f;
+		public class Assassin_PiercingHeartOverride : IGroundSkillHandler
+		{
+			private const float BackAttackAngle = 90f;
+			private const float ArmorPenetrationRate = 0.35f;
+			private static readonly TimeSpan HealBlockDuration = TimeSpan.FromSeconds(5);
+			private static readonly TimeSpan AnnihilationMarkDuration = TimeSpan.FromSeconds(15);
 
 		/// <summary>
 		/// Handles skill, damaging targets.
@@ -60,7 +62,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 		/// <param name="splashArea"></param>
 		private async Task Attack(Skill skill, ICombatEntity caster, ISplashArea splashArea)
 		{
-			var hitDelay = TimeSpan.FromMilliseconds(150);
+			var hitDelay = TimeSpan.FromMilliseconds(80);
 			var aniTime = TimeSpan.FromMilliseconds(50);
 			var skillHitDelay = TimeSpan.Zero;
 
@@ -69,14 +71,13 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			var targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
 			var hits = new List<SkillHitInfo>();
 
-			// Assassin13 increases duration of the debuff
-			var debuffDuration = 3f;
-			if (caster.TryGetActiveAbilityLevel(AbilityId.Assassin13, out var level))
-				debuffDuration += level;
-
 			foreach (var target in targets.LimitBySDR(caster, skill))
 			{
-				var modifier = SkillModifier.MultiHit(4);
+				var modifier = SkillModifier.MultiHit(skill.Data.MultiHitCount);
+				var isBackOrCloaked = this.IsBackOrCloaked(caster, target, modifier);
+
+				if (target.ArmorMaterial == ArmorMaterialType.Cloth || target.ArmorMaterial == ArmorMaterialType.Leather)
+					modifier.DefensePenetrationRate += ArmorPenetrationRate;
 
 				// Increase damage by 10% if target is under the effect of
 				// Assassination Target from the caster
@@ -88,12 +89,8 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 				var skillHitResult = SCR_SkillHit(caster, target, skill, modifier);
 
-				// Check back attack AFTER SCR_SkillHit so card hooks can set ForcedBackAttack
-				if (caster.IsBehind(target, BackAttackAngle) || modifier.ForcedBackAttack)
-				{
-					skillHitResult.Damage *= (1 + BackAttackDamageMultiplier);
+				if (isBackOrCloaked)
 					Send.ZC_NORMAL.PlayTextEffect(target, caster, "SHOW_CUSTOM_TEXT", 50, "Backstab!");
-				}
 
 				target.TakeDamage(skillHitResult.Damage, caster);
 
@@ -103,7 +100,12 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 				hits.Add(skillHit);
 
 				if (skillHitResult.Damage > 0)
-					target.StartBuff(BuffId.PiercingHeart_Debuff, skill.Level, 0, TimeSpan.FromSeconds(debuffDuration), caster);
+				{
+					target.StartBuff(BuffId.PiercingHeart_Debuff, skill.Level, 0, HealBlockDuration, caster);
+
+					if (isBackOrCloaked)
+						target.StartBuff(BuffId.Assassin_Request_Buff, skill.Level, 0, AnnihilationMarkDuration, caster, skill.Id);
+				}
 			}
 
 			// Assassin14 adds a critical buff
@@ -114,5 +116,8 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 			Send.ZC_SKILL_HIT_INFO(caster, hits);
 		}
+
+		private bool IsBackOrCloaked(ICombatEntity caster, ICombatEntity target, SkillModifier modifier)
+			=> caster.IsBuffActive(BuffId.Cloaking_Buff) || caster.IsBehind(target, BackAttackAngle) || modifier.ForcedBackAttack;
 	}
 }

@@ -346,6 +346,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			var wasActive = ability.Active;
 			if (wasActive)
 				ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, this.Character);
+			else
+				this.DeactivateMutuallyExclusiveAbility(ability);
 
 			ability.Active = !ability.Active;
 
@@ -363,6 +365,29 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			Send.ZC_ADDON_MSG(this.Character, AddonMessage.RESET_ABILITY_ACTIVE, 0, className);
 
 			return true;
+		}
+
+		private void DeactivateMutuallyExclusiveAbility(Ability ability)
+		{
+			var otherAbilityId = ability.Id switch
+			{
+				AbilityId.Assassin16 => (AbilityId?)AbilityId.Assassin23,
+				AbilityId.Assassin23 => AbilityId.Assassin16,
+				_ => null,
+			};
+
+			if (otherAbilityId == null)
+				return;
+
+			var otherAbility = this.Get(otherAbilityId.Value);
+			if (otherAbility == null || !otherAbility.Active)
+				return;
+
+			ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(otherAbility, this.Character);
+			otherAbility.Active = false;
+			this.AbilityDeactivated?.Invoke(this.Character, otherAbility);
+			Send.ZC_OBJECT_PROPERTY(this.Character.Connection, otherAbility);
+			Send.ZC_ADDON_MSG(this.Character, AddonMessage.RESET_ABILITY_ACTIVE, 0, otherAbility.Data.ClassName);
 		}
 
 		/// <summary>

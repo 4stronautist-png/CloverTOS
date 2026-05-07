@@ -1855,7 +1855,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_CLIENT_HIT_LIST: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -1957,7 +1956,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_TARGET: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -2145,7 +2143,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_GROUND: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -2242,7 +2239,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_SELF: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -4935,6 +4931,8 @@ namespace Melia.Zone.Network
 			var wasActive = ability.Active;
 			if (wasActive)
 				ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, character);
+			else
+				this.DeactivateMutuallyExclusiveAbility(character, ability);
 
 			ability.Active = !ability.Active;
 
@@ -4947,6 +4945,36 @@ namespace Melia.Zone.Network
 			Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", ability.Active ? 1 : 0, ability.Data.ClassName);
 
 			if (ZoneServer.Instance.AbilityHandlers.HasPropertyHandler(abilityId))
+			{
+				character.Properties.InvalidateAll();
+				Send.ZC_OBJECT_PROPERTY(character);
+			}
+		}
+
+		private void DeactivateMutuallyExclusiveAbility(Character character, Ability ability)
+		{
+			var otherAbilityId = ability.Id switch
+			{
+				AbilityId.Assassin16 => (AbilityId?)AbilityId.Assassin23,
+				AbilityId.Assassin23 => AbilityId.Assassin16,
+				_ => null,
+			};
+
+			if (otherAbilityId == null)
+				return;
+
+			var otherAbility = character.Abilities.Get(otherAbilityId.Value);
+			if (otherAbility == null || !otherAbility.Active)
+				return;
+
+			ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(otherAbility, character);
+			otherAbility.Active = false;
+			character.Abilities.RaiseToggled(otherAbility, activated: false, wasActive: true);
+
+			Send.ZC_OBJECT_PROPERTY(character.Connection, otherAbility, PropertyName.ActiveState);
+			Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", 0, otherAbility.Data.ClassName);
+
+			if (ZoneServer.Instance.AbilityHandlers.HasPropertyHandler(otherAbility.Id))
 			{
 				character.Properties.InvalidateAll();
 				Send.ZC_OBJECT_PROPERTY(character);

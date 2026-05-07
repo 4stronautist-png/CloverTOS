@@ -1,9 +1,11 @@
 ﻿using Melia.Shared.Game.Const;
 using Melia.Zone.Buffs.Base;
+using Melia.Zone.Network;
 using Melia.Zone.Scripting.ScriptableEvents;
 using Melia.Zone.Skills;
 using Melia.Zone.Skills.Combat;
 using Melia.Zone.World.Actors;
+using Melia.Zone.World.Actors.Characters;
 
 namespace Melia.Zone.Buffs.Handlers.Scouts.Scout
 {
@@ -13,6 +15,25 @@ namespace Melia.Zone.Buffs.Handlers.Scouts.Scout
 	[BuffHandler(BuffId.Cloaking_Buff)]
 	public class Cloaking_Buff : BuffHandler
 	{
+		public override void OnActivate(Buff buff, ActivationType activationType)
+		{
+			if (buff.NumArg2 <= 0)
+				return;
+
+			AddPropertyModifier(buff, buff.Target, PropertyName.MSPD_BM, buff.NumArg2);
+
+			if (buff.Target is Character character)
+				Send.ZC_MOVE_SPEED(character);
+		}
+
+		public override void OnEnd(Buff buff)
+		{
+			RemovePropertyModifier(buff, buff.Target, PropertyName.MSPD_BM);
+
+			if (buff.Target is Character character)
+				Send.ZC_MOVE_SPEED(character);
+		}
+
 		/// <summary>
 		/// Applies the buff's effects during the combat calculations.
 		/// </summary>

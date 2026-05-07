@@ -18,7 +18,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 	public class Assassin_HasisasOverride : IGroundSkillHandler
 	{
 		private const int HasisasPotionId = 647010;
-		private static readonly TimeSpan BuffDuration = TimeSpan.FromMinutes(5);
+		private static readonly TimeSpan BuffDuration = TimeSpan.FromMinutes(30);
 
 		/// <summary>
 		/// Handles skill, applying the buff to the caster.
@@ -44,18 +44,11 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
 
-			var tickLimit = 0;
-			if (caster.TryGetActiveAbilityLevel(AbilityId.Assassin2, out var level))
-			{
-				tickLimit = level;
-			}
-
 			var evasionVariant = 0f;
-			if (caster.IsAbilityActive(AbilityId.Assassin3))
+			if (caster.IsAbilityActive(AbilityId.Assassin3) || caster.GetAbilityLevel(AbilityId.Assassin3) > 0)
 				evasionVariant++;
 
-			var buff = caster.StartBuff(BuffId.Hasisas_Buff, skill.Level, evasionVariant, BuffDuration, caster, skill.Id);
-			buff?.Vars.SetInt("Hasisas.TickLimit", tickLimit);
+			caster.StartBuff(BuffId.Hasisas_Buff, skill.Level, evasionVariant, BuffDuration, caster, skill.Id);
 
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, caster.Position);
 		}
