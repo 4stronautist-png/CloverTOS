@@ -15,6 +15,7 @@ namespace Melia.Barracks.Database
 	public class Character : IBarrackPc
 	{
 		private const string LegendCardVisualEnabledVar = "Clover.LegendCardVisual.Enabled";
+
 		private readonly struct LegendCardVisualEffect
 		{
 			public LegendCardVisualEffect(int itemId, EquipSlot slot)

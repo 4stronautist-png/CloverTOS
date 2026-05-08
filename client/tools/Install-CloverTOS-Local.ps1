@@ -275,6 +275,22 @@ start "$ServerName" "%~dp0Client_tos_x64.exe" -SERVICE
     Set-Content -LiteralPath (Join-Path $ReleasePath "Start-CloverTOS-Local.bat") -Value $launcher -Encoding ASCII
 }
 
+function Apply-ClientPatches {
+    param([string]$ReleasePath)
+
+    $launcher = @"
+@echo off
+cd /d "%~dp0"
+start "CloverTOS" "%~dp0Client_tos_x64.exe" -SERVICE GLOBAL
+"@
+
+    Write-Step "Configurando launcher direto do client"
+    Set-Content -LiteralPath (Join-Path $ReleasePath "Start-CloverTOS-Local.bat") -Value $launcher -Encoding ASCII
+    Remove-Item -LiteralPath (Join-Path $ReleasePath "CloverTOS-LoadingScreen.ps1") -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $ReleasePath "loading-screen.png") -Force -ErrorAction SilentlyContinue
+    Write-Ok "Launcher direto configurado"
+}
+
 function Disable-Reshade {
     param([string]$ReleasePath)
 
@@ -377,6 +393,7 @@ Write-ClientConfig -ReleasePath $releasePath
 Disable-Reshade -ReleasePath $releasePath
 Reset-ClientState -ReleasePath $releasePath
 Write-ClientConfig -ReleasePath $releasePath
+Apply-ClientPatches -ReleasePath $releasePath
 Test-ClientServerList -ReleasePath $releasePath
 Write-Ok "Configuracao aplicada"
 

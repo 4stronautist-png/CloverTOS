@@ -336,7 +336,7 @@ namespace Melia.Zone.Network
 				Send.ZC_GUESTPAGE_MAP(conn);
 				foreach (var job in character.Jobs.GetList().OrderBy(j => j.SelectionDate).ThenBy(j => j.Rank))
 				{
-					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.SkillPoints);
+					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.Level);
 					Send.ZC_JOB_PTS(character, job);
 				}
 				Send.ZC_SESSION_OBJECTS(character);
@@ -348,7 +348,7 @@ namespace Melia.Zone.Network
 				Send.ZC_ITEM_EQUIP_LIST(character);
 				Send.ZC_NORMAL.SetSkillsProperties(conn);
 				
-				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 0);
+				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 1);
 				character.Properties.SetFloat(PropertyName.Job, (int)character.JobId);
 				Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 				Send.ZC_SKILL_LIST(character);
@@ -934,6 +934,8 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_ITEM_EQUIP: User '{0}' tried to equip item he doesn't have ({1}).", conn.Account.Name, worldId);
 			else if (result == InventoryResult.InvalidSlot)
 				Log.Warning("CZ_ITEM_EQUIP: User '{0}' tried to equip item in invalid slot ({1}).", conn.Account.Name, worldId);
+			else
+				character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -953,6 +955,8 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_ITEM_UNEQUIP: User '{0}' tried to unequip non-existent item from {1}.", conn.Account.Name, slot);
 			else if (result == InventoryResult.InvalidSlot)
 				Log.Warning("CZ_ITEM_UNEQUIP: User '{0}' tried to unequip item from invalid slot ({1}).", conn.Account.Name, slot);
+			else
+				character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -965,6 +969,7 @@ namespace Melia.Zone.Network
 		{
 			var character = conn.SelectedCharacter;
 			character.Inventory.UnequipAll();
+			character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -1087,18 +1092,13 @@ namespace Melia.Zone.Network
 			}
 
 			// Validate item is headgear
-			if (item.Data.EquipType1 != EquipType.Hat)
+			if (!item.IsHairAccessory())
 			{
 				character.ServerMessage("Enchant scrolls can only be used on headgear.");
 				return;
 			}
 
-			// Check potential
-			if (Feature.IsEnabled("HeadgearEnchantsConsumePotential") && item.Potential <= 0)
-			{
-				character.SystemMessage("NoMorePotential");
-				return;
-			}
+			item.EnsureHairAccessoryEnchantRank();
 
 			// Item Lock
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.REINFORCE_131014_ITEM_LOCK, itemId, "YES"));
@@ -1108,11 +1108,10 @@ namespace Melia.Zone.Network
 			var maxOptions = (int)enchantItem.Data.Script.NumArg2;
 			if (minOptions <= 0) minOptions = 1;
 			if (maxOptions <= 0) maxOptions = 2;
+			item.AddHairAccessoryEnchantRankProgress(GetHairAccessoryEnchantRankGain(enchantItem));
 			item.GenerateRandomHatOptions(minOptions, maxOptions + 1);
 
-			// Reduce potential by 1
-			if (Feature.IsEnabled("HeadgearEnchantsConsumePotential"))
-				item.Properties.Modify(PropertyName.PR, -1);
+			// Hair accessory scrolls must work on every hair accessory slot.
 
 			// Update item properties
 			Send.ZC_OBJECT_PROPERTY(character.Connection, item);
@@ -1124,6 +1123,23 @@ namespace Melia.Zone.Network
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.REINFORCE_131014_ITEM_LOCK, "None", "YES"));
 
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.HAIRENCHANT_SUCCESS, itemId, enchantItem.DbId));
+		}
+
+		/// <summary>
+		/// Returns how much rank-up progress a hair accessory enchant scroll gives.
+		/// </summary>
+		/// <param name="enchantItem"></param>
+		/// <returns></returns>
+		private static int GetHairAccessoryEnchantRankGain(Item enchantItem)
+		{
+			return enchantItem.Id switch
+			{
+				11201102 => 1,
+				495185 => 5,
+				495186 => 5,
+				495188 => 5,
+				_ => 0,
+			};
 		}
 
 		/// <summary>
@@ -1572,18 +1588,13 @@ namespace Melia.Zone.Network
 			else if (itemUsed.Data.ClassName.Contains("Enchantchip"))
 			{
 				// Enchant scrolls can only be used on headgear (hats)
-				if (itemUsedOn.Data.EquipType1 != EquipType.Hat)
+				if (!itemUsedOn.IsHairAccessory())
 				{
 					character.ServerMessage("Enchant scrolls can only be used on headgear.");
 					return;
 				}
 
-				// Check potential
-				if (Feature.IsEnabled("HeadgearEnchantsConsumePotential") && itemUsedOn.Potential <= 0)
-				{
-					character.SystemMessage("NoMorePotential");
-					return;
-				}
+				itemUsedOn.EnsureHairAccessoryEnchantRank();
 
 				// Get min/max options from item script args
 				var minOptions = (int)itemUsed.Data.Script.NumArg1;
@@ -1591,11 +1602,10 @@ namespace Melia.Zone.Network
 				if (minOptions <= 0) minOptions = 1;
 				if (maxOptions <= 0) maxOptions = 2;
 
+				itemUsedOn.AddHairAccessoryEnchantRankProgress(GetHairAccessoryEnchantRankGain(itemUsed));
 				itemUsedOn.GenerateRandomHatOptions(minOptions, maxOptions + 1);
 
-				// Reduce potential by 1
-				if (Feature.IsEnabled("HeadgearEnchantsConsumePotential"))
-					itemUsedOn.Properties.Modify(PropertyName.PR, -1);
+				// Hair accessory scrolls must work on every hair accessory slot.
 
 				character.Inventory.Remove(item1WorldId);
 				Send.ZC_OBJECT_PROPERTY(conn, itemUsedOn);
@@ -1845,7 +1855,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_CLIENT_HIT_LIST: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -1947,7 +1956,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_TARGET: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -2135,7 +2143,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_GROUND: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -2232,7 +2239,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_SELF: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -3748,6 +3754,7 @@ namespace Melia.Zone.Network
 			//Send.ZC_NORMAL.PlayEffect(character, "F_pc_class_change");
 
 			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(character));
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 
 			// The intended behavior is to trigger a clean DC from the
 			// client with a move to barracks, but if we *need* the
@@ -4526,6 +4533,13 @@ namespace Melia.Zone.Network
 			if (start != 1 && start != 3)
 				return;
 
+			if (character.Variables.Temp.GetBool("SoulSociety.Walk.Enabled", false))
+			{
+				character.StopBuff(BuffId.DashRun);
+				character.Movement.SetFixedMoveSpeed(18f);
+				return;
+			}
+
 			// For some reason this packet is sent multiple times while
 			// the character is dashing, which is a potential problem if
 			// DashRun gets stacked and started again, but the buff manager
@@ -4917,6 +4931,8 @@ namespace Melia.Zone.Network
 			var wasActive = ability.Active;
 			if (wasActive)
 				ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, character);
+			else
+				this.DeactivateMutuallyExclusiveAbility(character, ability);
 
 			ability.Active = !ability.Active;
 
@@ -4929,6 +4945,36 @@ namespace Melia.Zone.Network
 			Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", ability.Active ? 1 : 0, ability.Data.ClassName);
 
 			if (ZoneServer.Instance.AbilityHandlers.HasPropertyHandler(abilityId))
+			{
+				character.Properties.InvalidateAll();
+				Send.ZC_OBJECT_PROPERTY(character);
+			}
+		}
+
+		private void DeactivateMutuallyExclusiveAbility(Character character, Ability ability)
+		{
+			var otherAbilityId = ability.Id switch
+			{
+				AbilityId.Assassin16 => (AbilityId?)AbilityId.Assassin23,
+				AbilityId.Assassin23 => AbilityId.Assassin16,
+				_ => null,
+			};
+
+			if (otherAbilityId == null)
+				return;
+
+			var otherAbility = character.Abilities.Get(otherAbilityId.Value);
+			if (otherAbility == null || !otherAbility.Active)
+				return;
+
+			ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(otherAbility, character);
+			otherAbility.Active = false;
+			character.Abilities.RaiseToggled(otherAbility, activated: false, wasActive: true);
+
+			Send.ZC_OBJECT_PROPERTY(character.Connection, otherAbility, PropertyName.ActiveState);
+			Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", 0, otherAbility.Data.ClassName);
+
+			if (ZoneServer.Instance.AbilityHandlers.HasPropertyHandler(otherAbility.Id))
 			{
 				character.Properties.InvalidateAll();
 				Send.ZC_OBJECT_PROPERTY(character);
@@ -6487,7 +6533,7 @@ namespace Melia.Zone.Network
 			}
 
 			character.JobId = jobId;
-			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, 0);
+			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, character.Job?.Level ?? 1);
 			character.Properties.SetFloat(PropertyName.Job, (int)jobId);
 			Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 			Send.ZC_SKILL_LIST(character);
@@ -6496,6 +6542,7 @@ namespace Melia.Zone.Network
 			character.AddonMessage(AddonMessage.JOB_UPDATE);
 			character.AddonMessage(AddonMessage.UPDATE_REPRESENTATION_CLASS_ICON, "None", (int)jobId);
 			character.InvalidateProperties();
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 		}
 
 		/// <summary>
@@ -6739,6 +6786,7 @@ namespace Melia.Zone.Network
 
 			// Set the briquetting appearance on the target item
 			targetItem.Properties.SetFloat(PropertyName.BriquettingIndex, sourceItem.Id);
+			ZoneServer.Instance.Database.SaveItemProperties(targetItem);
 
 			// Update item properties to client
 			Send.ZC_OBJECT_PROPERTY(character.Connection, targetItem);
@@ -6748,6 +6796,15 @@ namespace Melia.Zone.Network
 
 			// Broadcast appearance update so other players see the change
 			Send.ZC_UPDATED_PCAPPEARANCE(character);
+
+			foreach (var equipPair in character.Inventory.GetEquip())
+			{
+				if (equipPair.Value == targetItem)
+				{
+					Send.ZC_NORMAL.UpdateCharacterLook(character, sourceItem.Id, equipPair.Key);
+					break;
+				}
+			}
 		}
 
 		/// <summary>

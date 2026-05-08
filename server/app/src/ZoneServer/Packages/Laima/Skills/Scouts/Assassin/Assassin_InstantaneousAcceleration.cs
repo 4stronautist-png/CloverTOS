@@ -85,8 +85,7 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 			foreach (var target in targets.LimitBySDR(caster, skill))
 			{
-				var modifier = SkillModifier.Default;
-				modifier.HitCount = 4;
+					var modifier = SkillModifier.MultiHit(skill.Data.MultiHitCount);
 
 				// Assassin8 doubles the hit count in exchange for -25% damage
 				if (caster.IsAbilityActive(AbilityId.Assassin8))
@@ -111,9 +110,8 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 
 				if (skillHitResult.Damage > 0)
 				{
-					// Assassin9 adds 3 seconds of stun
-					if (caster.IsAbilityActive(AbilityId.Assassin9))
-						target.StartBuff(BuffId.Stun, skill.Level, 0, TimeSpan.FromSeconds(3), caster);
+						if (caster.IsAbilityActive(AbilityId.Assassin9) || caster.GetAbilityLevel(AbilityId.Assassin9) > 0)
+							target.StartBuff(BuffId.Stun, skill.Level, 0, TimeSpan.FromSeconds(4), caster);
 				}
 			}
 

@@ -20,6 +20,9 @@ namespace Melia.Shared.Network.Helpers
 		{
 			foreach (var property in properties)
 			{
+				if (!CanWriteProperty(properties.Namespace, property))
+					continue;
+
 				var propertyId = PropertyTable.GetId(properties.Namespace, property.Ident);
 
 				if (Versions.Protocol > 500)
@@ -88,9 +91,13 @@ namespace Melia.Shared.Network.Helpers
 		public static int GetByteCount(this IEnumerable<IProperty> properties)
 		{
 			var result = 0;
+			var namespaceName = (properties as PropertyList)?.Namespace;
 
 			foreach (var property in properties)
 			{
+				if (namespaceName != null && !CanWriteProperty(namespaceName, property))
+					continue;
+
 				if (Versions.Protocol > 500)
 					result += sizeof(int); // Id
 				else
@@ -114,6 +121,15 @@ namespace Melia.Shared.Network.Helpers
 			}
 
 			return result;
+		}
+
+		private static bool CanWriteProperty(string namespaceName, IProperty property)
+		{
+			if (PropertyTable.Exists(namespaceName, property.Ident))
+				return true;
+
+			Log.Warning("PropertyHelper: Skipping unknown property '{0}' in namespace '{1}'.", property.Ident, namespaceName);
+			return false;
 		}
 	}
 }

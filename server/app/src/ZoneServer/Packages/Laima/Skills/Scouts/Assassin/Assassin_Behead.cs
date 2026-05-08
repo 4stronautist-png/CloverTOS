@@ -1,12 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Melia.Shared.Packages;
 using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
 using Melia.Shared.L10N;
+using Melia.Shared.Packages;
 using Melia.Shared.World;
 using Melia.Zone.Network;
 using Melia.Zone.Skills.Combat;
@@ -18,23 +16,17 @@ using static Melia.Zone.Skills.SkillUseFunctions;
 
 namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 {
-	/// <summary>
-	/// Handler for the Assassin skill Behead.
-	/// </summary>
 	[Package("laima")]
 	[SkillHandler(SkillId.Assassin_Behead)]
 	public class Assassin_BeheadOverride : IGroundSkillHandler
 	{
 		private const float BackAttackAngle = 90f;
-		private const float BackAttackDamageMultiplier = 0.5f;
+		private const float InstantAccelerationStunDamageBonus = 0.45f;
+		private const float BleedingDamageRate = 0.125f;
+		private static readonly TimeSpan BleedingDuration = TimeSpan.FromSeconds(15);
+		private static readonly TimeSpan DeepWoundBleedingDuration = TimeSpan.FromSeconds(7.5);
+		private static readonly TimeSpan SilenceDuration = TimeSpan.FromSeconds(2);
 
-		/// <summary>
-		/// Handles skill, damaging targets.
-		/// </summary>
-		/// <param name="skill"></param>
-		/// <param name="caster"></param>
-		/// <param name="originPos"></param>
-		/// <param name="farPos"></param>
 		public void Handle(Skill skill, ICombatEntity caster, Position originPos, Position farPos, ICombatEntity target)
 		{
 			if (!caster.TrySpendSp(skill))
@@ -46,6 +38,10 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
 
+			var attackTarget = this.GetAssassinationTarget(caster) ?? target;
+			if (attackTarget != null)
+				farPos = attackTarget.Position;
+
 			var splashParam = skill.GetSplashParameters(caster, originPos, farPos, length: 40, width: 20, angle: 0);
 			var splashArea = skill.GetSplashArea(SplashType.Square, splashParam);
 
@@ -55,119 +51,71 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 			skill.Run(this.Attack(skill, caster, splashArea));
 		}
 
-		/// <summary>
-		/// Executes the actual attack after a delay.
-		/// </summary>
-		/// <param name="skill"></param>
-		/// <param name="caster"></param>
-		/// <param name="splashArea"></param>
 		private async Task Attack(Skill skill, ICombatEntity caster, ISplashArea splashArea)
 		{
-			// The aniTime1 is unusually long, but confirmed with official.
+			await skill.Wait(TimeSpan.FromMilliseconds(30));
 
-			var hitDelay = TimeSpan.FromMilliseconds(30);
-			var aniTime1 = TimeSpan.FromMilliseconds(240);
-			var aniTime2 = TimeSpan.FromMilliseconds(80);
-			var delayBetweenHits = TimeSpan.FromMilliseconds(330);
-			var skillHitDelay = TimeSpan.Zero;
-
-			await skill.Wait(hitDelay);
-
-			var targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
 			var hits = new List<SkillHitInfo>();
+			var targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
 
-			foreach (var target in targets.LimitBySDR(caster, skill))
-			{
-				var modifier = SkillModifier.Default;
-				modifier.HitCount = 3;
-
-				// Increase damage by 10% if target is under the effect of
-				// Assassination Target from the caster
-				if (target.TryGetBuff(BuffId.Assassin_Target_Debuff, out var assassinTargetDebuff))
+				foreach (var target in targets.LimitBySDR(caster, skill))
 				{
-					if (assassinTargetDebuff.Caster == caster)
-						modifier.DamageMultiplier += 0.10f;
+					var modifier = SkillModifier.MultiHit(skill.Data.MultiHitCount);
+					this.ApplyAssassinationTargetBonus(caster, target, modifier);
+					var isBackOrCloaked = this.IsBackOrCloaked(caster, target, modifier);
+
+					if (isBackOrCloaked)
+						modifier.MinCritChance = 100;
+
+					if (target.IsBuffActive(BuffId.Stun))
+						modifier.DamageMultiplier += InstantAccelerationStunDamageBonus;
+
+					var skillHitResult = SCR_SkillHit(caster, target, skill, modifier);
+					if (isBackOrCloaked)
+						Send.ZC_NORMAL.PlayTextEffect(target, caster, "SHOW_CUSTOM_TEXT", 50, "Backstab!");
+
+					target.TakeDamage(skillHitResult.Damage, caster);
+					hits.Add(new SkillHitInfo(caster, target, skill, skillHitResult, TimeSpan.FromMilliseconds(120), TimeSpan.Zero) { HitEffect = HitEffect.Impact });
+
+					if (skillHitResult.Damage <= 0 || !isBackOrCloaked)
+						continue;
+
+					var bleedingDamage = skillHitResult.Damage * BleedingDamageRate;
+					var bleedingDuration = BleedingDuration;
+
+					if (target.Rank != MonsterRank.Boss && this.HasAbility(caster, AbilityId.Assassin6))
+					{
+						bleedingDamage = MathF.Min(caster.Properties.GetFloat(PropertyName.MHP) * 0.05f, target.Properties.GetFloat(PropertyName.MHP) * 0.05f);
+						bleedingDuration = DeepWoundBleedingDuration;
+					}
+
+					target.StartBuff(BuffId.Behead_Debuff, skill.Level, bleedingDamage, bleedingDuration, caster, skill.Id);
+
+					if (this.HasAbility(caster, AbilityId.Assassin5))
+						target.StartBuff(BuffId.Common_Silence, skill.Level, 0, SilenceDuration, caster, skill.Id);
 				}
-
-				var skillHitResult = SCR_SkillHit(caster, target, skill, modifier);
-
-				// Check back attack AFTER SCR_SkillHit so card hooks can set ForcedBackAttack
-				if (caster.IsBehind(target, BackAttackAngle) || modifier.ForcedBackAttack)
-				{
-					skillHitResult.Damage *= (1 + BackAttackDamageMultiplier);
-					Send.ZC_NORMAL.PlayTextEffect(target, caster, "SHOW_CUSTOM_TEXT", 50, "Backstab!");
-				}
-
-				target.TakeDamage(skillHitResult.Damage, caster);
-
-				var skillHit = new SkillHitInfo(caster, target, skill, skillHitResult, aniTime1, skillHitDelay);
-				skillHit.HitEffect = HitEffect.Impact;
-
-				hits.Add(skillHit);
-
-				var bleedingDamage = skillHitResult.Damage * 0.125f;
-
-				if (target.Rank != MonsterRank.Boss && caster.IsAbilityActive(AbilityId.Assassin6))
-				{
-					bleedingDamage = MathF.Min(caster.Properties.GetFloat(PropertyName.MHP) * 0.025f, target.Properties.GetFloat(PropertyName.MHP) * 0.025f);
-				}
-
-				if (skillHitResult.Damage > 0)
-					target.StartBuff(BuffId.Behead_Debuff, skill.Level, bleedingDamage, TimeSpan.FromSeconds(7), caster);
-			}
-
-			Send.ZC_SKILL_HIT_INFO(caster, hits);
-
-			await skill.Wait(delayBetweenHits);
-			hits.Clear();
-
-			targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
-			foreach (var target in targets.LimitBySDR(caster, skill))
-			{
-				var modifier = SkillModifier.Default;
-				modifier.HitCount = 3;
-
-				// Increase damage by 10% if target is under the effect of
-				// Assassination Target from the caster
-				if (target.TryGetBuff(BuffId.Assassin_Target_Debuff, out var assassinTargetDebuff))
-				{
-					if (assassinTargetDebuff.Caster == caster)
-						modifier.DamageMultiplier += 0.10f;
-				}
-
-				var skillHitResult2 = SCR_SkillHit(caster, target, skill, modifier);
-
-				// Check back attack AFTER SCR_SkillHit so card hooks can set ForcedBackAttack
-				if (caster.IsBehind(target, BackAttackAngle) || modifier.ForcedBackAttack)
-					skillHitResult2.Damage *= (1 + BackAttackDamageMultiplier);
-
-				target.TakeDamage(skillHitResult2.Damage, caster);
-
-				var skillHit2 = new SkillHitInfo(caster, target, skill, skillHitResult2, aniTime2, skillHitDelay);
-				skillHit2.HitEffect = HitEffect.Impact;
-
-				hits.Add(skillHit2);
-
-				var bleedingDamage = skillHitResult2.Damage * 0.125f;
-
-				// Assassin6 instead does 5% of their maximum HP, or 5% of the caster's
-				// maximum HP, whichever is less.  It also doesn't work on bosses
-				if (target.Rank != MonsterRank.Boss && caster.IsAbilityActive(AbilityId.Assassin6))
-				{
-					bleedingDamage = MathF.Min(caster.Properties.GetFloat(PropertyName.MHP) * 0.025f, target.Properties.GetFloat(PropertyName.MHP) * 0.025f);
-				}
-
-				if (skillHitResult2.Damage > 0)
-				{
-					target.StartBuff(BuffId.Behead_Debuff, skill.Level, bleedingDamage, TimeSpan.FromSeconds(7), caster);
-
-					// Assassin5 adds 5 seconds of silence
-					if (caster.IsAbilityActive(AbilityId.Assassin5))
-						target.StartBuff(BuffId.Common_Silence, skill.Level, bleedingDamage, TimeSpan.FromSeconds(5), caster);
-				}
-			}
 
 			Send.ZC_SKILL_HIT_INFO(caster, hits);
 		}
+
+		private ICombatEntity GetAssassinationTarget(ICombatEntity caster)
+		{
+			if (caster is not Character character || !character.Variables.Temp.TryGetInt("Melia.AssassinationTarget", out var targetHandle))
+				return null;
+
+			return caster.Map.TryGetCombatEntity(targetHandle, out var target) ? target : null;
+		}
+
+		private void ApplyAssassinationTargetBonus(ICombatEntity caster, ICombatEntity target, SkillModifier modifier)
+		{
+			if (target.TryGetBuff(BuffId.Assassin_Target_Debuff, out var assassinTargetDebuff) && assassinTargetDebuff.Caster == caster)
+				modifier.DamageMultiplier += 0.10f;
+		}
+
+			private bool HasAbility(ICombatEntity caster, AbilityId abilityId)
+				=> caster.IsAbilityActive(abilityId) || caster.GetAbilityLevel(abilityId) > 0;
+
+			private bool IsBackOrCloaked(ICombatEntity caster, ICombatEntity target, SkillModifier modifier)
+				=> caster.IsBuffActive(BuffId.Cloaking_Buff) || caster.IsBehind(target, BackAttackAngle) || modifier.ForcedBackAttack;
+		}
 	}
-}

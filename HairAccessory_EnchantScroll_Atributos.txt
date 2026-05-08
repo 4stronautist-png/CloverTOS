@@ -1,0 +1,83 @@
+Atributos possiveis em Hair Accessories usando Enchant Scroll
+
+Fonte no servidor:
+- server/app/src/ZoneServer/World/Items/Item.cs
+- Metodo: GenerateRandomHatOptions
+- O enchant scroll usa HatPropName_X / HatPropValue_X.
+
+Observacao:
+No banco atual, os Enchant Scrolls aparecem com script { numArg1: 3, numArg2: 3 }.
+Pela implementacao atual, isso gera 3 linhas de atributo:
+- Linha 1: sorteia um atributo da categoria "dano contra tipo/raca/tamanho".
+- Linha 2: sorteia um atributo da categoria "utilidade".
+- Linha 3: sorteia um atributo da categoria "status/outros".
+
+Linha 1 - Dano contra tipo/raca/tamanho
+
+ADD_CLOTH - Dano adicional contra Cloth
+ADD_LEATHER - Dano adicional contra Leather
+ADD_IRON - Dano adicional contra Iron
+ADD_SMALLSIZE - Dano adicional contra Small-size
+ADD_MIDDLESIZE - Dano adicional contra Medium-size
+ADD_LARGESIZE - Dano adicional contra Large-size
+ADD_GHOST - Dano adicional contra Ghost
+ADD_FORESTER - Dano adicional contra Forester
+ADD_WIDLING - Dano adicional contra Wildling
+ADD_VELIAS - Dano adicional contra Velias
+ADD_PARAMUNE - Dano adicional contra Paramune
+ADD_KLAIDA - Dano adicional contra Klaida
+
+Linha 2 - Utilidade
+
+CRTHR - Critical Rate
+CRTDR - Critical Resistance
+BLK_BREAK - Block Penetration
+BLK - Block
+ADD_HR - Accuracy
+ADD_DR - Evasion
+RHP - HP Recovery
+SR - SP Recovery
+MSPD - Movement Speed
+
+Linha 3 - Status/outros
+
+Add_Damage_Atk - Additional Damage
+LootingChance - Looting Chance
+STR - Strength
+DEX - Dexterity
+CON - Constitution
+INT - Intelligence
+MNA - Spirit
+RSP - SP Recovery
+
+Lista unica de todos os atributos possiveis
+
+ADD_CLOTH
+ADD_LEATHER
+ADD_IRON
+ADD_SMALLSIZE
+ADD_MIDDLESIZE
+ADD_LARGESIZE
+ADD_GHOST
+ADD_FORESTER
+ADD_WIDLING
+ADD_VELIAS
+ADD_PARAMUNE
+ADD_KLAIDA
+CRTHR
+CRTDR
+BLK_BREAK
+BLK
+ADD_HR
+ADD_DR
+RHP
+SR
+MSPD
+Add_Damage_Atk
+LootingChance
+STR
+DEX
+CON
+INT
+MNA
+RSP

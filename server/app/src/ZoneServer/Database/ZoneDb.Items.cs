@@ -79,6 +79,7 @@ namespace Melia.Zone.Database
 			{
 				// Fix incorrectly set GemLevel properties on cards/gems
 				item.MigrateProperties();
+				item.EnsureHairAccessoryEnchantRank();
 
 				if (item.Data.Type == ItemType.Equip)
 				{
@@ -108,6 +109,16 @@ namespace Melia.Zone.Database
 			foreach (var item in items) character.Inventory.AddSilent(item);
 			foreach (var kvp in equip) character.Inventory.SetEquipSilent(kvp.Key, kvp.Value);
 			foreach (var kvp in cards) character.Inventory.AddSilentCard(kvp.Key, kvp.Value);
+		}
+
+		public void SaveItemProperties(Item item)
+		{
+			using (var conn = this.GetConnection())
+			using (var trans = conn.BeginTransaction())
+			{
+				this.InternalSaveProperties("item_properties", "itemId", item.DbId, item.Properties, conn, trans);
+				trans.Commit();
+			}
 		}
 
 		internal void LoadStorage(Storage storage, string tableName, string idFieldName, long id)
@@ -140,6 +151,7 @@ namespace Melia.Zone.Database
 
 						// Fix incorrectly set GemLevel properties on cards/gems
 						item.MigrateProperties();
+						item.EnsureHairAccessoryEnchantRank();
 
 						if (item.Data.Type == ItemType.Equip)
 						{

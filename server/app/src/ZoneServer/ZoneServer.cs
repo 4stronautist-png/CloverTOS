@@ -490,6 +490,15 @@ namespace Melia.Zone
 				this.IesMods.Add("SkillTree", 10509, "MaxLevel", 5);
 			}
 
+			foreach (var skillTreeData in this.Data.SkillTreeDb.Entries)
+			{
+				if (skillTreeData.MaxLevel <= 0)
+					continue;
+
+				this.IesMods.Add("SkillTree", (int)skillTreeData.SkillId, "MaxLevel", skillTreeData.MaxLevel);
+				this.IesMods.Add("SkillTree", GetSkillTreeClassId(skillTreeData), "MaxLevel", skillTreeData.MaxLevel);
+			}
+
 			this.IesMods.Add("SharedConst", 177, "Value", this.Conf.World.StorageFee); // WAREHOUSE_PRICE
 			this.IesMods.Add("SharedConst", 10004, "Value", this.Conf.World.StorageExtCost); // WAREHOUSE_EXTEND_PRICE
 			this.IesMods.Add("SharedConst", 10006, "Value", this.Conf.World.StorageExtCount); // WAREHOUSE_EXTEND_SLOT_COUNT
@@ -524,6 +533,15 @@ namespace Melia.Zone
 
 			//foreach (var item in this.Data.ItemDb.Entries.Values)
 			//	this.IesMods.Add("Item", item.Id, "UserTrade", "YES");
+		}
+
+		private static int GetSkillTreeClassId(SkillTreeData skillTreeData)
+		{
+			var jobTree = ((int)skillTreeData.JobId) / 1000;
+			var jobIndex = ((int)skillTreeData.JobId) % 1000;
+			var skillIndex = ((int)skillTreeData.SkillId) % 100;
+
+			return jobTree * 10000 + jobIndex * 100 + skillIndex;
 		}
 
 		/// <summary>

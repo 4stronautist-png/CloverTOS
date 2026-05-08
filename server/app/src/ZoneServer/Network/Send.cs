@@ -2404,7 +2404,7 @@ namespace Melia.Zone.Network
 			packet.PutFloat(45);       // Camera Y
 			packet.PutFloat(200);      // Zoom Min
 			packet.PutFloat(2200);     // Zoom Max
-			packet.PutFloat(1000);     // Zoom Start
+			packet.PutFloat(2200);     // Zoom Start
 			packet.PutInt(26);         // Position?
 			packet.PutInt(20);         // Position?
 			packet.PutInt(59);         // Position?
@@ -6050,6 +6050,8 @@ namespace Melia.Zone.Network
 		/// <param name="conn"></param>
 		public static void ZC_CUSTOM_CAMERA_ZOOM(IZoneConnection conn, float distance, float time, float easing)
 		{
+			return;
+
 			using var packet = Packet.Rent(Op.ZC_CUSTOM_CAMERA_ZOOM);
 
 			packet.PutFloat(distance);
@@ -6106,6 +6108,8 @@ namespace Melia.Zone.Network
 		/// <param name="delay"></param>
 		public static void ZC_CHANGE_CAMERA_ZOOM(IActor actor, int i1, float range, float shakePower, float duration, float shakeAmount, float shakeDirection, float delay = 0.08460541f)
 		{
+			return;
+
 			using var packet = Packet.Rent(Op.ZC_CHANGE_CAMERA_ZOOM);
 
 			packet.PutInt(1);
