@@ -1425,6 +1425,7 @@ namespace Melia.Shared.Game.Const
 		Vulture_Diffusion_Debuff = 3267,
 		Vulture_Devastation_Buff = 3268,
 		Sledger_Fighting_Buff = 3269,
+		Sledger_RollingPower_Buff = 32691,
 		Vulture_CombatProtocol_Buff_dummy = 3270,
 		Bonemancer_Fist_Debuff = 3271,
 		Bonemancer_Rib_Debuff = 3272,

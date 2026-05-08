@@ -3824,22 +3824,42 @@ namespace Melia.Zone.Commands
 			var job = target.Jobs.Get(jobId);
 			if (job != null && job.Circle >= circle)
 			{
-				sender.ServerMessage(Localization.Get("The job exists already, at an equal or higher circle."));
+				this.PrepareGmAddedJob(target, job);
+				target.Jobs.RefreshJobAndSkillUi();
+				sender.ServerMessage(Localization.Get("The job exists already, at an equal or higher circle. Refreshed job level and skill points."));
 				return CommandResult.Okay;
 			}
 
 			if (job == null)
 			{
 				target.ChangeJob(jobId, circle, skillPoints: 1, playEffect: false);
+				job = target.Jobs.Get(jobId);
 			}
 			else
 				target.Jobs.ChangeCircle(jobId, circle);
+
+			if (job != null)
+				this.PrepareGmAddedJob(target, job);
+
+			target.Jobs.RefreshJobAndSkillUi();
+			ZoneServer.Instance.Database.SavePlayerData(target, target.Connection?.Account);
 
 			sender.ServerMessage(Localization.Get("Job '{0}' was added at circle '{1}'."), jobId, (int)circle);
 			if (sender != target)
 				target.ServerMessage(Localization.Get("Job '{0}' was added to your character at circle '{1}' by {2}."), jobId, (int)circle, sender.TeamName);
 
 			return CommandResult.Okay;
+		}
+
+		/// <summary>
+		/// Makes jobs added through the GM command immediately usable in the skill UI.
+		/// </summary>
+		/// <param name="target"></param>
+		/// <param name="job"></param>
+		private void PrepareGmAddedJob(Character target, Job job)
+		{
+			job.TotalExp = 1;
+			job.SetSkillPoints(1);
 		}
 
 		/// <summary>

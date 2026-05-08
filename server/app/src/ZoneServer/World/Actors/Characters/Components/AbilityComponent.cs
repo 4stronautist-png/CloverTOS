@@ -342,6 +342,16 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (ability.Data.Passive)
 				return false;
 
+			if (this.IsLinkedSkillOnCooldown(ability))
+			{
+				const string message = "Aguarde o cooldown da habilidade para alterar esta passiva.";
+				this.Character.AddonMessage("NOTICE_Dm_!", message, 3);
+				this.Character.ServerMessage(message);
+				Send.ZC_OBJECT_PROPERTY(this.Character.Connection, ability, PropertyName.ActiveState);
+				Send.ZC_ADDON_MSG(this.Character, AddonMessage.RESET_ABILITY_ACTIVE, ability.Active ? 1 : 0, className);
+				return false;
+			}
+
 			// Deactivate before toggling off, activate after toggling on
 			var wasActive = ability.Active;
 			if (wasActive)
@@ -362,9 +372,22 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			Send.ZC_OBJECT_PROPERTY(this.Character.Connection, ability);
-			Send.ZC_ADDON_MSG(this.Character, AddonMessage.RESET_ABILITY_ACTIVE, 0, className);
+			Send.ZC_ADDON_MSG(this.Character, AddonMessage.RESET_ABILITY_ACTIVE, ability.Active ? 1 : 0, className);
+			ZoneServer.Instance.Database.SavePlayerData(this.Character, this.Character.Connection?.Account);
 
 			return true;
+		}
+
+		private bool IsLinkedSkillOnCooldown(Ability ability)
+		{
+			foreach (var category in ability.Data.Categories)
+			{
+				var skill = this.Character.Skills.Get(category);
+				if (skill != null && skill.IsOnCooldown)
+					return true;
+			}
+
+			return false;
 		}
 
 		private void DeactivateMutuallyExclusiveAbility(Ability ability)

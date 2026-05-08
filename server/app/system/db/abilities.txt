@@ -2590,7 +2590,7 @@
 { id: 421045, className: "Sledger14", name: "Swing Hammer: Warm-up", level: 1, passive: false, categories: ["Sledger_SwingHammer_Cleric", "Sledger_SwingHammer_Swordman"], modifiers: { "SP": 100 } },
 { id: 421046, className: "Sledger15", name: "[Arts] Big Bang: Ground Explosion", level: 1, passive: false, categories: ["Sledger_BigBang_Cleric", "Sledger_BigBang_Swordman"], modifiers: { "SP": 100 } },
 { id: 421047, className: "Sledger16", name: "Sledgehammer: Enhance", level: 1, passive: true, categories: ["Sledger_Sledgehammer_Cleric", "Sledger_Sledgehammer_Swordman"] },
-{ id: 421048, className: "Sledger17", name: "Rolling Hammer: Positioning", level: 1, passive: false, categories: ["Sledger_RollingHammer_Cleric", "Sledger_RollingHammer_Swordman"], modifiers: { "SP": 50 } },
+{ id: 421048, className: "Sledger17", name: "Rolling Hammer: POWER!", level: 1, passive: false, categories: ["Sledger_RollingHammer_Cleric", "Sledger_RollingHammer_Swordman"], modifiers: { "SP": 100 } },
 { id: 421049, className: "Kneller100", name: "Resonance of Knell", level: 1, passive: true },
 { id: 421050, className: "Kneller1", name: "Grave Hands: Enhance", level: 1, passive: true, categories: ["Kneller_GraveHand_Cleric", "Kneller_GraveHand_Wizard", "Kneller_GraveHand_Scout"] },
 { id: 421051, className: "Kneller2", name: "Mourning Chime: Enhance", level: 1, passive: true, categories: ["Kneller_MourningChime_Cleric", "Kneller_MourningChime_Wizard", "Kneller_MourningChime_Scout"] },

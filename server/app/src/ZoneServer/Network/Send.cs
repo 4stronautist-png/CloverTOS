@@ -1478,7 +1478,7 @@ namespace Melia.Zone.Network
 					//if (propertiesSize > 0)
 					//	packet.AddProperties(propertyList);
 
-					var sendProperties = ability.Level > 1 || !ability.Active;
+					var sendProperties = true;
 
 					if (!sendProperties)
 					{

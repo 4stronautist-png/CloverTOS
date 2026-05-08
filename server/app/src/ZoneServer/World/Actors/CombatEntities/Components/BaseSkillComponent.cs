@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Melia.Shared.Game.Const;
+using Melia.Zone.Network;
 using Melia.Zone.Skills;
 using Yggdrasil.Scheduling;
 
@@ -180,10 +181,26 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 		{
 			if (this.CurrentSkillRef != null)
 			{
+				if (ShouldSendImmediateCleanup(this.CurrentSkillRef.Id))
+				{
+					Send.ZC_SKILL_DISABLE(this.Entity);
+					Send.ZC_NORMAL.SkillCancel(this.Entity, this.CurrentSkillRef.Id);
+					Send.ZC_NORMAL.SkillCancelCancel(this.Entity, this.CurrentSkillRef.Id);
+					this.Entity.SetAttackState(false);
+				}
+
 				this.CurrentSkillRef.Cancel();
 				this.CurrentSkillRef = null;
 			}
 			this.CurrentSkill = SkillId.None;
+		}
+
+		private static bool ShouldSendImmediateCleanup(SkillId skillId)
+		{
+			return skillId == SkillId.Sledger_HeavySmashing_Cleric
+				|| skillId == SkillId.Sledger_RollingHammer_Cleric
+				|| skillId == SkillId.Sledger_ChargeHammer_Cleric
+				|| skillId == SkillId.Sledger_SwingHammer_Cleric;
 		}
 
 		/// <summary>

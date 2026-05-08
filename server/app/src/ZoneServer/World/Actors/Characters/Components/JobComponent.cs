@@ -85,10 +85,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		public void Add(Job job)
 		{
 			this.AddSilent(job);
-			Send.ZC_PC(this.Character, PcUpdateType.Job, (int)job.Id, job.Level);
-			Send.ZC_SKILL_LIST(this.Character);
-			Send.ZC_COMMON_SKILL_LIST(this.Character);
-			Send.ZC_NORMAL.UpdateSkillUI(this.Character);
+			this.RefreshJobAndSkillUi();
 			this.Character.Properties.SetFloat(PropertyName.Job, (int)job.Id);
 			Send.ZC_OBJECT_PROPERTY(this.Character, PropertyName.JobName);
 			this.Character.AddonMessage(AddonMessage.JOB_UPDATE);
@@ -136,10 +133,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			// XXX: Seems like this is not enough to get rid of the jobs at
 			//   run-time. Is there a way for us to refresh the UI?
-			Send.ZC_PC(this.Character, PcUpdateType.Job, (int)this.Character.JobId, this.Character.Job?.Level ?? 1);
-			Send.ZC_SKILL_LIST(this.Character);
-			Send.ZC_COMMON_SKILL_LIST(this.Character);
-			Send.ZC_NORMAL.UpdateSkillUI(this.Character);
+			this.RefreshJobAndSkillUi();
 			this.Character.AddonMessage(AddonMessage.JOB_UPDATE);
 			this.Character.InvalidateProperties();
 
@@ -228,9 +222,25 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return false;
 
 			job.Circle = circle;
-			Send.ZC_NORMAL.UpdateSkillUI(this.Character);
+			this.RefreshJobAndSkillUi();
 
 			return true;
+		}
+
+		/// <summary>
+		/// Refreshes the client-side job points and skill UI after live job changes.
+		/// </summary>
+		public void RefreshJobAndSkillUi()
+		{
+			foreach (var job in this.GetList().OrderBy(j => j.SelectionDate).ThenBy(j => j.Rank))
+			{
+				Send.ZC_PC(this.Character, PcUpdateType.Job, (int)job.Id, job.Level);
+				Send.ZC_JOB_PTS(this.Character, job);
+			}
+
+			Send.ZC_SKILL_LIST(this.Character);
+			Send.ZC_COMMON_SKILL_LIST(this.Character);
+			Send.ZC_NORMAL.UpdateSkillUI(this.Character);
 		}
 
 		/// <summary>

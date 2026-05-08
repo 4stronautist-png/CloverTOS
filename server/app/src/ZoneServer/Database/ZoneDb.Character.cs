@@ -168,6 +168,12 @@ namespace Melia.Zone.Database
 					while (reader.Read())
 					{
 						var abilityId = (AbilityId)reader.GetInt32("id");
+						if (!ZoneServer.Instance.Data.AbilityDb.Contains(abilityId))
+						{
+							Log.Warning("ZoneDb.LoadAbilities: Ability data '{0}' not found, removing it from abilities.", (int)abilityId);
+							continue;
+						}
+
 						var level = reader.GetInt32("level");
 						var active = reader.GetBoolean("active");
 						var ability = new Ability(abilityId, level);

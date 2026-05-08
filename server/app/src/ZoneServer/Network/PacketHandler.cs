@@ -763,6 +763,7 @@ namespace Melia.Zone.Network
 				if (character.IsDead || character.IsWarping)
 					return;
 
+				character.Components.Get<BaseSkillComponent>()?.CancelCurrentSkill();
 				character.Movement.NotifyJump(position, direction, unkFloat, unkByte2);
 			}
 			else
@@ -772,6 +773,7 @@ namespace Melia.Zone.Network
 				if (character.IsDead || character.IsWarping)
 					return;
 
+				character.Components.Get<BaseSkillComponent>()?.CancelCurrentSkill();
 				character.Movement.NotifyJump(character.Position, character.Direction, (float)ZoneServer.Instance.World.WorldTime.Elapsed.TotalSeconds, unkByte1);
 			}
 		}
@@ -4928,6 +4930,16 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			if (this.IsLinkedSkillOnCooldown(character, ability))
+			{
+				const string message = "Aguarde o cooldown da habilidade para alterar esta passiva.";
+				character.AddonMessage("NOTICE_Dm_!", message, 3);
+				character.ServerMessage(message);
+				Send.ZC_OBJECT_PROPERTY(conn, ability, PropertyName.ActiveState);
+				Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", ability.Active ? 1 : 0, ability.Data.ClassName);
+				return;
+			}
+
 			var wasActive = ability.Active;
 			if (wasActive)
 				ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, character);
@@ -4949,6 +4961,20 @@ namespace Melia.Zone.Network
 				character.Properties.InvalidateAll();
 				Send.ZC_OBJECT_PROPERTY(character);
 			}
+
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
+		}
+
+		private bool IsLinkedSkillOnCooldown(Character character, Ability ability)
+		{
+			foreach (var category in ability.Data.Categories)
+			{
+				var skill = character.Skills.Get(category);
+				if (skill != null && skill.IsOnCooldown)
+					return true;
+			}
+
+			return false;
 		}
 
 		private void DeactivateMutuallyExclusiveAbility(Character character, Ability ability)
