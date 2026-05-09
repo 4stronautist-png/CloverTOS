@@ -2200,6 +2200,20 @@ namespace Melia.Zone.Network
 						handler.Handle(skill, character, originPos, farPos, target);
 						break;
 					}
+					case SkillUseType.TargetGround:
+					{
+						if (!ZoneServer.Instance.SkillHandlers.TryGetHandler<ITargetGroundSkillHandler>(skillId, out var handler))
+						{
+							character.ServerMessage(Localization.Get("This skill has not been implemented yet."));
+							Log.Warning("CZ_SKILL_GROUND: No target ground handler for skill '{0}' found.", skillId);
+							return;
+						}
+
+						skill.PrepareCancellation();
+
+						handler.Handle(skill, character, originPos, farPos, target);
+						break;
+					}
 					default:
 					{
 						character.ServerMessage(Localization.Get("This skill has not been implemented yet."));

@@ -1479,6 +1479,7 @@ namespace Melia.Shared.Game.Const
 		GraveChill_Debuff = 3320,
 		Mourning_Debuff = 3321,
 		RestingGround_Buff = 3322,
+		Shame_Debuff = 3323,
 		Mourning_Dummy_Debuff = 3323,
 		Touche_Buff = 3324,
 		Touche_max_Buff = 3325,

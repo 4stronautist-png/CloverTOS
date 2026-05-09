@@ -118,6 +118,16 @@ namespace Melia.Barracks
 				this.IesMods.Add("SkinTone", data.ClassId, "Blue", ((data.Color & 0x000000FF) >> 00).ToString());
 			}
 
+			this.IesMods.Add("Skill", 22503, "CoolDown", "40000");
+			this.IesMods.Add("Skill", 42130, "CoolDown", "40000");
+			this.IesMods.Add("Skill", 51745, "CoolDown", "40000");
+
+			this.IesMods.Add("Buff", 3323, "Name", "Embarrassed");
+			this.IesMods.Add("Buff", 3323, "Caption", "Attributes are reduced.");
+			this.IesMods.Add("Buff", 3323, "Icon", "buff_icon_dark");
+			this.IesMods.Add("Buff", 479, "Name", "Embarrassed");
+			this.IesMods.Add("Buff", 479, "Caption", "Each stack reduces Evasion, Critical Resistance, Accuracy and Defense. Movement Speed is also reduced.");
+
 		}
 
 		/// <summary>

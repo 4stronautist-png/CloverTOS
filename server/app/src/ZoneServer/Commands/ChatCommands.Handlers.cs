@@ -135,7 +135,7 @@ namespace Melia.Zone.Commands
 			this.Add("warp", "<map id> <x> <y> <z>", "Warps to another map.", this.HandleWarp);
 			this.Add("item", "<item id> [amount] [grade] [unidentified]", "Spawns item. 'true' as grade = random grade unidentified.", this.HandleItem);
 			this.Add("earring", "<job id> [line1] [line2] [line3]", "Creates a Fire Flame Earring with fixed skill line bonuses.", this.HandleEarring);
-			this.Add("effect", "<effect id> [sound id|sound name|none]", "Plays a visual effect by packet string id.", this.HandleEffect);
+			this.Add("effect", "<effect id|name|alias|list> [scale] [durationMs] [ground|self|projectile]", "Plays a visual effect by packet string id, name, or Kneller alias.", this.HandleEffect);
 			this.Add("sfx", "<sfx id>", "Plays a sound effect by packet string id.", this.HandleSfx);
 			this.Add("identify", "", "Identifies all unidentified items in inventory.", this.HandleIdentify);
 			this.Add("appraise", "", "Identifies all unidentified items in inventory.", this.HandleIdentify);
@@ -1417,12 +1417,57 @@ namespace Melia.Zone.Commands
 		/// <summary>
 		/// Plays a visual effect from packetstrings.txt by id, with an optional sound.
 		/// </summary>
+		private sealed class VisibleEffectDefinition
+		{
+			public string Alias { get; set; }
+			public string Effect { get; set; }
+			public string ImpactEffect { get; set; }
+			public string Mode { get; set; }
+			public string Description { get; set; }
+			public float Scale { get; set; }
+			public float DurationMs { get; set; }
+			public float Range { get; set; }
+		}
+
+		private static readonly VisibleEffectDefinition[] VisibleKnellerEffects =
+		{
+			new VisibleEffectDefinition { Alias = "mourning_chime_projectile", Effect = "F_smoke054", ImpactEffect = "F_smoke054", Mode = "projectile", Description = "Mourning Chime projetil de fumaca", Scale = 1.2f, DurationMs = 0, Range = 120 },
+			new VisibleEffectDefinition { Alias = "mourning_chime_impact", Effect = "F_smoke054", Mode = "ground", Description = "Mourning Chime impacto de fumaca", Scale = 1.5f, DurationMs = 900 },
+			new VisibleEffectDefinition { Alias = "resting_sepulcher_dark", Effect = "SKL_TELEKINESIS_THROW", Mode = "ground", Description = "Resting Sepulcher area telekinetica", Scale = 2.4f, DurationMs = 2500 },
+			new VisibleEffectDefinition { Alias = "resting_sepulcher_rise", Effect = "SKL_TELEKINESIS_THROW", Mode = "ground", Description = "Resting Sepulcher efeito repetido", Scale = 2.4f, DurationMs = 1600 },
+			new VisibleEffectDefinition { Alias = "resonance_pulse_start", Effect = "F_warrior_ShareBuff_ground_loop_1", Mode = "ground", Description = "Resonance Pulse loop no chao", Scale = 1.6f, DurationMs = 1200 },
+			new VisibleEffectDefinition { Alias = "resonance_pulse_wave", Effect = "F_warrior_ShareBuff_ground_loop_1", Mode = "ground", Description = "Resonance Pulse loop repetido", Scale = 1.6f, DurationMs = 900 },
+			new VisibleEffectDefinition { Alias = "death_knell", Effect = "F_ground131_dark_red", Mode = "ground", Description = "Death Knell area escura/vermelha", Scale = 2.5f, DurationMs = 1200 },
+			new VisibleEffectDefinition { Alias = "grave_hands_dark", Effect = "I_wizard_DemonScratch_mesh2", Mode = "ground", Description = "Grave Hands garra/demon scratch", Scale = 1.7f, DurationMs = 1500 },
+			new VisibleEffectDefinition { Alias = "grave_hands_rise", Effect = "I_wizard_DemonScratch_mesh2", Mode = "ground", Description = "Grave Hands efeito persistente", Scale = 1.7f, DurationMs = 1500 },
+			new VisibleEffectDefinition { Alias = "frost_grave", Effect = "I_sys_target001_circle", Mode = "self", Description = "Marcador do debuff Frost Grave", Scale = 1.5f, DurationMs = 0 },
+		};
+
 		private CommandResult HandleEffect(Character sender, Character target, string message, string command, Arguments args)
 		{
 			if (args.IndexedCount == 0)
+			{
+				sender.ServerMessage("Usage: /effect <effect id|name|alias|list> [scale] [durationMs] [ground|self|projectile]");
+				sender.ServerMessage("Use /effect list to see the Kneller aliases.");
 				return CommandResult.InvalidArgument;
+			}
 
-			if (!int.TryParse(args.Get(0), out var effectId) || effectId <= 0)
+			var effectArg = args.Get(0);
+			if (effectArg.Equals("list", StringComparison.InvariantCultureIgnoreCase) ||
+				effectArg.Equals("kneller", StringComparison.InvariantCultureIgnoreCase))
+			{
+				sender.ServerMessage("Kneller visible effects:");
+				foreach (var effect in VisibleKnellerEffects)
+					sender.ServerMessage($"/effect {effect.Alias} -> {effect.Effect} ({effect.Description})");
+
+				sender.ServerMessage("You can also use /effect <exact_packet_string> [scale] [durationMs] [ground|self|projectile].");
+				return CommandResult.Okay;
+			}
+
+			if (!int.TryParse(effectArg, out var effectId))
+				return this.HandleNamedEffect(sender, target, args);
+
+			if (effectId <= 0)
 				return CommandResult.InvalidArgument;
 
 			if (!ZoneServer.Instance.Data.PacketStringDb.TryFind(effectId, out var effectData))
@@ -1481,6 +1526,77 @@ namespace Melia.Zone.Commands
 			else
 				sender.ServerMessage(Localization.Get("Played effect {0}: {1} without sound"), effectId, effectData.Name);
 
+			return CommandResult.Okay;
+		}
+
+		private CommandResult HandleNamedEffect(Character sender, Character target, Arguments args)
+		{
+			var key = args.Get(0);
+			var definition = VisibleKnellerEffects.FirstOrDefault(effect =>
+				effect.Alias.Equals(key, StringComparison.InvariantCultureIgnoreCase) ||
+				effect.Effect.Equals(key, StringComparison.InvariantCultureIgnoreCase));
+
+			var effectName = definition?.Effect ?? key;
+			if (!IsVisualEffectPacketString(effectName))
+			{
+				sender.ServerMessage(Localization.Get("Packet string is not listed as a visual effect: {0}"), effectName);
+				return CommandResult.InvalidArgument;
+			}
+
+			var scale = definition?.Scale ?? 1f;
+			var durationMs = definition?.DurationMs ?? 1200f;
+			var mode = definition?.Mode ?? "ground";
+			var numericArgIndex = 0;
+
+			for (var i = 1; i < args.IndexedCount; ++i)
+			{
+				var value = args.Get(i);
+				if (value.Equals("ground", StringComparison.InvariantCultureIgnoreCase) ||
+					value.Equals("self", StringComparison.InvariantCultureIgnoreCase) ||
+					value.Equals("projectile", StringComparison.InvariantCultureIgnoreCase))
+				{
+					mode = value.ToLowerInvariant();
+					continue;
+				}
+
+				if (!float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+				{
+					sender.ServerMessage(Localization.Get("Invalid effect argument: {0}"), value);
+					return CommandResult.InvalidArgument;
+				}
+
+				if (numericArgIndex == 0)
+					scale = number;
+				else if (numericArgIndex == 1)
+					durationMs = number;
+
+				numericArgIndex++;
+			}
+
+			if (mode == "projectile")
+			{
+				var range = definition?.Range > 0 ? definition.Range : 120f;
+				var destination = target != null && target.Handle != sender.Handle
+					? target.Position
+					: sender.Position.GetRelative(sender.Direction, range);
+				var impact = definition?.ImpactEffect ?? "skl_eff_dark_hit";
+
+				Send.ZC_NORMAL.SkillProjectile(sender, destination, effectName, scale, impact, scale, range, TimeSpan.FromMilliseconds(350), TimeSpan.Zero, 0f, 1f);
+				sender.ServerMessage($"Played projectile effect '{effectName}' -> '{impact}'.");
+				return CommandResult.Okay;
+			}
+
+			if (mode == "self")
+			{
+				sender.PlayEffect(effectName, scale);
+				sender.ServerMessage($"Played self effect '{effectName}' scale {scale:0.##}.");
+				return CommandResult.Okay;
+			}
+
+			var effectHandle = ZoneServer.Instance.World.CreateEffectHandle();
+			Send.ZC_NORMAL.PlayEffectAtPosition(sender, effectName, sender.Position, scale, effectHandle, durationMs);
+			sender.Variables.Temp.SetInt("LastEffectHandle", effectHandle);
+			sender.ServerMessage($"Played ground effect '{effectName}' scale {scale:0.##} duration {durationMs:0}ms handle {effectHandle}.");
 			return CommandResult.Okay;
 		}
 
