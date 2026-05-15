@@ -55,6 +55,24 @@ public class CombatCalculationsScript : GeneralScript
 		[RaceType.Widling] = PropertyName.Widling_Atk,
 	};
 
+	private static void StopAttackBreakingCloaking(ICombatEntity attacker)
+	{
+		if (attacker.IsBuffActive(BuffId.WideMiasma_Buff))
+		{
+			attacker.StopBuff(
+				BuffId.Cloaking_Buff,
+				BuffId.ShinobiCloaking_Buff,
+				BuffId.Illusionist_Cloaking,
+				BuffId.UC_Cloaking_Buff,
+				BuffId.Raid_Cloaking_Buff,
+				BuffId.Companion_Cloaking_Buff
+			);
+			return;
+		}
+
+		attacker.StopBuffByTag(BuffTag.Cloaking);
+	}
+
 	/// <summary>
 	/// Returns a random attack value between the min and max values
 	/// for the type that matches the given skill (PATK or MATK).
@@ -1076,7 +1094,7 @@ public class CombatCalculationsScript : GeneralScript
 		if (attacker != null
 			&& attacker.Components != null
 			&& attacker.IsBuffActiveByKeyword(BuffTag.Cloaking))
-			attacker.StopBuffByTag(BuffTag.Cloaking);
+			StopAttackBreakingCloaking(attacker);
 
 		var result = new SkillHitResult();
 		result.Damage = SCR_CalculateDamage(attacker, target, skill, modifier, result);
@@ -1281,7 +1299,7 @@ public class CombatCalculationsScript : GeneralScript
 
 		if (attacker is { Components: not null }
 		    && attacker.IsBuffActiveByKeyword(BuffTag.Cloaking))
-			attacker.StopBuffByTag(BuffTag.Cloaking);
+			StopAttackBreakingCloaking(attacker);
 
 		var result = new SkillHitResult();
 		

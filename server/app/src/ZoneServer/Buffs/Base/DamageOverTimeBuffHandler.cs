@@ -53,6 +53,73 @@ namespace Melia.Zone.Buffs.Base
 		}
 
 		/// <summary>
+		/// Calculates the remaining damage for all active damage instances and
+		/// clears them so the caller can resolve a poison burst immediately.
+		/// </summary>
+		public static float ConsumeRemainingDamage(Buff buff)
+		{
+			if (!buff.Vars.TryGet<List<DamageInstance>>(DamageInstancesVarName, out var instances))
+				return 0;
+
+			var now = DateTime.Now;
+			var updateTime = buff.HasUpdateTime ? buff.UpdateTime : buff.Data.UpdateTime;
+			if (updateTime <= TimeSpan.Zero)
+				updateTime = TimeSpan.FromSeconds(1);
+
+			float totalDamage = 0;
+			foreach (var instance in instances)
+			{
+				if (now >= instance.ExpirationTime)
+					continue;
+
+				var remainingTicks = MathF.Ceiling((float)((instance.ExpirationTime - now).TotalMilliseconds / updateTime.TotalMilliseconds));
+				totalDamage += instance.Damage * Math.Max(1, remainingTicks);
+			}
+
+			instances.Clear();
+			return totalDamage;
+		}
+
+		/// <summary>
+		/// Compresses the remaining lifetime of active DoT instances and speeds up
+		/// the tick cycle. Used by effects that make poisons resolve faster.
+		/// </summary>
+		public static bool CondenseRemainingTicks(Buff buff, float remainingDurationMultiplier, float updateTimeMultiplier)
+		{
+			if (!buff.Vars.TryGet<List<DamageInstance>>(DamageInstancesVarName, out var instances))
+				return false;
+
+			var now = DateTime.Now;
+			var changed = false;
+			foreach (var instance in instances)
+			{
+				if (now >= instance.ExpirationTime)
+					continue;
+
+				var remaining = instance.ExpirationTime - now;
+				instance.ExpirationTime = now.Add(TimeSpan.FromMilliseconds(Math.Max(100, remaining.TotalMilliseconds * remainingDurationMultiplier)));
+				changed = true;
+			}
+
+			if (!changed)
+				return false;
+
+			var remainingDuration = TimeSpan.FromMilliseconds(Math.Max(100, buff.RemainingDuration.TotalMilliseconds * remainingDurationMultiplier));
+			buff.Duration = remainingDuration;
+			buff.IncreaseDuration(remainingDuration);
+
+			var updateTime = buff.HasUpdateTime ? buff.UpdateTime : buff.Data.UpdateTime;
+			if (updateTime <= TimeSpan.Zero)
+				updateTime = TimeSpan.FromSeconds(1);
+
+			buff.UpdateTime = TimeSpan.FromMilliseconds(Math.Max(100, updateTime.TotalMilliseconds * updateTimeMultiplier));
+			buff.NextUpdateTime = DateTime.Now.Add(buff.UpdateTime);
+			buff.NotifyUpdate();
+
+			return true;
+		}
+
+		/// <summary>
 		/// Adds a new damage instance when the buff is activated.
 		/// </summary>
 		/// <param name="buff"></param>

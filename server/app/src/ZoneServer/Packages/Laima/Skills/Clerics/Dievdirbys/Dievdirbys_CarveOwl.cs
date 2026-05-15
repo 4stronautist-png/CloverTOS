@@ -259,18 +259,6 @@ namespace Melia.Zone.Skills.HandlersOverrides.Clerics.Dievdirbys
 			var hits = new List<SkillHitInfo>();
 			SkillHitCircle(caster, skill, target.Position, 80f, hits);
 
-			// Apply wide miasma poison to all enemies hit (8 second duration)
-			if (caster.Components.TryGet<BaseSkillComponent>(out var skillComponent) &&
-				skillComponent.TryGet(SkillId.Wugushi_WideMiasma, out var miasmaSkill))
-			{
-				foreach (var hit in hits)
-				{
-					if (hit.HitInfo == null || hit.HitInfo.Damage <= 0)
-						continue;
-
-					hit.Target.StartBuff(BuffId.WideMiasma_Debuff, 1, hit.HitInfo.Damage, TimeSpan.FromMilliseconds(8000), caster, miasmaSkill.Id);
-				}
-			}
 		}
 	}
 }

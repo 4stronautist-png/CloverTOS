@@ -121,12 +121,33 @@ namespace Melia.Barracks
 			this.IesMods.Add("Skill", 22503, "CoolDown", "40000");
 			this.IesMods.Add("Skill", 42130, "CoolDown", "40000");
 			this.IesMods.Add("Skill", 51745, "CoolDown", "40000");
+			this.IesMods.Add("Skill", 31708, "CoolDown", "35000");
+			this.IesMods.Add("Skill", 31708, "BasicCoolDown", "35000");
+			this.IesMods.Add("Skill", 30504, "CoolDown", 1000);
+			this.IesMods.Add("Skill", 30504, "BasicCoolDown", 1000);
+			this.IesMods.Add("Skill", 30504, "ShootTime", 0);
+			this.IesMods.Add("Skill", 30504, "DelayTime", 0);
+			this.IesMods.Add("Skill", 30504, "CancelTime", 0);
+			this.IesMods.Add("Skill", 30504, "HoldTime", "0");
+			this.IesMods.Add("Skill", 30509, "Caption", "{#339999}{ol}[Stealth]{/}{/} Duration and movement speed scale with Poison Mastery.{nl}Any damage you deal or any skill use removes Stealth.{nl}{#339999}{ol}[Hemotoxic Miasma]{/}{/} Buff Duration: 5 seconds{nl}Wugushi skills that hit bleeding enemies inflict 60% healing reduction for 8 seconds.");
 
 			this.IesMods.Add("Buff", 3323, "Name", "Embarrassed");
 			this.IesMods.Add("Buff", 3323, "Caption", "Attributes are reduced.");
 			this.IesMods.Add("Buff", 3323, "Icon", "buff_icon_dark");
 			this.IesMods.Add("Buff", 479, "Name", "Embarrassed");
 			this.IesMods.Add("Buff", 479, "Caption", "Each stack reduces Evasion, Critical Resistance, Accuracy and Defense. Movement Speed is also reduced.");
+			this.IesMods.Add("Buff", 1126, "ClassName", "Hemotoxic_Miasma_Buff");
+			this.IesMods.Add("Buff", 1126, "Type", "Buff");
+			this.IesMods.Add("Buff", 1126, "Name", "Hemotoxic Miasma");
+			this.IesMods.Add("Buff", 1126, "Caption", "For 5 seconds, Wugushi skills reduce healing by 60% for 8 seconds when they hit bleeding enemies.");
+			this.IesMods.Add("Buff", 1126, "Icon", "state_posion");
+			this.IesMods.Add("Buff", 1126, "ShowIcon", "YES");
+			this.IesMods.Add("Buff", 1126, "Group1", "Buff");
+			this.IesMods.Add("Buff", 1126, "Group2", "Normal");
+			this.IesMods.Add("Buff", 1126, "ApplyTime", 5000);
+			this.IesMods.Add("Buff", 1126, "OverBuff", 1);
+			this.IesMods.Add("Buff", 1126, "CT_OverBuff", 1);
+			this.IesMods.Add("Buff", 1126, "CT_SlotType", "slot_buff");
 
 		}
 

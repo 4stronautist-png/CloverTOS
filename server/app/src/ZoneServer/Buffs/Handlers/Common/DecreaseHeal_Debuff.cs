@@ -26,10 +26,17 @@ namespace Melia.Zone.Buffs.Handlers.Common
 		/// <returns></returns>
 		public static bool TryApply(ICombatEntity entity, ref float hpAmount)
 		{
-			if (!entity.TryGetBuff(BuffId.DecreaseHeal_Debuff, out var buff))
+			var reduction = 0f;
+
+			if (entity.TryGetBuff(BuffId.DecreaseHeal_Debuff, out var buff))
+				reduction = Math.Max(reduction, buff.NumArg2);
+
+			if (entity.TryGetBuff(BuffId.WideMiasma_Debuff, out var wideMiasmaBuff))
+				reduction = Math.Max(reduction, wideMiasmaBuff.NumArg2);
+
+			if (reduction <= 0)
 				return false;
 
-			var reduction = buff.NumArg2;
 			var multiplier = Math.Max(0, 1f - (reduction / 100000f));
 
 			hpAmount *= multiplier;

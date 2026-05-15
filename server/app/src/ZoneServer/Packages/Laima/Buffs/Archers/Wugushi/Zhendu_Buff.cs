@@ -7,6 +7,7 @@ using Melia.Zone.Scripting.ScriptableEvents;
 using Melia.Zone.Skills;
 using Melia.Zone.Skills.Combat;
 using Melia.Zone.World.Actors;
+using Melia.Zone.World.Actors.Effects;
 
 namespace Melia.Zone.Buffs.Handlers
 {
@@ -23,9 +24,26 @@ namespace Melia.Zone.Buffs.Handlers
 	[BuffHandler(BuffId.Zhendu_Buff)]
 	public class Zhendu_BuffOverride : BuffHandler
 	{
+		private const string RightHandEffectKey = "Melia.Zhendu.Weapon.Right";
+		private const string LeftHandEffectKey = "Melia.Zhendu.Weapon.Left";
+		private const string RightHandEffect = "I_force018_trail_rize_green_800#Bip001 R Hand";
+		private const string LeftHandEffect = "I_force018_trail_rize_green_800#Bip001 L Hand";
+
 		static Zhendu_BuffOverride()
 		{
 			Buff.BuffActivated += TryExtendPoisonDuration;
+		}
+
+		public override void OnActivate(Buff buff, ActivationType activationType)
+		{
+			buff.Target.AddEffect(RightHandEffectKey, new AttachEffect(RightHandEffect, 0.7f));
+			buff.Target.AddEffect(LeftHandEffectKey, new AttachEffect(LeftHandEffect, 0.7f));
+		}
+
+		public override void OnEnd(Buff buff)
+		{
+			buff.Target.RemoveEffect(RightHandEffectKey);
+			buff.Target.RemoveEffect(LeftHandEffectKey);
 		}
 
 		/// <summary>
@@ -41,7 +59,7 @@ namespace Melia.Zone.Buffs.Handlers
 				modifier.AttackAttribute = AttributeType.Poison;
 
 			if (skill.Data.Attribute == AttributeType.Poison || modifier.AttackAttribute == AttributeType.Poison)
-				modifier.DamageMultiplier += 0.05f + buff.NumArg1 * 0.005f;
+				modifier.DamageMultiplier += buff.NumArg1 * 0.10f;
 		}
 
 		/// <summary>

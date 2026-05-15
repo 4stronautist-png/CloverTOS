@@ -101,7 +101,7 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 		private string GetPadName(ICombatEntity caster)
 		{
-			return PadName.Archer_JincanGu_Abil;
+			return PadName.Archer_JincanGu;
 		}
 	}
 }

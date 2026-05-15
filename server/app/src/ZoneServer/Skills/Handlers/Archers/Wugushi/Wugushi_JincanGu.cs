@@ -107,6 +107,8 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 			{
 				if (!target.IsBuffActive(BuffId.JincanGu_Abil_Debuff))
 					target.StartBuff(BuffId.JincanGu_Abil_Debuff, 0, 0, TimeSpan.FromSeconds(60), caster, skill.Id);
+
+				target.StartBuff(BuffId.GoldenFrog_Slow_Debuff, 1f, 0f, TimeSpan.FromMilliseconds(1500), caster, skill.Id);
 			}
 		}
 	}

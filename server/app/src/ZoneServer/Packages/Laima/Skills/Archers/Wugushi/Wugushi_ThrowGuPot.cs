@@ -57,6 +57,7 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
 
 			var targetHandle = target?.Handle ?? 0;
 			Send.ZC_SKILL_READY(caster, skill, 1, originPos, farPos);

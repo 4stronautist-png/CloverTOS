@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Melia.Shared.Game.Const;
 using Melia.Shared.L10N;
 using Melia.Shared.World;
 using Melia.Zone.Network;
 using Melia.Zone.Skills.Combat;
 using Melia.Zone.Skills.Handlers.Base;
-using Melia.Zone.Skills.SplashAreas;
 using Melia.Zone.World.Actors;
-using static Melia.Shared.Util.TaskHelper;
 
 namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 {
@@ -19,6 +15,8 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 	[SkillHandler(SkillId.Wugushi_WideMiasma)]
 	public class Wugushi_WideMiasma : IGroundSkillHandler
 	{
+		private static readonly TimeSpan HemotoxicMiasmaDuration = TimeSpan.FromSeconds(5);
+
 		/// <summary>
 		/// Handles the skill, insert debuffs to enemies inside of the effect area
 		/// </summary>
@@ -38,46 +36,17 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
-			caster.StartBuff(BuffId.WideMiasma_Buff, skill.Level, 0, TimeSpan.FromSeconds(15), caster);
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
+
+			var radius = WugushiSkillHelper.GetWideMiasmaRadius(caster);
+			var stealthDuration = WugushiSkillHelper.GetWideMiasmaStealthDuration(caster);
+			caster.StartBuff(BuffId.WideMiasma_Buff, skill.Level, 0, stealthDuration, caster);
+			caster.StartBuff(BuffId.Hemotoxic_Miasma_Buff, skill.Level, 0, HemotoxicMiasmaDuration, caster, skill.Id);
 
 			Send.ZC_SKILL_READY(caster, skill, caster.Position, caster.Position);
 			Send.ZC_NORMAL.UpdateSkillEffect(caster, caster.Handle, caster.Position, caster.Direction, farPos);
 			Send.ZC_SKILL_MELEE_GROUND(caster, skill, caster.Position, null);
-
-			// TODO: Cut in half in PVP Zones
-			var radius = 120;
-			var splashArea = new Circle(caster.Position, radius);
-
-			skill.Run(this.Attack(skill, caster, splashArea));
-		}
-
-		/// <summary>
-		/// Executes the actual attack after a delay.
-		/// </summary>
-		/// <param name="skill"></param>
-		/// <param name="caster"></param>
-		/// <param name="splashArea"></param>
-		private async Task Attack(Skill skill, ICombatEntity caster, ISplashArea splashArea)
-		{
-			await skill.Wait(1000);
-
-			var targets = caster.Map.GetAttackableEnemiesIn(caster, splashArea);
-
-			foreach (var target in targets.LimitRandom(10))
-			{
-				target.StartBuff(BuffId.WideMiasma_Debuff, 0, 0, TimeSpan.FromSeconds(15), caster, skill.Id);
-				target.StartBuff(BuffId.DecreaseHeal_Debuff, skill.Level, this.GetHealingReduction(skill), TimeSpan.FromSeconds(20), caster);
-			}
-		}
-
-		/// <summary>
-		/// Returns the healing reduction value for the skill.
-		/// </summary>
-		/// <param name="skill"></param>
-		/// <returns></returns>
-		private float GetHealingReduction(Skill skill)
-		{
-			return (3 * skill.Level) * 1000;
+			Send.ZC_GROUND_EFFECT(caster, caster.Position, "F_archer_WideMiasma_ground_loop", Math.Max(0.1f, radius / 60f), Math.Max(3f, (float)stealthDuration.TotalSeconds));
 		}
 	}
 }

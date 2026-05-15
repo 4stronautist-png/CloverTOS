@@ -289,6 +289,94 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return _equip.ToDictionary(a => a.Key, a => a.Value);
 		}
 
+		public static bool TryGetClassCostumeJobId(ItemData itemData, out JobId jobId)
+		{
+			jobId = 0;
+
+			const string prefix = "costume_Char";
+			if (itemData == null || itemData.EquipType1 != EquipType.Outer || !itemData.ClassName.StartsWith(prefix, StringComparison.Ordinal))
+				return false;
+
+			var className = itemData.ClassName;
+			var index = prefix.Length;
+			var tree = 0;
+			while (index < className.Length && char.IsDigit(className[index]))
+			{
+				tree = tree * 10 + (className[index] - '0');
+				index++;
+			}
+
+			if (tree <= 0 || index >= className.Length || className[index] != '_')
+				return false;
+
+			index++;
+			var job = 0;
+			while (index < className.Length && char.IsDigit(className[index]))
+			{
+				job = job * 10 + (className[index] - '0');
+				index++;
+			}
+
+			if (job <= 0)
+				return false;
+
+			jobId = (JobId)(tree * 1000 + job);
+			return ZoneServer.Instance.Data.JobDb.TryFind(jobId, out _);
+		}
+
+		public static bool IsClassCostume(ItemData itemData)
+			=> TryGetClassCostumeJobId(itemData, out _);
+
+		public int RemoveInvalidClassCostumes()
+		{
+			var removed = 0;
+			var inventoryItems = this.GetItems(item => TryGetClassCostumeJobId(item.Data, out var jobId) && !this.Character.Jobs.Has(jobId))
+				.Select(pair => pair.Value)
+				.ToArray();
+
+			foreach (var item in inventoryItems)
+			{
+				if (this.Remove(item, item.Amount, InventoryItemRemoveMsg.Destroyed) == InventoryResult.Success)
+					removed++;
+			}
+
+			var equippedItems = this.GetEquip()
+				.Where(pair => pair.Value is not DummyEquipItem && TryGetClassCostumeJobId(pair.Value.Data, out var jobId) && !this.Character.Jobs.Has(jobId))
+				.ToArray();
+
+			foreach (var pair in equippedItems)
+			{
+				var slot = pair.Key;
+				var item = pair.Value;
+
+				lock (_syncLock)
+				{
+					if (!_equip.TryGetValue(slot, out var current) || current.ObjectId != item.ObjectId)
+						continue;
+
+					_equip[slot] = new DummyEquipItem(slot);
+				}
+
+				this.HandleAppearanceChanges(slot);
+				Send.ZC_ITEM_EQUIP_LIST(this.Character);
+				Send.ZC_UPDATED_PCAPPEARANCE(this.Character);
+				Send.ZC_NORMAL.UpdateCharacterLook(this.Character, 0, slot);
+
+				if (ZoneServer.Instance.Conf.Log.LogItems)
+					ZoneServer.Instance.Database.LogItemTransaction(this.Character.DbId, this.Character.Name, item.ObjectId, item.DbId, item.Id, item.Name, item.Amount, "Remove", InventoryItemRemoveMsg.Destroyed.ToString());
+
+				removed++;
+			}
+
+			if (removed > 0)
+			{
+				this.UpdateWeight();
+				Send.ZC_EQUIP_GEM_INFO(this.Character);
+			}
+
+			return removed;
+		}
+
 		/// <summary>
 		/// Returns item equipped in the given slot.
 		/// </summary>

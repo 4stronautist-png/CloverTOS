@@ -47,6 +47,15 @@ namespace Melia.Zone.Network
 {
 	public partial class PacketHandler : PacketHandler<IZoneConnection>
 	{
+		private static void RemoveWideMiasmaStealthOnSkillUse(Character character, SkillId skillId)
+		{
+			if (skillId == SkillId.None || skillId == SkillId.Wugushi_WideMiasma)
+				return;
+
+			if (character.TryGetBuff(BuffId.WideMiasma_Buff, out _))
+				character.StopBuff(BuffId.WideMiasma_Buff);
+		}
+
 		/// <summary>
 		/// Sent wrongfully if a channel wasn't available and the client
 		/// tries to log in again afterwards.
@@ -1027,6 +1036,13 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			if (InventoryComponent.IsClassCostume(item.Data))
+			{
+				character.ServerMessage("Class costumes cannot be discarded.");
+				Log.Warning("CZ_ITEM_DELETE: User '{0}' tried to delete class costume '{1}'.", conn.Account.Name, item.Data.ClassName);
+				return;
+			}
+
 			var fullStack = (amount >= item.Amount);
 
 			var result = character.Inventory.Remove(item, amount, InventoryItemRemoveMsg.Destroyed);
@@ -1890,6 +1906,7 @@ namespace Melia.Zone.Network
 						if (ZoneServer.Instance.SkillHandlers.TryGetHandler<IMeleeGroundSkillHandler>(skillId, out var meleeHandler))
 						{
 							skill.PrepareCancellation();
+							RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 							meleeHandler.Handle(skill, character, originPos, farPos, targets);
 							break;
 						}
@@ -1902,6 +1919,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 						handler.Handle(skill, character, originPos, farPos, targets.FirstOrDefault());
 						break;
 					}
@@ -1915,6 +1933,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 						handler.Handle(skill, character, originPos, farPos, targets.FirstOrDefault());
 						break;
 					}
@@ -1994,6 +2013,7 @@ namespace Melia.Zone.Network
 							Log.Warning("CZ_SKILL_TARGET: No force skill handler for skill '{0}' found.", skillId);
 							return;
 						}
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 						handler.Handle(skill, character, character.Position, target.Position, target);
 						break;
 					}
@@ -2007,6 +2027,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 						handler.Handle(skill, character, target);
 						break;
 					}
@@ -2066,6 +2087,7 @@ namespace Melia.Zone.Network
 							Log.Warning("CZ_SKILL_TARGET: No force skill handler for skill '{0}' found.", skillId);
 							return;
 						}
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 						handler.Handle(skill, character, character.Position, character.Position, null);
 						break;
 					}
@@ -2079,6 +2101,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 						handler.Handle(skill, character, null);
 						break;
 					}
@@ -2182,6 +2205,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 
 						handler.Handle(skill, character, originPos, farPos, target);
 						break;
@@ -2196,6 +2220,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 
 						handler.Handle(skill, character, originPos, farPos, target);
 						break;
@@ -2210,6 +2235,7 @@ namespace Melia.Zone.Network
 						}
 
 						skill.PrepareCancellation();
+						RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 
 						handler.Handle(skill, character, originPos, farPos, target);
 						break;
@@ -2269,6 +2295,7 @@ namespace Melia.Zone.Network
 				}
 
 				skill.PrepareCancellation();
+				RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 				handler.Handle(skill, character, originPos, direction);
 			}
 			catch (ArgumentException ex)
@@ -2301,6 +2328,7 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			RemoveWideMiasmaStealthOnSkillUse(character, skillId);
 			character.SetCastingState(true, skill);
 			Send.ZC_NORMAL.Skill_DynamicCastStart(character, skill.Id);
 			character.Variables.Temp.Set("Melia.Cast.Skill", skill);
@@ -2329,6 +2357,9 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_DYNAMIC_CASTING_END: User '{0}' tried to cast a skill they don't have ({1}).", conn.Account.Name, skillId);
 				return;
 			}
+
+			if (skillId == SkillId.PiedPiper_Friedenslied && skill.Vars.GetBool("Melia.PiedPiper.Friedenslied.Channeling"))
+				return;
 
 			character.SetCastingState(false, skill);
 			Send.ZC_NORMAL.Skill_DynamicCastEnd(character, skill.Id, castTime);
@@ -2432,6 +2463,7 @@ namespace Melia.Zone.Network
 			var type = (InventoryType)packet.GetByte();
 
 			var character = conn.SelectedCharacter;
+			character.Inventory.RemoveInvalidClassCostumes();
 
 			if (type == InventoryType.PersonalStorage && character.CurrentStorage is PersonalStorage storage && storage.IsBrowsing)
 			{
@@ -3104,6 +3136,13 @@ namespace Melia.Zone.Network
 				if (item.IsLocked)
 					continue;
 
+				if (InventoryComponent.IsClassCostume(item.Data))
+				{
+					character.ServerMessage("Class costumes cannot be sold.");
+					Log.Warning("CZ_ITEM_SELL: User '{0}' tried to sell class costume '{1}'.", conn.Account.Name, item.Data.ClassName);
+					return;
+				}
+
 				// Check amount
 				if (item.Amount < amount)
 				{
@@ -3757,6 +3796,7 @@ namespace Melia.Zone.Network
 			character.Jobs.Remove(oldJobId);
 			character.Jobs.Add(newJob);
 			character.JobId = newJob.Id;
+			character.Inventory.RemoveInvalidClassCostumes();
 
 			// I'd prefer to let the player keep playing after the switch,
 			// but the intended behavior is apparently that you get DCed
@@ -6484,6 +6524,7 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			EnsurePiedPiperFluteUnlock(character);
 			Send.ZC_READY_FLUTING(character, enabled);
 		}
 
@@ -6513,6 +6554,7 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			EnsurePiedPiperFluteUnlock(character);
 			Send.ZC_PLAY_FLUTING(character, note, octave, semitone, true);
 		}
 
@@ -6542,6 +6584,8 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			EnsurePiedPiperFluteUnlock(character);
+
 			// If the user starts playing a note, but doesn't stop
 			// playing it, or they send a different note to stop,
 			// the note will keep playing for a moment until stopping
@@ -6553,6 +6597,98 @@ namespace Melia.Zone.Network
 			// ones, and stop all if anything goes wrong.
 
 			Send.ZC_STOP_FLUTING(character, note, octave, semitone);
+		}
+
+		/// <summary>
+		/// Request to close the active toy instrument.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_REQ_CLOSE_INSTRUMENT)]
+		public void CZ_REQ_CLOSE_INSTRUMENT(IZoneConnection conn, Packet packet)
+		{
+			var instrument = packet.GetString(64);
+
+			var character = conn.SelectedCharacter;
+			if (string.IsNullOrWhiteSpace(instrument))
+				instrument = character.Variables.Temp.GetString("Melia.Instrument.Type", "None");
+
+			character.Variables.Temp.Remove("Melia.Instrument.Type");
+			character.RemoveBuff(BuffId.Instrument_Use_Buff);
+			character.Unlock(LockType.Movement);
+
+			Send.ZC_STOP_INSTRUMENT_ALL(character);
+			Send.ZC_READY_INSTRUMENT(character, instrument, false);
+		}
+
+		/// <summary>
+		/// Request to play a note on a toy instrument.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_REQ_PLAY_INSTRUMENT)]
+		public void CZ_REQ_PLAY_INSTRUMENT(IZoneConnection conn, Packet packet)
+		{
+			var note = packet.GetInt();
+			var octave = packet.GetInt();
+			var variant = packet.GetInt();
+			var semitone = packet.GetBool();
+			var pressed = packet.GetBool();
+			var instrument = packet.GetString(64);
+
+			var character = conn.SelectedCharacter;
+			if (string.IsNullOrWhiteSpace(instrument))
+				instrument = character.Variables.Temp.GetString("Melia.Instrument.Type", "None");
+
+			Send.ZC_PLAY_INSTRUMENT(character, note, octave, variant, semitone, pressed, true, instrument);
+		}
+
+		/// <summary>
+		/// Request to stop a note on a toy instrument.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_REQ_STOP_INSTRUMENT)]
+		public void CZ_REQ_STOP_INSTRUMENT(IZoneConnection conn, Packet packet)
+		{
+			var note = packet.GetInt();
+			var octave = packet.GetInt();
+			var semitone = packet.GetBool();
+			var instrument = packet.GetString(64);
+
+			var character = conn.SelectedCharacter;
+			if (string.IsNullOrWhiteSpace(instrument))
+				instrument = character.Variables.Temp.GetString("Melia.Instrument.Type", "None");
+
+			Send.ZC_STOP_INSTRUMENT(character, note, octave, semitone, instrument);
+		}
+
+		private static void EnsurePiedPiperFluteUnlock(Character character)
+		{
+			if (!character.Jobs.Has(JobId.PiedPiper))
+				return;
+
+			var main = character.SessionObjects.Main;
+			if (main.Properties.GetFloat(PropertyName.JOB_PIED_PIPER_Q1) < 300)
+			{
+				main.Properties.SetFloat(PropertyName.JOB_PIED_PIPER_Q1, 300);
+				Send.ZC_OBJECT_PROPERTY(character, main, PropertyName.JOB_PIED_PIPER_Q1);
+			}
+
+			foreach (var skillId in new[]
+			{
+				SkillId.PiedPiper_Quest1,
+				SkillId.PiedPiper_Quest2,
+				SkillId.PiedPiper_Quest3,
+				SkillId.PiedPiper_Quest4,
+				SkillId.PiedPiper_Quest5,
+			})
+			{
+				if (character.Skills.Has(skillId) || !ZoneServer.Instance.Data.SkillDb.TryFind(skillId, out _))
+					continue;
+
+				character.Skills.AddSilent(new Skill(character, skillId, 1));
+			}
 		}
 
 		/// <summary>

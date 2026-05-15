@@ -24,7 +24,7 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 	public class Wugushi_LatentVenomOverride : IForceSkillHandler
 	{
 		private const int AniTimeMs = 300;
-		private const int BaseLatentDurationMs = 40000;
+		private const int BaseLatentDurationMs = 100000;
 		private const int StacksPerUse = 2;
 		private const float SplashLength = 30f;
 		private const float SplashWidth = 30f;
@@ -41,6 +41,7 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 			skill.IncreaseOverheat();
 			caster.TurnTowards(target);
 			caster.SetAttackState(true);
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
 
 			if (target == null)
 			{
@@ -89,9 +90,14 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 				if (hit.HitInfo.Damage <= 0)
 					continue;
 
-				var buff = target.StartBuff(BuffId.LatentVenom_Debuff, stacks, hit.HitInfo.Damage, TimeSpan.FromMilliseconds(BaseLatentDurationMs), caster);
+				var duration = TimeSpan.FromMilliseconds(BaseLatentDurationMs);
+				var buff = target.StartBuff(BuffId.LatentVenom_Debuff, stacks, hit.HitInfo.Damage, duration, caster);
 				if (buff != null)
+				{
 					buff.OverbuffCounter = 1;
+					buff.IncreaseDuration(duration);
+					buff.NotifyUpdate();
+				}
 			}
 		}
 	}

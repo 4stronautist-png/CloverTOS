@@ -16,6 +16,8 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 	[SkillHandler(SkillId.Wugushi_WugongGu)]
 	public class Wugushi_WugongGu : ITargetSkillHandler
 	{
+		private static readonly TimeSpan PoisonDuration = TimeSpan.FromSeconds(10);
+
 		/// <summary>
 		/// Handles skill, damages targets and apply a debuff.
 		/// </summary>
@@ -24,15 +26,6 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 		/// <param name="target"></param>
 		public void Handle(Skill skill, ICombatEntity caster, ICombatEntity target)
 		{
-			if (!caster.TrySpendSp(skill))
-			{
-				caster.ServerMessage(Localization.Get("Not enough SP."));
-				return;
-			}
-
-			skill.IncreaseOverheat();
-			caster.SetAttackState(true);
-
 			if (target == null)
 			{
 				// TODO: Skill_42 not implemented
@@ -44,20 +37,35 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 				return;
 			}
 
+			if (!caster.TrySpendSp(skill))
+			{
+				caster.ServerMessage(Localization.Get("Not enough SP."));
+				return;
+			}
+
+			skill.IncreaseOverheat();
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
 			caster.TurnTowards(target.Position);
 
-			var aniTime = TimeSpan.FromMilliseconds(600);
+			var aniTime = TimeSpan.Zero;
 			var skillHitResult = SCR_SkillHit(caster, target, skill);
 
 			target.TakeDamage(skillHitResult.Damage, caster);
 
 			var skillHit = new SkillHitInfo(caster, target, skill, skillHitResult, aniTime, TimeSpan.Zero);
 
-			Send.ZC_SKILL_READY(caster, skill, caster.Position, caster.Position);
-			Send.ZC_NORMAL.UpdateSkillEffect(caster, target.Handle, caster.Position, caster.Direction, target.Position);
 			Send.ZC_SKILL_FORCE_TARGET(caster, target, skill, skillHit);
 
-			target.StartBuff(BuffId.Virus_Debuff, 0, 0, TimeSpan.FromSeconds(10), caster, skill.Id);
+			if (skillHitResult.Damage <= 0)
+				return;
+
+			var poison = target.StartBuff(BuffId.Virus_Debuff, skill.Level, skillHitResult.Damage, PoisonDuration, caster, skill.Id);
+			if (poison != null)
+			{
+				poison.SetUpdateTime(500);
+				poison.IncreaseDuration(PoisonDuration);
+				poison.NotifyUpdate();
+			}
 		}
 	}
 }

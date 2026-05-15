@@ -4,11 +4,11 @@ using Melia.Shared.Packages;
 using Melia.Shared.Game.Const;
 using Melia.Zone.Buffs.Base;
 using Melia.Zone.Scripting.ScriptableEvents;
-using Melia.Zone.Skills;
-using Melia.Zone.Skills.Combat;
-using Melia.Zone.Skills.SplashAreas;
-using Melia.Zone.World.Actors;
-using Yggdrasil.Util;
+	using Melia.Zone.Skills;
+	using Melia.Zone.Skills.Combat;
+	using Melia.Zone.Skills.Handlers.Archers.Wugushi;
+	using Melia.Zone.Skills.SplashAreas;
+	using Melia.Zone.World.Actors;
 
 namespace Melia.Zone.Buffs.Handlers
 {
@@ -25,16 +25,15 @@ namespace Melia.Zone.Buffs.Handlers
 	[BuffHandler(BuffId.Virus_Debuff)]
 	public class Virus_DebuffOverride : DamageOverTimeBuffHandler
 	{
-		private const int MaxSpreadOnDeathAmount = 2;
-		private const float SpreadRange = 50f;
-		private const float SpreadOnHitChance = 20f;
-		private const int SpreadOnHitCount = 1;
+		private const int MaxSpreadOnDeathAmount = 5;
+		private const int MaxSpreadCount = 5;
 		private const string RemainingDurationVar = "Melia.Virus_Debuff.RemainingDuration";
 
 		public override void WhileActive(Buff buff)
 		{
 			buff.Vars.Set(RemainingDurationVar, buff.RemainingDuration);
 			base.WhileActive(buff);
+			this.SpreadVirus(buff, MaxSpreadCount);
 		}
 
 		public override void OnEnd(Buff buff)
@@ -49,8 +48,7 @@ namespace Melia.Zone.Buffs.Handlers
 		}
 
 		/// <summary>
-		/// When the poisoned target is struck, 20% chance to spread
-		/// poison to one nearby enemy with remaining duration.
+		/// When the poisoned target is struck, spread poison to nearby enemies.
 		/// </summary>
 		[CombatCalcModifier(CombatCalcPhase.AfterCalc, BuffId.Virus_Debuff)]
 		public void OnDefenseAfterCalc(ICombatEntity attacker, ICombatEntity target, Skill skill, SkillModifier modifier, SkillHitResult skillHitResult)
@@ -61,27 +59,7 @@ namespace Melia.Zone.Buffs.Handlers
 			if (buff.Caster is not ICombatEntity caster)
 				return;
 
-			if (target.IsDead)
-				return;
-
-			if (RandomProvider.Get().Next(100) >= SpreadOnHitChance)
-				return;
-
-			var map = target.Map;
-			if (map == null)
-				return;
-
-			var nearbyEnemies = map.GetAttackableEnemiesIn(caster, new Circle(target.Position, SpreadRange))
-				.Where(e => e != target && !e.IsBuffActive(BuffId.Virus_Debuff))
-				.Take(SpreadOnHitCount);
-
-			var remainingDuration = buff.RemainingDuration;
-			var damage = buff.NumArg2;
-
-			foreach (var enemy in nearbyEnemies)
-			{
-				enemy.StartBuff(BuffId.Virus_Debuff, buff.NumArg1, damage, remainingDuration, caster, buff.SkillId);
-			}
+			this.SpreadVirus(buff, MaxSpreadCount);
 		}
 
 		private void SpreadVirusOnDeath(Buff buff)
@@ -94,7 +72,7 @@ namespace Melia.Zone.Buffs.Handlers
 			if (target.Map == null)
 				return;
 
-			var targetsInRange = target.Map.GetAttackableEnemiesInPosition(caster, target.Position, SpreadRange);
+			var targetsInRange = target.Map.GetAttackableEnemiesInPosition(caster, target.Position, this.GetSpreadRange(caster));
 			var spreadTargets = targetsInRange
 				.Where(a => a != target && !a.IsBuffActive(BuffId.Virus_Debuff))
 				.Take(MaxSpreadOnDeathAmount);
@@ -106,6 +84,29 @@ namespace Melia.Zone.Buffs.Handlers
 
 			foreach (var spreadTarget in spreadTargets)
 				spreadTarget.StartBuff(BuffId.Virus_Debuff, buff.NumArg1, damage, remainingDuration, caster, buff.SkillId);
+		}
+
+		private void SpreadVirus(Buff buff, int maxTargets)
+		{
+			if (buff.Caster is not ICombatEntity caster)
+				return;
+
+			var target = buff.Target;
+			if (target.IsDead || target.Map == null || buff.RemainingDuration <= TimeSpan.Zero)
+				return;
+
+			var spreadRange = this.GetSpreadRange(caster);
+			var spreadTargets = target.Map.GetAttackableEnemiesIn(caster, new Circle(target.Position, spreadRange))
+				.Where(e => e != target && !e.IsBuffActive(BuffId.Virus_Debuff))
+				.Take(maxTargets);
+
+			foreach (var spreadTarget in spreadTargets)
+				spreadTarget.StartBuff(BuffId.Virus_Debuff, buff.NumArg1, buff.NumArg2, buff.RemainingDuration, caster, buff.SkillId);
+		}
+
+		private float GetSpreadRange(ICombatEntity caster)
+		{
+			return WugushiSkillHelper.GetWugongGuSpreadRange(caster);
 		}
 	}
 }

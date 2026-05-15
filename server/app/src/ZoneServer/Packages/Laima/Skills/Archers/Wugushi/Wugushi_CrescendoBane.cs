@@ -6,7 +6,7 @@ using Melia.Shared.Game.Const;
 using Melia.Shared.L10N;
 using Melia.Shared.World;
 using Melia.Zone.Buffs;
-using Melia.Zone.Buffs.Handlers.Archers.Wugushi;
+using Melia.Zone.Buffs.Base;
 using Melia.Zone.Network;
 using Melia.Zone.Skills.Combat;
 using Melia.Zone.Skills.Handlers.Base;
@@ -19,16 +19,13 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 {
 	/// <summary>
 	/// Handler for the Wugushi skill Crescendo Bane.
-	/// Accelerates all poison debuffs on enemies in range, reducing
-	/// their tick interval and remaining duration. Also applies a
-	/// self-buff that automatically accelerates newly-applied poisons.
+	/// Condenses poison damage over time on enemies in range.
 	/// </summary>
 	[Package("laima")]
 	[SkillHandler(SkillId.Wugushi_CrescendoBane)]
 	public class Wugushi_CrescendoBaneOverride : IGroundSkillHandler
 	{
-		private const float BuffDurationMs = 8000f;
-		private const float SplashRadius = 300f;
+		private const float BaseSplashRadius = 50f;
 		private const int MaxTargets = 15;
 
 		public void Handle(Skill skill, ICombatEntity caster, Position originPos, Position farPos, ICombatEntity target)
@@ -41,6 +38,7 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
 
 			var targetHandle = target?.Handle ?? 0;
 			Send.ZC_SKILL_READY(caster, skill, 1, originPos, farPos);
@@ -54,37 +52,20 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 		{
 			await skill.Wait(TimeSpan.FromMilliseconds(50));
 
-			caster.StartBuff(BuffId.Crescendo_Bane_Buff, skill.Level, 0f, TimeSpan.FromMilliseconds(BuffDurationMs), caster);
+			var splashRadius = this.GetSplashRadius(caster, skill);
+			var effectScale = Math.Max(0.05f, splashRadius / BaseSplashRadius);
 
-			await skill.Wait(TimeSpan.FromMilliseconds(50));
+			Send.ZC_GROUND_EFFECT(caster, caster.Position, "F_archer_crescendobane_ground", effectScale, 1f);
 
-			var enemiesInRange = caster.Map.GetAttackableEnemiesInPosition(caster, caster.Position, SplashRadius);
-
-			var hasPoisonToPoison = caster.IsAbilityActive(AbilityId.Wugushi25);
-
-			var deadlyVenomMultiplier = 1f;
-			if (caster.TryGetActiveAbilityLevel(AbilityId.Wugushi35, out var deadlyVenomLevel))
-				deadlyVenomMultiplier += deadlyVenomLevel * 0.1f;
+			var enemiesInRange = caster.Map.GetAttackableEnemiesInPosition(caster, caster.Position, splashRadius);
 
 			foreach (var target in enemiesInRange.Take(MaxTargets))
 			{
-				this.AcceleratePoisonDebuffs(target, skill.Level);
-
-				if (hasPoisonToPoison && target.Properties.GetFloat(PropertyName.Attribute) == (float)AttributeType.Poison)
-				{
-					var modifier = SkillModifier.Default;
-					modifier.DamageMultiplier = deadlyVenomMultiplier;
-
-					var skillHitResult = SCR_SkillHit(caster, target, skill, modifier);
-					target.TakeDamage(skillHitResult.Damage, caster);
-
-					var hit = new HitInfo(caster, target, skill, skillHitResult);
-					Send.ZC_HIT_INFO(caster, target, hit);
-				}
+				this.CondensePoisonDebuffs(caster, target);
 			}
 		}
 
-		private void AcceleratePoisonDebuffs(ICombatEntity target, int skillLevel)
+		private void CondensePoisonDebuffs(ICombatEntity caster, ICombatEntity target)
 		{
 			var buffs = target.Components.Get<BuffComponent>();
 			if (buffs == null)
@@ -94,8 +75,16 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 			foreach (var buff in poisonDebuffs)
 			{
-				Crescendo_Bane_BuffOverride.AccelerateBuff(buff, skillLevel);
+				if (buff.Caster != caster)
+					continue;
+
+				DamageOverTimeBuffHandler.CondenseRemainingTicks(buff, 0.5f, 0.5f);
 			}
+		}
+
+		private float GetSplashRadius(ICombatEntity caster, Skill skill)
+		{
+			return WugushiSkillHelper.GetCrescendoBaneRadius(caster, skill.Level);
 		}
 	}
 }

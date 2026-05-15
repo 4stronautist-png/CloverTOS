@@ -125,8 +125,17 @@ namespace Melia.Zone.World.Actors.Characters
 			if (this.IsLocked(LockType.GetDamaged))
 				return false;
 
+			if (this.TryGetBuff(BuffId.LiedDerWeltbaum_NoDamage_Buff, out var weltbaumNoDamage))
+			{
+				weltbaumNoDamage.OverbuffCounter--;
+				if (weltbaumNoDamage.OverbuffCounter <= 0)
+					this.RemoveBuff(BuffId.LiedDerWeltbaum_NoDamage_Buff);
+
+				return false;
+			}
+
 			if (this.IsAnyBuffActive(BuffId.Skill_NoDamage_Buff,
-				BuffId.LiedDerWeltbaum_NoDamage_Buff, BuffId.EarringRaid_PartyLeaderBuff_NoDamage,
+				BuffId.EarringRaid_PartyLeaderBuff_NoDamage,
 				BuffId.InfernalShadow_CasterNoDamage_Buff))
 				return false;
 
@@ -148,7 +157,13 @@ namespace Melia.Zone.World.Actors.Characters
 				this.ShowHelp("TUTO_RECOVERY");
 			if (this.Hp == 0)
 			{
-				if (this.TryGetBuff(BuffId.Cleric_Revival_Buff, out var reviveBuff))
+				if (this.TryGetBuff(BuffId.Symphony_FinaleOfResurrection_Buff, out var symphonyRevive) && symphonyRevive.OverbuffCounter > 0)
+				{
+					symphonyRevive.OverbuffCounter = 0;
+					this.RemoveBuff(BuffId.Symphony_FinaleOfResurrection_Buff);
+					this.Resurrect(ResurrectOptions.TryAgain, 0.4f);
+				}
+				else if (this.TryGetBuff(BuffId.Cleric_Revival_Buff, out var reviveBuff))
 				{
 					this.ModifyHpSafe(1, out _, out _);
 					reviveBuff.Activate(Zone.Buffs.Base.ActivationType.Start);

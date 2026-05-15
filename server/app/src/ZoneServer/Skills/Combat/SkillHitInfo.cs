@@ -241,8 +241,7 @@ namespace Melia.Zone.Skills.Combat
 			// Knockback immunity check - may need to move this
 			if (
 				target.IsBuffActive(BuffId.PainBarrier_Buff) ||
-				target.IsBuffActive(BuffId.BullyPainBarrier_Buff) ||
-				target.IsBuffActive(BuffId.Marschierendeslied_Buff)
+				target.IsBuffActive(BuffId.BullyPainBarrier_Buff)
 				)
 			{
 				this.KnockBackInfo = null;

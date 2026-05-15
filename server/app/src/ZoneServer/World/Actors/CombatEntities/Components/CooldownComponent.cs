@@ -45,6 +45,10 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 			if (this.ExtraCooldown > TimeSpan.Zero)
 				duration += this.ExtraCooldown;
 
+			var cdrRate = this.Entity.GetTempVar("Melia.Skill.CooldownReduction");
+			if (cdrRate > 0)
+				duration *= MathF.Max(0, MathF.Min(1, 1 - cdrRate));
+
 			var cooldown = new Cooldown(cooldownId, duration);
 
 			lock (_syncLock)
@@ -79,12 +83,6 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 			if (_cooldownReductions.TryGetValue(skill.Id, out var reduction))
 			{
 				duration = Math2.Max(TimeSpan.Zero, duration - reduction);
-			}
-
-			var cdrRate = this.Entity.GetTempVar("Melia.Skill.CooldownReduction");
-			if (cdrRate > 0)
-			{
-				duration *= (1 - cdrRate);
 			}
 
 			return this.Start(skill.Data.CooldownGroup, duration);

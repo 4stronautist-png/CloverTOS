@@ -608,6 +608,24 @@ namespace Melia.Zone.Network
 			var skillIds = new HashSet<SkillId>(skills.Select(skill => skill.Id));
 			var packetSkills = new List<Skill>(skills);
 
+			if (character.Jobs.Has(JobId.PiedPiper))
+			{
+				foreach (var skillId in new[]
+				{
+					SkillId.PiedPiper_Quest1,
+					SkillId.PiedPiper_Quest2,
+					SkillId.PiedPiper_Quest3,
+					SkillId.PiedPiper_Quest4,
+					SkillId.PiedPiper_Quest5,
+				})
+				{
+					if (!skillIds.Add(skillId) || ZoneServer.Instance.Data.SkillDb.Find(skillId) == null)
+						continue;
+
+					packetSkills.Add(new Skill(character, skillId, 1));
+				}
+			}
+
 			foreach (var job in character.Jobs.GetList())
 			{
 				var skillTree = ZoneServer.Instance.Data.SkillTreeDb.FindSkills(job.Id, job.Level);
@@ -7853,6 +7871,84 @@ if ok~=true then ui.SysMsg('SSMIV '..tostring(err)) end;");
 			packet.PutByte(semitone);
 
 			character.Map.Broadcast(packet, character);
+		}
+
+		/// <summary>
+		/// Toggles character's toy instrument stance.
+		/// </summary>
+		/// <param name="character"></param>
+		/// <param name="instrument"></param>
+		/// <param name="enabled"></param>
+		public static void ZC_READY_INSTRUMENT(Character character, string instrument, bool enabled)
+		{
+			using var packet = Packet.Rent(Op.ZC_READY_INSTRUMENT);
+
+			packet.PutInt(character.Handle);
+			packet.PutString(instrument ?? "None", 64);
+			packet.PutByte(enabled);
+
+			character.Map.Broadcast(packet);
+		}
+
+		/// <summary>
+		/// Makes character play a note on their toy instrument.
+		/// </summary>
+		/// <param name="character"></param>
+		/// <param name="note"></param>
+		/// <param name="octave"></param>
+		/// <param name="variant"></param>
+		/// <param name="semitone"></param>
+		/// <param name="pressed"></param>
+		/// <param name="animate"></param>
+		/// <param name="instrument"></param>
+		public static void ZC_PLAY_INSTRUMENT(Character character, int note, int octave, int variant, bool semitone, bool pressed, bool animate, string instrument)
+		{
+			using var packet = Packet.Rent(Op.ZC_PLAY_INSTRUMENT);
+
+			packet.PutInt(character.Handle);
+			packet.PutInt(note);
+			packet.PutInt(octave);
+			packet.PutInt(variant);
+			packet.PutByte(semitone);
+			packet.PutByte(pressed);
+			packet.PutByte(animate);
+			packet.PutString(instrument ?? "None", 64);
+
+			character.Map.Broadcast(packet);
+		}
+
+		/// <summary>
+		/// Stops character playing the current note on their toy instrument.
+		/// </summary>
+		/// <param name="character"></param>
+		/// <param name="note"></param>
+		/// <param name="octave"></param>
+		/// <param name="semitone"></param>
+		/// <param name="instrument"></param>
+		public static void ZC_STOP_INSTRUMENT(Character character, int note, int octave, bool semitone, string instrument)
+		{
+			using var packet = Packet.Rent(Op.ZC_STOP_INSTRUMENT);
+
+			packet.PutInt(character.Handle);
+			packet.PutInt(note);
+			packet.PutInt(octave);
+			packet.PutByte(semitone);
+			packet.PutString(instrument ?? "None", 64);
+
+			character.Map.Broadcast(packet);
+		}
+
+		/// <summary>
+		/// Stops all currently playing toy instrument notes.
+		/// </summary>
+		/// <param name="character"></param>
+		public static void ZC_STOP_INSTRUMENT_ALL(Character character)
+		{
+			using var packet = Packet.Rent(Op.ZC_STOP_INSTRUMENT_ALL);
+
+			packet.PutInt(character.Handle);
+
+			character.Map.Broadcast(packet);
 		}
 
 		/// <summary>

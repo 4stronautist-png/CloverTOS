@@ -1,32 +1,23 @@
-﻿using Melia.Shared.Game.Const;
+using Melia.Shared.Game.Const;
 using Melia.Zone.Buffs.Base;
-using Melia.Zone.World.Actors;
+using Melia.Zone.Network;
 
 namespace Melia.Zone.Buffs.Handlers.Archers.Wugushi
 {
 	/// <summary>
-	/// Handle for the WideMiasma Debuff, which ticks damage every second.
+	/// Healing reduction applied by Wide Miasma.
 	/// </summary>
 	/// <remarks>
-	/// NumArg1: None
-	/// NumArg2: None
+	/// NumArg1: Skill level
+	/// NumArg2: Heal reduction percentage in thousands
 	/// </remarks>
 	[BuffHandler(BuffId.WideMiasma_Debuff)]
 	public class WideMiasma_Debuff : BuffHandler
 	{
-		public override void WhileActive(Buff buff)
+		public override void OnActivate(Buff buff, ActivationType activationType)
 		{
-			if (buff.Target.IsDead)
-				return;
-
-			if (buff.Caster is not ICombatEntity caster)
-				return;
-
-			if (!caster.TryGetSkill(buff.SkillId, out var skill))
-				return;
-
-			buff.Target.TakeSkillHit(caster, skill);
-			Crescendo_Bane_Buff.TryApply(buff);
+			Send.ZC_NORMAL.PlayTextEffect(buff.Target, buff.Caster, "SHOW_BUFF_TEXT", (float)BuffId.WideMiasma_Debuff, null);
+			buff.NotifyUpdate();
 		}
 	}
 }

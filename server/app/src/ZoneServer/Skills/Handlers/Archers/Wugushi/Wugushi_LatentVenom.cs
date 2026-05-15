@@ -32,6 +32,7 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
 
 			if (target == null)
 			{
@@ -58,7 +59,13 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 			Send.ZC_SKILL_FORCE_TARGET(caster, target, skill, skillHit);
 			Send.ZC_SHOW_EMOTICON(target, "I_emo_poison", TimeSpan.FromSeconds(100));
 
-			target.StartBuff(BuffId.LatentVenom_Debuff, 0, 0, TimeSpan.FromSeconds(100), caster, skill.Id);
+			var duration = TimeSpan.FromSeconds(100);
+			var buff = target.StartBuff(BuffId.LatentVenom_Debuff, 0, skillHitResult.Damage, duration, caster, skill.Id);
+			if (buff != null)
+			{
+				buff.IncreaseDuration(duration);
+				buff.NotifyUpdate();
+			}
 		}
 	}
 }

@@ -1120,17 +1120,13 @@
 
 // PiedPiper
 //---------------------------------------------------------------------------
-{ category: "PiedPiper", classId: 303, abilityId: 318006, jobId: 3012, className: "PiedPiper6", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HypnotischeFlote", argNum: 10 } },
-{ category: "PiedPiper", classId: 401, abilityId: 318011, jobId: 3012, className: "PiedPiper11", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HamelnNagetier", argNum: 1 } },
-{ category: "PiedPiper", classId: 403, abilityId: 318013, jobId: 3012, className: "PiedPiper13", maxLevel: 10, priceTimeScript: 'ABIL_ABOVE_NORMAL_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HamelnNagetier", argNum: 5 } },
-{ category: "PiedPiper", classId: 702, abilityId: 318015, jobId: 3012, className: "PiedPiper15", maxLevel: 5, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 100 } },
-{ category: "PiedPiper", classId: 801, abilityId: 318016, jobId: 3012, className: "PiedPiper16", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 100 } },
-{ category: "PiedPiper", classId: 901, abilityId: 318017, jobId: 3012, className: "PiedPiper17", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char3_12", argNum: 45 } },
-{ category: "PiedPiper", classId: 902, abilityId: 318018, jobId: 3012, className: "PiedPiper18", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char3_12", argNum: 45 } },
-{ category: "PiedPiper", classId: 903, abilityId: 318019, jobId: 3012, className: "PiedPiper19", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char3_12", argNum: 45 } },
-{ category: "PiedPiper", classId: 904, abilityId: 318020, jobId: 3012, className: "PiedPiper20", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char3_12", argNum: 45 } },
-{ category: "PiedPiper", classId: 1001, abilityId: 318021, jobId: 3012, className: "PiedPiper21", maxLevel: 30, priceTimeScript: 'HIDDENABIL_PRICE_COND_REINFORCE', unlockScript: { name: "UNLOCK_ABIL_OTHERABILITY", argStr: "PiedPiper11", argNum: 65 } },
-{ category: "PiedPiper", classId: 905, abilityId: 318022, jobId: 3012, className: "PiedPiper22", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char3_12", argNum: 45 } },
+{ category: "PiedPiper", classId: 101, abilityId: 318006, jobId: 3012, className: "PiedPiper6", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HypnotischeFlote", argNum: 10 } },
+{ category: "PiedPiper", classId: 201, abilityId: 318011, jobId: 3012, className: "PiedPiper11", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HamelnNagetier", argNum: 1 } },
+{ category: "PiedPiper", classId: 301, abilityId: 318012, jobId: 3012, className: "PiedPiper12", maxLevel: 10, priceTimeScript: 'ABIL_ABOVE_NORMAL_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HamelnNagetier", argNum: 1 } },
+{ category: "PiedPiper", classId: 401, abilityId: 318013, jobId: 3012, className: "PiedPiper13", maxLevel: 10, priceTimeScript: 'ABIL_ABOVE_NORMAL_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "PiedPiper_HamelnNagetier", argNum: 5 } },
+{ category: "PiedPiper", classId: 501, abilityId: 318015, jobId: 3012, className: "PiedPiper15", maxLevel: 5, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 100 } },
+{ category: "PiedPiper", classId: 601, abilityId: 318021, jobId: 3012, className: "PiedPiper21", maxLevel: 30, priceTimeScript: 'HIDDENABIL_PRICE_COND_REINFORCE', unlockScript: { name: "UNLOCK_ABIL_OTHERABILITY", argStr: "PiedPiper11", argNum: 65 } },
+{ category: "PiedPiper", classId: 701, abilityId: 318022, jobId: 3012, className: "PiedPiper22", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char3_12", argNum: 45 } },
 
 // Appraiser
 //---------------------------------------------------------------------------

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Melia.Shared.Packages;
 using Melia.Shared.Game.Const;
 using Melia.Shared.L10N;
@@ -9,9 +7,6 @@ using Melia.Zone.Network;
 using Melia.Zone.Skills.Combat;
 using Melia.Zone.Skills.Handlers.Base;
 using Melia.Zone.World.Actors;
-using static Melia.Zone.Skills.SkillUseFunctions;
-using static Melia.Zone.Skills.Helpers.SkillDamageHelper;
-using static Melia.Zone.Skills.Helpers.SkillTargetHelper;
 
 namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 {
@@ -22,10 +17,8 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 	[SkillHandler(SkillId.Wugushi_WideMiasma)]
 	public class Wugushi_WideMiasmaOverride : IGroundSkillHandler
 	{
-		private const float CasterBuffDurationMs = 5000f;
-		private const float TargetDebuffDurationMs = 15000f;
-		private const float SplashRadius = 120f;
-		private const int BaseTargetCount = 10;
+		private static readonly TimeSpan HemotoxicMiasmaDuration = TimeSpan.FromSeconds(5);
+
 		public void Handle(Skill skill, ICombatEntity caster, Position originPos, Position farPos, ICombatEntity target)
 		{
 			if (!caster.TrySpendSp(skill))
@@ -36,34 +29,18 @@ namespace Melia.Zone.Skills.Handlers.Archers.Wugushi
 
 			skill.IncreaseOverheat();
 			caster.SetAttackState(true);
+			WugushiSkillHelper.ApplyPoisonMasteryIndicator(caster);
 
-			var targetHandle = target?.Handle ?? 0;
-			Send.ZC_SKILL_READY(caster, skill, 1, originPos, farPos);
-			Send.ZC_NORMAL.UpdateSkillEffect(caster, targetHandle, originPos, originPos.GetDirection(farPos), Position.Zero);
-			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, ForceId.GetNew(), null);
+			var radius = WugushiSkillHelper.GetWideMiasmaRadius(caster);
+			var stealthDuration = WugushiSkillHelper.GetWideMiasmaStealthDuration(caster);
 
-			skill.Run(this.HandleSkill(caster, skill, originPos, farPos));
-		}
+			caster.StartBuff(BuffId.WideMiasma_Buff, skill.Level, 0f, stealthDuration, caster);
+			caster.StartBuff(BuffId.Hemotoxic_Miasma_Buff, skill.Level, 0f, HemotoxicMiasmaDuration, caster, skill.Id);
 
-		private async Task HandleSkill(ICombatEntity caster, Skill skill, Position originPos, Position farPos)
-		{
-			await skill.Wait(TimeSpan.FromMilliseconds(200));
-
-			var targetPos = originPos.GetRelative(farPos);
-
-			caster.SetTargets(SkillSelectEnemiesInCircle(caster, targetPos, SplashRadius, BaseTargetCount));
-			var skillTargets = caster.GetTargets();
-
-			foreach (var target in skillTargets)
-			{
-				var damage = (int)SCR_SkillHit(caster, target, skill).Damage;
-				if (damage <= 0)
-					continue;
-
-				target.StartBuff(BuffId.WideMiasma_Debuff, skill.Level, damage, TimeSpan.FromMilliseconds(TargetDebuffDurationMs), caster, skill.Id);
-			}
-
-			caster.StartBuff(BuffId.WideMiasma_Buff, skill.Level, 0f, TimeSpan.FromMilliseconds(CasterBuffDurationMs), caster);
+			Send.ZC_SKILL_READY(caster, skill, caster.Position, caster.Position);
+			Send.ZC_NORMAL.UpdateSkillEffect(caster, caster.Handle, caster.Position, caster.Direction, farPos);
+			Send.ZC_SKILL_MELEE_GROUND(caster, skill, caster.Position, null);
+			Send.ZC_GROUND_EFFECT(caster, caster.Position, "F_archer_WideMiasma_ground_loop", Math.Max(0.1f, radius / 60f), Math.Max(3f, (float)stealthDuration.TotalSeconds));
 		}
 	}
 }

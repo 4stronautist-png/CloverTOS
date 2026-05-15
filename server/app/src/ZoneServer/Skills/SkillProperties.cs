@@ -7,6 +7,7 @@ using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
 using Melia.Shared.ObjectProperties;
 using Melia.Zone.Scripting;
+using Melia.Zone.Skills.Handlers.Archers.Wugushi;
 using Newtonsoft.Json.Linq;
 using Yggdrasil.Logging;
 
@@ -147,7 +148,7 @@ namespace Melia.Zone.Skills
 
 			this.Create(new RFloatProperty(PropertyName.CaptionTime, () => this.GetCaptionTime()));
 			this.Create(new RFloatProperty(PropertyName.CaptionRatio, () => this.GetCaptionRatio()));
-			this.Create(new RFloatProperty(PropertyName.CaptionRatio2, () => 0f)); // Needs to be calculated if used, uses lua script
+			this.Create(new RFloatProperty(PropertyName.CaptionRatio2, () => this.GetCaptionRatio2()));
 			this.Create(new RFloatProperty(PropertyName.CaptionRatio3, () => this.GetCaptionRatio3()));
 		}
 
@@ -167,6 +168,16 @@ namespace Melia.Zone.Skills
 			{
 				SkillId.Assassin_Hasisas or SkillId.Common_Assassin_Hasisas => 175f + (20f * (this.Skill.Level - 1)),
 				SkillId.Assassin_HallucinationSmoke or SkillId.Assassin_HallucinationSmoke_2 => 20f,
+				SkillId.Wugushi_WideMiasma => WugushiSkillHelper.HemotoxicMiasmaHealingReductionPercent,
+				_ => 0f,
+			};
+		}
+
+		private float GetCaptionRatio2()
+		{
+			return this.Skill.Id switch
+			{
+				SkillId.Wugushi_WideMiasma => WugushiSkillHelper.GetWideMiasmaMoveSpeedCaption(this.Skill.Owner),
 				_ => 0f,
 			};
 		}
@@ -176,6 +187,7 @@ namespace Melia.Zone.Skills
 			return this.Skill.Id switch
 			{
 				SkillId.Assassin_Hasisas or SkillId.Common_Assassin_Hasisas => 10f + (2f * (this.Skill.Level - 1)),
+				SkillId.Wugushi_WideMiasma => WugushiSkillHelper.GetWideMiasmaStealthDurationCaption(this.Skill.Owner),
 				_ => 0f,
 			};
 		}

@@ -32,6 +32,19 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 			BuffId.DashRun,
 			BuffId.RidingCompanion,
 			BuffId.TakingOwner,
+			BuffId.Symphony_MarchOfTriumph_Buff,
+			BuffId.Symphony_BalladOfSanctuary_Buff,
+			BuffId.Symphony_DanceOfSwiftness_Buff,
+			BuffId.Symphony_GoldenResonance_Buff,
+			BuffId.Symphony_HerosCrescendo_Buff,
+			BuffId.Symphony_IronWaltz_Buff,
+			BuffId.Symphony_EchoOfReversal_Buff,
+			BuffId.Symphony_FestivalOverture_Buff,
+			BuffId.Symphony_FinaleOfResurrection_Buff,
+			BuffId.Symphony_BrokenTempo_Debuff,
+			BuffId.Symphony_CursedChorus_Debuff,
+			BuffId.Symphony_DiscordantMelody_Debuff,
+			BuffId.Symphony_DanceOfMadness_Debuff,
 		];
 
 		/// <summary>
@@ -685,6 +698,9 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 			// TODO: Ideally, this should happen from the buff handler,
 			//   and we might also want to move the check somewhere else,
 			//   so we're still able to force-apply buffs if necessary.
+
+			if (buffId == BuffId.HamelnNagetier_Debuff)
+				return false;
 
 			var selfBuff = caster == this.Entity;
 			if (selfBuff)

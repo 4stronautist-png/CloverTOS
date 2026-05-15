@@ -285,6 +285,7 @@ namespace Melia.Zone.World.Actors.Characters
 
 			this.JobId = jobId;
 			this.Jobs.Add(newJob);
+			this.Inventory.RemoveInvalidClassCostumes();
 
 			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(this));
 

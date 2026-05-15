@@ -25,12 +25,13 @@ namespace Melia.Zone.Pads.HandlersOverride.Archers.Wugushi
 			var pad = args.Trigger;
 			var creator = args.Creator;
 
-			Send.ZC_NORMAL.PadUpdate(pad, true);
+			Send.ZC_NORMAL.PadUpdate(creator, pad, PadName.Archer_VerminPot, 0f, 0f, 50f, true);
+			Send.ZC_GROUND_EFFECT(creator, pad.Position, "F_burstup019_smoke", 0.5f, 1f);
 			pad.SetRange(40f);
 			pad.SetUpdateInterval(750);
 			pad.Trigger.LifeTime = TimeSpan.FromMilliseconds(15000);
 
-			var monster = PadCreateMonster(pad, "hidden_monster4", pad.Position, 0f, 0, 15f, "HitProof#YES", "None", 1, true, "None", "None", false, "SCR_ARRIVE_THROWGUPOT");
+			var monster = PadCreateMonster(pad, "hidden_monster", pad.Position, 0f, 0, 15f, "HitProof#YES", "None", 1, true, "None", "None", false, "SCR_ARRIVE_THROWGUPOT");
 			if (monster is Mob mob)
 			{
 				mob.SetHittable(false);
@@ -45,7 +46,7 @@ namespace Melia.Zone.Pads.HandlersOverride.Archers.Wugushi
 			var pad = args.Trigger;
 			var creator = args.Creator;
 
-			Send.ZC_NORMAL.PadUpdate(pad, false);
+			Send.ZC_NORMAL.PadUpdate(creator, pad, PadName.Archer_VerminPot, 0f, 0f, 50f, false);
 		}
 
 		public void Entered(object sender, PadTriggerActorArgs args)

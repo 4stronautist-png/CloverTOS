@@ -64,7 +64,7 @@ namespace Melia.Zone.Buffs.Handlers.Scout
 
 			if (skillHitResult.Damage > 0)
 			{
-				target.StopBuffByTag(BuffTag.Cloaking);
+				target.StopBuff(BuffId.Cloaking_Buff);
 			}
 		}
 	}
