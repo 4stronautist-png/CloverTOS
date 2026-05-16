@@ -357,7 +357,7 @@
 { id: 8416, className: "SSN_ZACHA4F_SQ_03", name: "Call the Guardian",  quest: { name: "ZACHA4F_SQ_03" } },
 { id: 8417, className: "SSN_FLASH60_SQ_01", name: "Cleaning Up",  quest: { name: "FLASH60_SQ_01" } },
 { id: 8418, className: "SSN_ZACHA4F_SQ_05", name: "Royal Mausoleum's Treasure",  quest: { name: "ZACHA4F_SQ_05" } },
-{ id: 8419, className: "SSN_GELE574_MQ_09", name: "GELE574_MQ_09",  quest: { name: "GELE574_MQ_09", infoName: [ "Defeat Biteregina" ], infoMaxCount: [ 1 ], monsterNameGroup: [ "boss_BiteRegina_Q3" ], monsterView: [ 1 ] } },
+{ id: 8419, className: "SSN_GELE574_MQ_09", name: "GELE574_MQ_09",  quest: { name: "GELE574_MQ_09", infoName: [ "Defeat Chapparition" ], infoMaxCount: [ 1 ], monsterNameGroup: [ "boss_Chapparition" ], monsterView: [ 1 ] } },
 { id: 8421, className: "SSN_CHAPLE575_MQ_02", name: "Search for follower Tomas (1)",  quest: { name: "CHAPLE575_MQ_02" } },
 { id: 8422, className: "SSN_CHAPLE575_MQ_03", name: "Search for follower Tomas (2)",  quest: { name: "CHAPLE575_MQ_03" } },
 { id: 8423, className: "SSN_CHAPLE575_MQ_04", name: "CHAPLE575_MQ_04",  quest: { name: "CHAPLE575_MQ_04" } },

@@ -6425,10 +6425,10 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		private List<string> FilterQuestMapPointGroupsWithFallback(Quest quest, List<string> mapPointGroups)
 		{
 			var filtered = this.FilterClientSafeQuestMapPointGroups(mapPointGroups ?? new List<string>());
-			if (filtered.Count != 0)
+			var currentMap = this.Character?.Map?.ClassName;
+			if (filtered.Count != 0 && this.MapPointGroupsReferenceCurrentMap(filtered, currentMap))
 				return filtered;
 
-			var currentMap = this.Character?.Map?.ClassName;
 			var successNextPoints = this.GetPapayaSuccessNextMapPointGroups(quest, currentMap);
 			if (successNextPoints.Count != 0)
 				return successNextPoints;
@@ -6438,6 +6438,27 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return routePoints;
 
 			return filtered;
+		}
+
+		private bool MapPointGroupsReferenceCurrentMap(List<string> mapPointGroups, string currentMap)
+		{
+			if (string.IsNullOrWhiteSpace(currentMap) || mapPointGroups == null || mapPointGroups.Count == 0)
+				return true;
+
+			foreach (var mapPointGroup in mapPointGroups)
+			{
+				if (this.IsNone(mapPointGroup))
+					continue;
+
+				var parts = mapPointGroup.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				if (parts.Length == 0)
+					continue;
+
+				if (string.Equals(parts[0], currentMap, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+
+			return false;
 		}
 
 		private List<string> GetPapayaSuccessNextMapPointGroups(Quest quest, string mapClassName)

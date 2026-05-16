@@ -1030,7 +1030,7 @@
 		"id": 860901,
 		"questName": "GELE574_MQ_09",
 		"mapName": "f_gele_57_4",
-		"target": "boss_BiteRegina_Q3",
+		"target": "boss_Chapparition",
 		"minSpawnCount": 1,
 		"mapPointGroup": [
 			"f_gele_57_4 1287 -78 1811 350"
