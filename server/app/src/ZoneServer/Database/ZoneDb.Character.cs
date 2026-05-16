@@ -220,7 +220,7 @@ namespace Melia.Zone.Database
 				}
 			}
 			if (character.Jobs.Count == 0 || character.Jobs.Get(character.JobId) == null)
-				character.Jobs.AddSilent(new Job(character, character.JobId));
+				character.Jobs.AddSilent(new Job(character, character.JobId, JobCircle.First, 1));
 		}
 
 		private void LoadSessionObjects(Character character)
@@ -349,6 +349,12 @@ namespace Melia.Zone.Database
 							};
 							if (!QuestScript.Exists(questId))
 							{
+								if (character.Quests.TryRestoreStaticQuest(questClassId, status, startTime, completeTime, tracked, out var staticQuest))
+								{
+									loadedQuests.Add(questDbId, staticQuest);
+									continue;
+								}
+
 								character.Quests.AddDisabledQuest(questDbId);
 								continue;
 							}

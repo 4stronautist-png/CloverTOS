@@ -142,7 +142,8 @@ namespace Melia.Web.Database
 				using var conn = this.GetConnection();
 				using var cmd = conn.CreateCommand();
 
-				var hashedPassword = BCrypt.HashPassword(newPassword, BCrypt.GenerateSalt());
+				var md5Password = MD5.Encode(newPassword);
+				var hashedPassword = BCrypt.HashPassword(md5Password, BCrypt.GenerateSalt());
 
 				cmd.CommandText = @"
 					UPDATE accounts

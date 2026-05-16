@@ -24,6 +24,8 @@ public class FSiauliaiWestNpcScript : GeneralScript
 	private const bool UseOpeningCutscene = true;
 	private Npc _titasNpc;
 	private Npc _scoutNpc;
+	private Npc _battleCommanderNpc;
+	private Npc _laimonasNpc;
 
 	[On("PlayerReady")]
 	public void OnPlayerReady(object sender, PlayerEventArgs args)
@@ -45,11 +47,14 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		try
 		{
 			character.RestoreCoreHudState(true, true);
+			character.Quests.RepairWestSiauliaiMainQuestState();
 			ApplyStarterProgressCatchUp(character);
 			RevealTitasIfNeeded(character);
 			RevealScoutIfNeeded(character);
+			RevealBattleCommanderIfNeeded(character);
+			RevealLaimonasIfNeeded(character);
 
-			if (character.Level > 1 && character.Quests.HasCompleted(1001))
+			if (HasEnteredWestSiauliaiStory(character))
 				return;
 
 			var introTrackCompleted = character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1;
@@ -69,6 +74,8 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
 			RevealTitasIfNeeded(character);
 			RevealScoutIfNeeded(character);
+			RevealBattleCommanderIfNeeded(character);
+			RevealLaimonasIfNeeded(character);
 			QueueOpeningCutscene(character);
 
 			if (!UseOpeningCutscene)
@@ -79,13 +86,10 @@ public class FSiauliaiWestNpcScript : GeneralScript
 					Log.Info("West Siauliai opening: completed intro trigger quest for '{0}' because the cutscene is disabled.", character.Name);
 				}
 
-				if (!character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
-				{
-					await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
-					Log.Info("West Siauliai opening: started visible Titas quest SIAUL_WEST_WEST_FOREST for '{0}'.", character.Name);
-				}
-
 				RevealTitasIfNeeded(character);
+				RevealScoutIfNeeded(character);
+				RevealBattleCommanderIfNeeded(character);
+				RevealLaimonasIfNeeded(character);
 				Log.Info("West Siauliai opening: skipping broken intro cutscene for '{0}' and keeping HUD/world controls active.", character.Name);
 				character.LookAround();
 				return;
@@ -103,10 +107,13 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			return;
 		if (!UseOpeningCutscene)
 			return;
-		if ((!character.Quests.IsActive(1001) && character.Quests.HasCompleted(1001)) ||
-			character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1 ||
-			character.Tracks.ActiveTrack != null)
+		if (HasEnteredWestSiauliaiStory(character) || character.Tracks.ActiveTrack != null)
 			return;
+		if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
+		{
+			_ = EnsureWestForestFallback(character);
+			return;
+		}
 
 		_ = Task.Run(async () =>
 		{
@@ -114,20 +121,17 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 			if (character.Connection == null || character.MapId != 1021)
 				return;
-			if ((!character.Quests.IsActive(1001) && character.Quests.HasCompleted(1001)) ||
-				character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1 ||
-				character.Tracks.ActiveTrack != null)
+			if (HasEnteredWestSiauliaiStory(character) || character.Tracks.ActiveTrack != null)
 				return;
+			if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
+			{
+				await EnsureWestForestFallback(character);
+				return;
+			}
 
 			try
 			{
 				Send.ZC_NORMAL.SetupCutscene(character, false, false, false);
-
-				if (character.Quests.IsActive(1001))
-				{
-					character.Quests.Complete(1001);
-					Log.Info("West Siauliai opening: completed SIAUL_WEST_MEET_TITAS for '{0}' before automatic intro track.", character.Name);
-				}
 
 				var started = await character.Tracks.Start(
 					"SIAU_WEST_START_TRACK",
@@ -151,19 +155,40 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		});
 	}
 
+	private static bool HasEnteredWestSiauliaiStory(Character character)
+	{
+		return
+			character.Quests.IsActive(1002) ||
+			character.Quests.HasCompleted(1002) ||
+			character.Quests.IsActive(1003) ||
+			character.Quests.HasCompleted(1003) ||
+			character.Quests.IsActive(1004) ||
+			character.Quests.HasCompleted(1004) ||
+			character.Quests.IsActive(1014) ||
+			character.Quests.HasCompleted(1014) ||
+			character.Quests.IsActive(1020) ||
+			character.Quests.HasCompleted(1020) ||
+			character.Quests.IsActive(1021) ||
+			character.Quests.HasCompleted(1021) ||
+			character.Quests.IsActive(1013) ||
+			character.Quests.HasCompleted(1013) ||
+			character.Quests.IsActive(1015) ||
+			character.Quests.HasCompleted(1015);
+	}
+
 	private static async Task EnsureWestForestFallback(Character character)
 	{
 		if (character == null || character.MapId != 1021)
 			return;
 
-		if (character.Quests.IsActive(1001))
-			character.Quests.Complete(1001);
-
-		if (!character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
+		if (character.Quests.IsActive(1001) && !character.Quests.HasCompleted(1001))
 		{
-			await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
-			Log.Info("West Siauliai opening: started SIAUL_WEST_WEST_FOREST for '{0}' via automatic fallback.", character.Name);
+			character.Quests.Complete(1001);
+			Log.Info("West Siauliai opening: completed SIAUL_WEST_MEET_TITAS for '{0}' via intro fallback.", character.Name);
 		}
+
+		if (character.Quests.HasCompleted(1001) && !character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
+			Log.Info("West Siauliai opening: SIAUL_WEST_WEST_FOREST is available at Titas for '{0}' via intro fallback.", character.Name);
 
 		character.RestoreCoreHudState(true, true);
 		character.Quests.SyncStaticQuestNpcStates();
@@ -197,7 +222,14 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 	protected override void Load()
 	{
-		_scoutNpc = AddNpc(1, 10032, L("Scout"), "f_siauliai_west", -1121, 260, -528, -99, "SIALUL_WEST_DRASIUS", state: (int)NpcState.Invisible);
+		_scoutNpc = AddNpc(100300, 10032, L("Scout"), "f_siauliai_west", -1121, 260, -528, -99, "SIALUL_WEST_DRASIUS");
+
+		// Search Scout
+		//-------------------------------------------------------------------------
+		// Naglis is part of the main Large Kepa handoff. Side quest NPCs remain
+		// disabled, but this actor must exist so SIAUL_WEST_MEET_NAGLIS can be
+		// turned in before the Battle Commander chain opens.
+		AddNpc(100301, 20016, L("Search Scout"), "f_siauliai_west", -1490, 260, -140, 0, "SIAUL_WEST_NAGLIS2", state: (int)NpcState.Invisible);
 
 		// Opening quest trigger
 		//-------------------------------------------------------------------------
@@ -212,7 +244,14 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 		// Battle Commander
 		//-------------------------------------------------------------------------
-		AddNpc(2002, 20016, L("Battle Commander"), "f_siauliai_west", -663, 322, 503, 0, "SIAUL_WEST_SOL3");
+		_battleCommanderNpc = AddNpc(2002, 20016, L("Battle Commander"), "f_siauliai_west", -663, 322, 503, 0, "SIAUL_WEST_SOL3", state: (int)NpcState.Invisible);
+
+		// Laimonas
+		//-------------------------------------------------------------------------
+		_laimonasNpc = AddNpc(9, 20117, L("Laimonas"), "f_siauliai_west", 326.508606, 210.211899, -346.852936, -90, "SIAUL_WEST_LAIMONAS", state: (int)NpcState.Normal);
+
+		// Klaipeda road handoff, revealed after Laimonas' favor.
+		AddNpc(1019, 20016, L("Klaipeda Guard Captain"), "f_siauliai_west", 1880, 210, -1175, 0, "SIAUL_ST1_ST2", state: (int)NpcState.Invisible);
 
 		// Western Woods Scout / Drasius
 		//-------------------------------------------------------------------------
@@ -240,10 +279,6 @@ public class FSiauliaiWestNpcScript : GeneralScript
 
 			await Task.CompletedTask;
 		});
-
-		// Search Scout Naglis
-		//-------------------------------------------------------------------------
-		AddNpc(33, 20117, L("Search Scout Naglis"), "f_siauliai_west", -1490, 260, -140, 90, "SIAUL_WEST_NAGLIS2");
 
 		// Statue of Goddess Vakarine
 		//-------------------------------------------------------------------------
@@ -284,6 +319,7 @@ public class FSiauliaiWestNpcScript : GeneralScript
 			character.Quests.IsActive(1003) ||
 			character.Quests.HasCompleted(1003) ||
 			character.Quests.IsActive(1004) ||
+			character.Quests.HasCompleted(1004) ||
 			character.Quests.IsActive(1014);
 
 		if (!shouldReveal || character.GetMapNPCState(_scoutNpc) == NpcState.Normal)
@@ -293,22 +329,83 @@ public class FSiauliaiWestNpcScript : GeneralScript
 		Log.Info("West Siauliai scout reveal: revealed Drasius for '{0}'.", character.Name);
 	}
 
+	private void RevealBattleCommanderIfNeeded(Character character)
+	{
+		if (_battleCommanderNpc == null || character == null || character.Connection == null)
+			return;
+
+		var shouldReveal =
+			character.Quests.HasCompleted(1014) ||
+			character.Quests.IsActive(1020) ||
+			character.Quests.HasCompleted(1020) ||
+			character.Quests.IsActive(1021) ||
+			character.Quests.HasCompleted(1021) ||
+			character.Quests.IsActive(1013) ||
+			character.Quests.HasCompleted(1013);
+
+		if (!shouldReveal)
+			return;
+
+		var shouldHighlight =
+			character.Quests.IsActive(1021) ||
+			character.Quests.HasCompleted(1014) && !character.Quests.IsActive(1020) && !character.Quests.HasCompleted(1020) ||
+			character.Quests.HasCompleted(1021) && !character.Quests.IsActive(1013) && !character.Quests.HasCompleted(1013);
+		var desiredState = shouldHighlight ? NpcState.Highlighted : NpcState.Normal;
+
+		if (character.GetMapNPCState(_battleCommanderNpc) == desiredState)
+			return;
+
+		character.SetMapNPCState(_battleCommanderNpc, desiredState);
+		Log.Info("West Siauliai Battle Commander reveal: revealed commander for '{0}' with state {1}.", character.Name, desiredState);
+	}
+
+	private void RevealLaimonasIfNeeded(Character character)
+	{
+		if (_laimonasNpc == null || character == null || character.Connection == null)
+			return;
+
+		var shouldReveal =
+			character.Quests.HasCompleted(1013) ||
+			character.Quests.IsActive(1015) ||
+			character.Quests.HasCompleted(1015);
+
+		if (!shouldReveal)
+			return;
+
+		var shouldHighlight =
+			character.Quests.HasCompleted(1013) && !character.Quests.IsActive(1015) && !character.Quests.HasCompleted(1015) ||
+			character.Quests.IsActive(1015);
+		var desiredState = shouldHighlight ? NpcState.Highlighted : NpcState.Normal;
+
+		character.SetMapNPCState(_laimonasNpc, desiredState);
+		Log.Info("West Siauliai Laimonas reveal: revealed Laimonas for '{0}' with state {1}.", character.Name, desiredState);
+	}
+
 	private void RevealTitasIfNeeded(Character character)
 	{
 		if (_titasNpc == null || character == null || character.Connection == null)
 			return;
 
+		var westForestAvailable =
+			character.Quests.HasCompleted(1001) &&
+			!character.Quests.IsActive(1002) &&
+			!character.Quests.HasCompleted(1002);
 		var shouldReveal =
+			westForestAvailable ||
 			character.Quests.IsActive(1002) ||
 			character.Quests.HasCompleted(1002) ||
 			character.Quests.IsActive(1003) ||
 			character.Quests.HasCompleted(1003) ||
 			character.Quests.IsActive(1004);
 
-		if (!shouldReveal || character.GetMapNPCState(_titasNpc) == NpcState.Normal)
+		if (!shouldReveal)
 			return;
 
-		character.SetMapNPCState(_titasNpc, NpcState.Normal);
-		Log.Info("West Siauliai Titas reveal: revealed Titas for '{0}'.", character.Name);
+		var desiredState = westForestAvailable || character.Quests.IsActive(1002) ? NpcState.Highlighted : NpcState.Normal;
+		if (character.GetMapNPCState(_titasNpc) == desiredState)
+			return;
+
+		character.SetMapNPCState(_titasNpc, desiredState);
+		Log.Info("West Siauliai Titas reveal: revealed Titas for '{0}' with state {1}.", character.Name, desiredState);
 	}
 }

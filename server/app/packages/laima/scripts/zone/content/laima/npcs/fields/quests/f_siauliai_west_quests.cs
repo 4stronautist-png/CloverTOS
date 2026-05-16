@@ -22,6 +22,8 @@ public class FSiauliaiWestQuestNpcsScript : GeneralScript
 	protected override void Load()
 	{
 		Log.Info("Laima quest NPC load: West Siauliai quest NPC script initializing.");
+		Log.Info("Laima quest NPC load: West Siauliai side quest NPCs are disabled while the initial main quest flow is main-only.");
+		return;
 
 		// Lost Farmer
 		//-------------------------------------------------------------------------

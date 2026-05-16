@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Melia.Shared.Game.Const;
 using Melia.Shared.World;
@@ -70,16 +71,46 @@ public class SiaulWestDrasius1TrackScript : TrackScript
 		base.OnComplete(character, track);
 
 		character.RestoreCoreHudState(true, true);
-		SpawnCombatKepas(character);
-		ReenterRealScout(character);
-		character.LookAround();
+		QueueRealScoutEncounter(character, true);
 	}
 
 	public override void OnCancel(Character character, Track track)
 	{
 		RemoveTrackActorsFromClient(character, track);
 		base.OnCancel(character, track);
-		ReenterRealScout(character);
+		QueueRealScoutEncounter(character, false);
+	}
+
+	private static void QueueRealScoutEncounter(Character character, bool spawnKepas)
+	{
+		if (character?.Map == null)
+			return;
+
+		_ = Task.Run(async () =>
+		{
+			for (var attempt = 0; attempt < 8; attempt++)
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(250));
+
+				if (character.Connection == null || character.MapId != 1021)
+					return;
+
+				if (character.Tracks.ActiveTrack == null)
+					break;
+			}
+
+			if (character.Connection == null || character.MapId != 1021 || character.Tracks.ActiveTrack != null)
+				return;
+
+			if (character.Layer != 0)
+				character.StopLayer();
+
+			if (spawnKepas)
+				SpawnCombatKepas(character);
+
+			ReenterRealScout(character);
+			character.LookAround();
+		});
 	}
 
 	private static void RemoveTrackActorsFromClient(Character character, Track track)
@@ -137,21 +168,84 @@ public class SiaulWestDrasius1TrackScript : TrackScript
 
 	private static void SpawnCombatKepas(Character character)
 	{
-		SpawnCombatKepa(character, 24111, -1168, 260, -579, 40);
-		SpawnCombatKepa(character, 24112, -1072, 260, -594, -35);
-		SpawnCombatKepa(character, 24113, -1216, 260, -492, 90);
-		SpawnCombatKepa(character, 24114, -1024, 260, -471, -90);
+		if (character?.Map == null)
+			return;
+
+		var existingKepas = character.Map
+			.GetMonsters(monster =>
+				monster.Id == 400001 &&
+				monster.Hp > 0 &&
+				monster.Layer == 0 &&
+				IsNearScoutKepaEncounter(monster))
+			.OfType<Mob>()
+			.ToList();
+
+		foreach (var kepa in existingKepas)
+			ConfigureCombatKepa(character, kepa);
+
+		var missingCount = Math.Max(0, 4 - existingKepas.Count);
+		if (missingCount <= 0)
+		{
+			Log.Info("SIAUL_WEST_DRASIUS1_TRACK: reused {0} real-layer Kepa(s) for '{1}'.", existingKepas.Count, character.Name);
+			return;
+		}
+
+		var spawns = new[]
+		{
+			(GenType: 24111, X: -1168d, Y: 260d, Z: -579d, Direction: 40d),
+			(GenType: 24112, X: -1072d, Y: 260d, Z: -594d, Direction: -35d),
+			(GenType: 24113, X: -1216d, Y: 260d, Z: -492d, Direction: 90d),
+			(GenType: 24114, X: -1024d, Y: 260d, Z: -471d, Direction: -90d),
+		};
+
+		for (var i = 0; i < missingCount; i++)
+		{
+			var spawn = spawns[(existingKepas.Count + i) % spawns.Length];
+			SpawnCombatKepa(character, spawn.GenType, spawn.X, spawn.Y, spawn.Z, spawn.Direction);
+		}
+
+		Log.Info("SIAUL_WEST_DRASIUS1_TRACK: spawned {0} combat Kepa(s) for '{1}' on real layer.", missingCount, character.Name);
 	}
 
 	private static void SpawnCombatKepa(Character character, int genType, double x, double y, double z, double direction)
 	{
 		var mob = Shortcuts.AddMonster(genType, 400001, "Kepa", character.Map.ClassName, x, y, z, direction);
-		mob.Layer = character.Layer;
+		mob.Layer = 0;
 		mob.SpawnPosition = mob.Position;
-		mob.InsertHate(character);
-		mob.Tendency = TendencyType.Aggressive;
+		ConfigureCombatKepa(character, mob);
 
 		if (character.Connection != null)
 			Send.ZC_ENTER_MONSTER(character.Connection, mob);
+	}
+
+	private static void ConfigureCombatKepa(Character character, Mob mob)
+	{
+		if (character?.Map == null || mob == null)
+			return;
+
+		mob.Layer = 0;
+		mob.SpawnPosition = mob.Position;
+
+		if (!mob.Components.Has<MovementComponent>())
+			mob.Components.Add(new MovementComponent(mob));
+
+		if (!mob.Components.Has<AiComponent>())
+			mob.Components.Add(new AiComponent(mob, "BasicMonster"));
+
+		mob.MonsterType = RelationType.Enemy;
+		mob.SetTarget(character);
+		mob.InsertHate(character, 5000);
+		mob.Tendency = TendencyType.Aggressive;
+		mob.FromGround = true;
+
+		if (character.Map.TryGetPropertyOverrides(mob.Id, out var propertyOverrides))
+			mob.ApplyOverrides(propertyOverrides);
+	}
+
+	private static bool IsNearScoutKepaEncounter(IMonster monster)
+	{
+		var dx = monster.Position.X - -1121;
+		var dz = monster.Position.Z - -528;
+		return (dx * dx) + (dz * dz) <= 260 * 260;
 	}
 }

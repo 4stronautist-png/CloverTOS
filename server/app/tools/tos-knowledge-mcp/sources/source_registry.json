@@ -1,0 +1,86 @@
+[
+  {
+    "id": "papaya_trace_manual",
+    "kind": "manual_trace",
+    "trust_rank": 10,
+    "local_path": "tools/tos-knowledge-mcp/data/manual/papaya-traces",
+    "notes": "Highest-trust behavioral evidence captured from Papaya test/client traces. Store logs, screenshots, packet notes, and quest run notes here."
+  },
+  {
+    "id": "clover_local_data",
+    "kind": "local_repo",
+    "trust_rank": 20,
+    "local_path": "system/db",
+    "notes": "CloverTOS authoritative server data currently used by Melia."
+  },
+  {
+    "id": "clover_local_scripts",
+    "kind": "local_repo",
+    "trust_rank": 25,
+    "local_path": "packages/laima/scripts",
+    "notes": "CloverTOS NPC, map, warp, track, and client script implementations."
+  },
+  {
+    "id": "extracted_client_ipf",
+    "kind": "local_client_extract",
+    "trust_rank": 30,
+    "local_path": "../../tools/ipf_extract_work/extract",
+    "notes": "Extracted client/IPF evidence, including IES, XML, addon, shared, and script data."
+  },
+  {
+    "id": "imc_official_quest_guide",
+    "kind": "official_web",
+    "trust_rank": 40,
+    "url": "https://home.treeofsavior.net/page/guide/view.php?n=18",
+    "notes": "Official quest/episode system documentation from Tree of Savior."
+  },
+  {
+    "id": "treeofsavior_official_quest_guide_alt",
+    "kind": "official_web",
+    "trust_rank": 41,
+    "url": "https://treeofsavior.com/page/guide/view.php?n=18",
+    "notes": "Alternate official domain for the same quest guide."
+  },
+  {
+    "id": "tosbase_quest_database",
+    "kind": "public_database",
+    "trust_rank": 60,
+    "url": "https://www.tosbase.com/database/quests/",
+    "notes": "Quest list and detail pages. Useful for display names, NPCs, maps, objectives, and required quest hints."
+  },
+  {
+    "id": "tosguru_itos_database",
+    "kind": "public_database",
+    "trust_rank": 65,
+    "url": "https://tos.guru/itos/home/",
+    "notes": "Open-source public database UI covering iTOS and related datasets."
+  },
+  {
+    "id": "fandom_quest_reference",
+    "kind": "community_wiki",
+    "trust_rank": 80,
+    "url": "https://treeofsavior.fandom.com/wiki/Category:Quests",
+    "notes": "Low-trust but useful mechanics overview and cross-check source."
+  },
+  {
+    "id": "reddit_treeofsavior",
+    "kind": "community_discussion",
+    "trust_rank": 90,
+    "url": "https://www.reddit.com/r/treeofsavior/",
+    "notes": "Community reports and historical quest breakage hints. Use only as weak corroborating evidence."
+  },
+  {
+    "id": "papaya_discord_manual_export",
+    "kind": "manual_community_export",
+    "trust_rank": 55,
+    "local_path": "tools/tos-knowledge-mcp/data/manual/papaya-discord",
+    "notes": "Place authorized Discord exports here. The MCP does not access private Discord directly."
+  },
+  {
+    "id": "github_tos_repos",
+    "kind": "public_code_search",
+    "trust_rank": 70,
+    "url": "https://github.com/search?q=Tree+of+Savior+questprogresscheck+request.ies&type=code",
+    "notes": "Manual seed for public repo research. Cache specific discovered files, not broad search result pages."
+  }
+]

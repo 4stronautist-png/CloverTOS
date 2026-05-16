@@ -9,6 +9,7 @@ using Melia.Web.Const;
 using Melia.Web.Controllers.Api.Helpers;
 using Melia.Web.Controllers.Api.Objects;
 using Yggdrasil.Logging;
+using YggMd5 = Yggdrasil.Security.Hashing.MD5;
 
 namespace Melia.Web.Controllers.Api
 {
@@ -77,7 +78,7 @@ namespace Melia.Web.Controllers.Api
 					return;
 				}
 
-					if (!WebServer.Instance.Database.CreateAccount(request.Username, request.Password1))
+					if (!WebServer.Instance.Database.CreateAccount(request.Username, YggMd5.Encode(request.Password1)))
 				{
 					await this.Error("Failed to create account. Please try again later.");
 					return;

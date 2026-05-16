@@ -21,7 +21,8 @@ public class KlaipeQuestNpcsScript : GeneralScript
 {
 	protected override void Load()
 	{
-		Log.Info("Laima quest NPC load: Klaipeda quest NPC script initializing.");
+		Log.Info("Laima quest NPC load: Klaipeda custom side quest NPCs are disabled while Clover follows the official main quest chain.");
+		return;
 
 		// Withered Branch Collection Helper
 		//-------------------------------------------------------------------------
@@ -486,6 +487,7 @@ public class KlaipeCaravanEscortQuest : QuestScript
 		SetAutoTracked(true);
 
 		SetReceive(QuestReceiveType.Manual);
+		AddPrerequisite(new CompletedPrerequisite("CloverFlow", 65535));
 		SetCancelable(true);
 		SetUnlock(QuestUnlockType.AllAtOnce);
 		AddQuestGiver(L("[Caravan Master] Marcus"), "c_Klaipe");
@@ -519,6 +521,7 @@ public class KlaipeRiverCorruptionQuest : QuestScript
 		SetAutoTracked(true);
 
 		SetReceive(QuestReceiveType.Manual);
+		AddPrerequisite(new CompletedPrerequisite("CloverFlow", 65535));
 		SetCancelable(true);
 		SetUnlock(QuestUnlockType.AllAtOnce);
 		AddQuestGiver(L("[River Warden] Elara"), "c_Klaipe");
@@ -585,6 +588,7 @@ public class KlaipeReconstructionQuest : QuestScript
 		SetAutoTracked(true);
 
 		SetReceive(QuestReceiveType.Manual);
+		AddPrerequisite(new CompletedPrerequisite("CloverFlow", 65535));
 		SetCancelable(true);
 		SetUnlock(QuestUnlockType.AllAtOnce);
 		AddQuestGiver(L("[Reconstruction Coordinator] Viktor"), "c_Klaipe");
@@ -639,6 +643,7 @@ public class KlaipeMerchantGuildQuest : QuestScript
 		SetAutoTracked(true);
 
 		SetReceive(QuestReceiveType.Manual);
+		AddPrerequisite(new CompletedPrerequisite("CloverFlow", 65535));
 		SetCancelable(true);
 		SetUnlock(QuestUnlockType.AllAtOnce);
 		AddQuestGiver(L("[Merchant Guild] Anastasia"), "c_Klaipe");
@@ -701,6 +706,7 @@ public class KlaipeCursedRefugeeQuest : QuestScript
 		SetAutoTracked(true);
 
 		SetReceive(QuestReceiveType.Manual);
+		AddPrerequisite(new CompletedPrerequisite("CloverFlow", 65535));
 		SetCancelable(true);
 		SetUnlock(QuestUnlockType.AllAtOnce);
 		AddQuestGiver(L("[Cursed Refugee] Aldric"), "c_voodoo");

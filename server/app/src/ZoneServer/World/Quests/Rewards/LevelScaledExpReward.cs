@@ -29,6 +29,7 @@ namespace Melia.Zone.World.Quests.Rewards
 			var maxJobExp = Math.Max(1, character.Job?.MaxExp ?? maxExp);
 			var exp = Math.Max(1, (long)Math.Ceiling(maxExp * _expRate));
 			var jobExp = Math.Max(1, (long)Math.Ceiling(maxJobExp * _jobExpRate));
+			(exp, jobExp) = character.GetWorldScaledExperienceAmounts(exp, jobExp);
 
 			character.GiveExp(exp, jobExp, null);
 		}

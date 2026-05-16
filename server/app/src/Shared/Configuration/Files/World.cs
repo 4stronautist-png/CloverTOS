@@ -38,6 +38,8 @@ namespace Melia.Shared.Configuration.Files
 		// exp.conf
 		public float ExpRate { get; protected set; }
 		public float JobExpRate { get; protected set; }
+		public int AbilityPointsPerLevel { get; protected set; }
+		public int AbilityPointsPerJobLevel { get; protected set; }
 		public bool LevelExpPenalty { get; protected set; }
 
 		// instance_dungeon.conf
@@ -290,6 +292,8 @@ namespace Melia.Shared.Configuration.Files
 
 			this.ExpRate = this.GetFloat("exp_rate", 100);
 			this.JobExpRate = this.GetFloat("job_exp_rate", 100);
+			this.AbilityPointsPerLevel = this.GetInt("ability_points_per_level", 100);
+			this.AbilityPointsPerJobLevel = this.GetInt("ability_points_per_job_level", 100);
 			this.LevelExpPenalty = this.GetBool("level_exp_penalty", false);
 
 			this.InstancedDungeonExpRate = this.GetFloat("instanced_dungeon_exp_rate", 300);

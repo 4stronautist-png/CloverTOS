@@ -17,7 +17,15 @@ public class FSiauliaiWestMobScript : GeneralScript
 	{
 		// Property Overrides -------------------------------
 
-		AddPropertyOverrides("f_siauliai_west", MonsterId.Mushcarfung_Summon, Properties("MHP", 607, "MINPATK", 80, "MAXPATK", 150, "MINMATK", 80, "MAXMATK", 150, "DEF", 23, "MDEF", 23));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Leaf_Diving, Properties("MHP", 632, "MINPATK", 111, "MAXPATK", 119, "MINMATK", 111, "MAXMATK", 119, "DEF", 10, "MDEF", 10));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Onion, Properties("MHP", 660, "MINPATK", 112, "MAXPATK", 120, "MINMATK", 112, "MAXMATK", 120, "DEF", 10, "MDEF", 10));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Hanaming, Properties("MHP", 722, "MINPATK", 115, "MAXPATK", 123, "MINMATK", 115, "MAXMATK", 123, "DEF", 10, "MDEF", 10));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Bokchoy, Properties("MHP", 810, "MINPATK", 119, "MAXPATK", 128, "MINMATK", 119, "MAXMATK", 128, "DEF", 11, "MDEF", 11));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.InfroRocktor, Properties("MHP", 923, "MINPATK", 124, "MAXPATK", 133, "MINMATK", 124, "MAXMATK", 133, "DEF", 11, "MDEF", 11));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Mushcarfung_Summon, Properties("MHP", 1057, "MINPATK", 130, "MAXPATK", 140, "MINMATK", 130, "MAXMATK", 140, "DEF", 12, "MDEF", 12));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Boss_Mushcaria, Properties("MHP", 5451, "MINPATK", 247, "MAXPATK", 266, "MINMATK", 247, "MAXMATK", 266, "DEF", 23, "MDEF", 23));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Onion_Big, Properties("MHP", 98, "MINPATK", 50, "MAXPATK", 61, "MINMATK", 44, "MAXMATK", 55, "DEF", 84, "MDEF", 84));
+		AddPropertyOverrides("f_siauliai_west", MonsterId.Onion_Big_Q1, Properties("MHP", 1310, "MINPATK", 139, "MAXPATK", 170, "MINMATK", 135, "MAXMATK", 165, "DEF", 89, "MDEF", 89));
 
 		// Monster Spawners ---------------------------------
 
@@ -30,7 +38,6 @@ public class FSiauliaiWestMobScript : GeneralScript
 		AddSpawner("f_siauliai_west.Id7", MonsterId.Leaf_Diving, min: 12, max: 15);
 		AddSpawner("f_siauliai_west.Id8", MonsterId.Onion, min: 12, max: 15);
 		AddSpawner("f_siauliai_west.Id9", MonsterId.Hanaming, min: 15, max: 20);
-		AddSpawner("f_siauliai_west.Id10", MonsterId.Onion_Big, amount: 1, respawn: Seconds(20));
 		AddSpawner("f_siauliai_west.Id11", MonsterId.Onion_Big_Q1, amount: 1, respawn: Seconds(20));
 
 		// Monster Spawn Points -----------------------------
@@ -54,9 +61,6 @@ public class FSiauliaiWestMobScript : GeneralScript
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1934, -120, 80));
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1832, 282, 80));
 		AddSpawnPoint("f_siauliai_west.Id2", "f_siauliai_west", Rectangle(-1812, -419, 80));
-
-		// 'Onion_Big' Large Kepa for SIAUL_WEST_MEET_NAGLIS
-		AddSpawnPoint("f_siauliai_west.Id10", "f_siauliai_west", Rectangle(-1490, -140, 60));
 
 		// 'Onion_Big_Q1' Large Kepa for SIAUL_WEST_ONION_BIG
 		AddSpawnPoint("f_siauliai_west.Id11", "f_siauliai_west", Rectangle(-1862, 185, 125));

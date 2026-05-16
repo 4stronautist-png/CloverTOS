@@ -4,6 +4,13 @@ $ErrorActionPreference = "Stop"
 
 $clientDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $clientExe = Join-Path $clientDir "Client_tos_x64.exe"
+$clientXml = Join-Path $clientDir "client.xml"
+$serverListCache = Join-Path $clientDir "serverlist_recent.xml"
+$serverHost = "127.0.0.1"
+$webPort = 8080
+$serverListUrl = "http://${serverHost}:${webPort}/toslive/patch/serverlist.xml"
+$staticConfigUrl = "http://${serverHost}:${webPort}/toslive/patch/"
+$registerUrl = "http://${serverHost}:${webPort}/register/index.html"
 $imagePath = Join-Path $clientDir "assets\tos-clover-loadscreen.png"
 if (-not (Test-Path -LiteralPath $imagePath)) {
     $imagePath = "C:\Users\Jean\Pictures\CloverTOS\tos-clover-loadscreen.png"
@@ -11,6 +18,59 @@ if (-not (Test-Path -LiteralPath $imagePath)) {
 $fillSeconds = 32
 $minVisibleSeconds = 40
 $maxWaitSeconds = 75
+
+function Write-CloverClientConfig {
+    $content = @"
+<?xml version="1.0" encoding="UTF-8"?>
+<client>
+<General Width="1280" Height="720" WindowMode="1" UseSteamClient="NO" />
+<Display Shadow="3" AntiAliasing="0" VSync="0" FullScreenBloom="0" SSAO="0" />
+<GameOption ServerListURL="$serverListUrl" StaticConfigURL="$staticConfigUrl" NewAccountURL="$registerUrl" PaymentURL="$staticConfigUrl" LoadingImgURL="$staticConfigUrl" LoadingImgCount="10"/>
+<Locale ServiceNation="GLOBAL" Dictionary="YES" DefaultLanguage="English" />
+<Security CheatCheck="NO" GameGuard="NO" XignCode="NO" />
+</client>
+"@
+    [System.IO.File]::WriteAllText($clientXml, $content, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Test-CloverTcpPort {
+    param(
+        [string]$HostName,
+        [int]$Port
+    )
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $async = $client.BeginConnect($HostName, $Port, $null, $null)
+        if (-not $async.AsyncWaitHandle.WaitOne(2000, $false)) {
+            throw "timeout"
+        }
+        $client.EndConnect($async)
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+function Test-CloverServer {
+    $response = Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri $serverListUrl
+    if (-not $response.Content.Contains('Server0_IP="127.0.0.1"')) {
+        throw "serverlist nao aponta para 127.0.0.1"
+    }
+
+    Test-CloverTcpPort -HostName $serverHost -Port 2000
+}
+
+Write-CloverClientConfig
+Remove-Item -LiteralPath $serverListCache -Force -ErrorAction SilentlyContinue
+
+try {
+    Test-CloverServer
+}
+catch {
+    [System.Windows.MessageBox]::Show("Clover local nao respondeu em 127.0.0.1. Rode o start-server.sh e tente novamente.`n`n$($_.Exception.Message)", "CloverTOS")
+    exit 1
+}
 
 if (-not (Test-Path -LiteralPath $clientExe)) {
     [System.Windows.MessageBox]::Show("Client_tos_x64.exe nao encontrado em $clientDir", "CloverTOS")

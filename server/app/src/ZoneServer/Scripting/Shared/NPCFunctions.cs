@@ -27,16 +27,265 @@ namespace Melia.Zone.Scripting.Shared
 {
 	public static partial class NPCFunctions
 	{
-		public static async Task COMMON_QUEST_HANDLER(Dialog dialog)
+		public static async Task<bool> COMMON_QUEST_HANDLER(Dialog dialog)
 		{
+			var handledQuest = false;
+
 			await dialog.HooksByDialogName("BeforeStart");
 			if (dialog.Npc != null)
 				await ShowStaticQuestDialog(dialog, dialog.Npc.DialogName, beforeAdvance: true);
+
+			if (dialog.Npc != null && ShouldDeferStaticQuestAdvanceUntilDialogClosed(dialog))
+			{
+				DeferStaticQuestAdvance(dialog.Player, dialog.Npc.DialogName);
+				dialog.Close();
+				return true;
+			}
+
 			if (dialog.Npc != null)
-				dialog.Player.Quests.HandleStaticNpcDialog(dialog.Npc.DialogName);
+				handledQuest = dialog.Player.Quests.HandleStaticNpcDialog(dialog.Npc.DialogName);
 			if (dialog.Npc != null)
 				await ShowStaticQuestDialog(dialog, dialog.Npc.DialogName, beforeAdvance: false);
 			await dialog.HooksByDialogName("BeforeEnd");
+
+			if (handledQuest && dialog.Npc != null)
+				RefreshStaticQuestStateAfterDialog(dialog.Player);
+
+			return handledQuest;
+		}
+
+		private static bool ShouldDeferStaticQuestAdvanceUntilDialogClosed(Dialog dialog)
+		{
+			if (dialog?.Player == null || dialog.Npc == null)
+				return false;
+
+			return dialog.Player.Quests.ShouldDeferStaticNpcDialogAdvance(dialog.Npc.DialogName);
+		}
+
+		private static void RefreshStaticQuestStateAfterDialog(Character character)
+		{
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(450);
+
+				if (character?.Connection == null)
+					return;
+
+				character.Quests.SyncStaticQuestNpcStates();
+				character.Quests.UpdateClient();
+				character.RestoreCoreHudState(true, true);
+			});
+		}
+
+		private static void DeferStaticQuestAdvance(Character character, string npcDialogName)
+		{
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(300);
+
+				if (character?.Connection == null)
+					return;
+
+				character.RestoreCoreHudState(true, true);
+				character.Quests.HandleStaticNpcDialog(npcDialogName);
+				character.Quests.SyncStaticQuestNpcStates();
+				character.Quests.UpdateClient();
+				character.RestoreCoreHudState(true, true);
+			});
+		}
+
+		private static async Task<bool> RepairKlapedaUskaMainChain(Dialog dialog)
+		{
+			var character = dialog?.Player;
+			if (character == null || character.Map?.ClassName != "c_Klaipe")
+				return false;
+
+			var changed = false;
+
+			Log.Info($"Clover main quest repair: checking Klaipeda Uska chain for character '{character.Name}'.");
+
+			changed |= SyncCompletedWestSiauliaiRoadToKlapedaQuests(character);
+
+			if (await RecoverPrematureKlaipedaUskaFlow(dialog))
+				return true;
+
+			if (await CompleteKlaipedaUskaHandoffAndStartEastPrepare(dialog))
+				return true;
+
+			if (!changed)
+				return false;
+
+			Log.Info($"Clover main quest repair: synced stale Klaipeda handoff state for character '{character.Name}'.");
+			character.Quests.SyncStaticQuestNpcStates();
+			character.Quests.UpdateClient();
+			character.RestoreCoreHudState(true, true);
+			await Task.Yield();
+			return false;
+		}
+
+		private static bool SyncCompletedWestSiauliaiRoadToKlapedaQuests(Character character)
+		{
+			if (character == null)
+				return false;
+
+			if (!character.Quests.HasCompleted(1019))
+				return false;
+
+			var changed = false;
+			var staleQuestIds = new[]
+			{
+				new QuestId(1018), // SIAUL_WEST_LAIMONAS4
+				new QuestId(1019), // SIAUL_WEST_WOOD_SPIRIT
+			};
+
+			foreach (var questId in staleQuestIds)
+			{
+				if (!character.Quests.TryGetById(questId, out var quest))
+					continue;
+
+				if (quest.Status == QuestStatus.Completed || quest.Status == QuestStatus.Abandoned)
+					continue;
+
+				quest.CompleteObjectives();
+				character.Quests.Complete(quest);
+				Log.Info($"Clover main quest repair: synced completed West Siauliai road quest {quest.QuestStaticData?.ClassName ?? quest.Data.Id.ToString()} for '{character.Name}' after Klaipeda handoff.");
+				changed = true;
+			}
+
+			return changed;
+		}
+
+		private static async Task<bool> RecoverPrematureKlaipedaUskaFlow(Dialog dialog)
+		{
+			var character = dialog.Player;
+			if (character.Quests.HasCompleted(1019))
+				return false;
+
+			if (TryTrackAndReturnToActiveWestRoadQuest(character, 1015, "SIAUL_WEST_LAIMONAS1", out var x, out var y, out var z))
+			{
+				await ReturnToWestSiauliaiRoad(dialog, "Finish Laimonas' favor in West Siauliai Woods before reporting to Klaipeda.", x, y, z);
+				return true;
+			}
+
+			return false;
+		}
+
+		private static async Task<bool> CompleteKlaipedaUskaHandoffAndStartEastPrepare(Dialog dialog)
+		{
+			var character = dialog.Player;
+			if (!character.Quests.HasCompleted(1019) ||
+				character.Quests.HasCompleted(20236) ||
+				character.Quests.Has(new QuestId(20236)) ||
+				character.Quests.Has(new QuestId(40010)))
+				return false;
+
+			var changed = await CompleteStaticQuestForKlaipedaRecovery(character, 1027, "KLAPEDA_GO_TO_EAST");
+
+			if (!character.Quests.HasCompleted(20236) && !character.Quests.Has(new QuestId(20236)))
+			{
+				await character.Quests.EnsureStaticQuestInProgress("EAST_PREPARE");
+				changed = true;
+			}
+
+			if (!character.Quests.TryGetById(new QuestId(20236), out var eastPrepare) || !eastPrepare.InProgress)
+				return changed;
+
+			Log.Info($"Clover main quest repair: advanced Klaipeda Uska handoff to EAST_PREPARE for '{character.Name}'.");
+			character.Quests.SyncStaticQuestNpcStates();
+			character.Quests.UpdateClient();
+			character.Quests.TrackQuestInClientSlot("EAST_PREPARE");
+			character.RestoreCoreHudState(true, true);
+			await dialog.Msg(L("Use Klaipeda's goddess statue, then speak with the item merchant and the accessory merchant before heading to the Eastern Woods."));
+			return true;
+		}
+
+		private static async Task<bool> CompleteStaticQuestForKlaipedaRecovery(Character character, int questId, string questClassName)
+		{
+			if (character.Quests.HasCompleted(questId))
+				return false;
+
+			await character.Quests.EnsureStaticQuestInProgress(questClassName);
+
+			if (!character.Quests.TryGetById(new QuestId(questId), out var quest) ||
+				quest.Status == QuestStatus.Completed ||
+				quest.Status == QuestStatus.Abandoned)
+				return false;
+
+			quest.CompleteObjectives();
+			character.Quests.Complete(quest);
+			Log.Info($"Clover main quest repair: completed Klaipeda recovery handoff quest {questClassName} for '{character.Name}'.");
+			return true;
+		}
+
+		private static bool TryTrackAndReturnToActiveWestRoadQuest(Character character, int questId, string questClassName, out float x, out float y, out float z)
+		{
+			x = 326.508606f;
+			y = 210.211899f;
+			z = -346.852936f;
+
+			if (!character.Quests.TryGetById(new QuestId(questId), out var quest) ||
+				(!quest.InProgress && quest.Status != QuestStatus.Success))
+				return false;
+
+			switch (questId)
+			{
+				case 1015 when quest.InProgress:
+					x = 1705.19f;
+					y = 285.05f;
+					z = 390.19f;
+					break;
+				case 1018 when quest.Status == QuestStatus.Success:
+				case 1019 when quest.Status == QuestStatus.Success:
+					x = 1880f;
+					y = 210f;
+					z = -1175f;
+					break;
+				case 1018:
+					x = 576f;
+					y = 210f;
+					z = -945f;
+					break;
+				case 1019:
+					x = 1880f;
+					y = 210f;
+					z = -1175f;
+					break;
+			}
+
+			character.Quests.SyncStaticQuestNpcStates();
+			character.Quests.UpdateClient();
+			character.Quests.TrackQuestInClientSlot(questClassName);
+			character.RestoreCoreHudState(true, true);
+			return true;
+		}
+
+		private static async Task ReturnToWestSiauliaiRoad(Dialog dialog, string message, float x, float y, float z)
+		{
+			var character = dialog.Player;
+			Log.Info($"Clover main quest repair: returning '{character.Name}' from Klaipeda to West Siauliai road chain.");
+			await dialog.Msg(L(message));
+			dialog.Close();
+			character.Warp("f_siauliai_west", x, y, z);
+		}
+
+		private static async Task<bool> ShowKlapedaUskaMainChainHint(Dialog dialog)
+		{
+			var character = dialog.Player;
+			if (character == null || character.Map?.ClassName != "c_Klaipe")
+				return false;
+
+			var bishopDreamId = new QuestId(20236); // EAST_PREPARE
+			if (!character.Quests.TryGetById(bishopDreamId, out var bishopDream) || !bishopDream.InProgress)
+				return false;
+
+			SyncCompletedWestSiauliaiRoadToKlapedaQuests(character);
+			Log.Info($"Clover main quest repair: refreshed EAST_PREPARE tracker from Uska for '{character.Name}'.");
+			character.Quests.SyncStaticQuestNpcStates();
+			character.Quests.UpdateClient();
+			character.Quests.TrackQuestInClientSlot("EAST_PREPARE");
+			character.RestoreCoreHudState(true, true);
+			await dialog.Msg(L("I received Titas' report. Visit the goddess statue, the item merchant, and the accessory merchant before leaving for the Eastern Woods."));
+			return true;
 		}
 
 		private static async Task ShowStaticQuestDialog(Dialog dialog, string npcDialogName, bool beforeAdvance)
@@ -44,21 +293,59 @@ namespace Melia.Zone.Scripting.Shared
 			var quest = dialog.Player.Quests.GetList()
 				.Where(q => q.QuestStaticData != null && StaticQuestUsesNpc(q.QuestStaticData, npcDialogName))
 				.OrderBy(q => q.Data.Id.Value)
-				.FirstOrDefault(q => beforeAdvance ? q.InProgress : q.Status == QuestStatus.Success || q.Status == QuestStatus.Completed);
+				.FirstOrDefault(q => beforeAdvance
+					? q.InProgress || (q.IsPossible && string.Equals(q.QuestStaticData.StartNPC, npcDialogName, StringComparison.OrdinalIgnoreCase))
+					: q.Status == QuestStatus.Success || q.Status == QuestStatus.Completed);
 
 			if (quest == null)
 				return;
 
 			var className = quest.QuestStaticData.ClassName;
-			var keys = beforeAdvance
-				? new[] { $"{className}_dlg1" }
-				: new[] { $"{className}_dlg2", $"{className}_dlg3", $"{className}_dlg4" };
+			var keys = GetStaticQuestDialogKeys(className, npcDialogName, beforeAdvance);
 
 			foreach (var key in keys)
 			{
 				if (ZoneServer.Instance.Data.DialogDb.Exists(key))
 					await dialog.Msg(key);
 			}
+		}
+
+		private static string[] GetStaticQuestDialogKeys(string questClassName, string npcDialogName, bool beforeAdvance)
+		{
+			if (string.Equals(questClassName, "EAST_PREPARE", StringComparison.OrdinalIgnoreCase))
+			{
+				if (string.Equals(npcDialogName, "KLAPEDA_USKA", StringComparison.OrdinalIgnoreCase))
+					return beforeAdvance
+						? new[] { "EAST_PREPARE_select01", "EAST_PREPARE_02" }
+						: new[] { "EAST_PREPARE_PRST", "EAST_PREPARE_SUCST" };
+
+				if (string.Equals(npcDialogName, "WARP_C_KLAIPE", StringComparison.OrdinalIgnoreCase))
+					return beforeAdvance
+						? Array.Empty<string>()
+						: new[] { "EAST_PREPARE_PRST" };
+
+				if (string.Equals(npcDialogName, "EMILIA", StringComparison.OrdinalIgnoreCase))
+					return beforeAdvance
+						? Array.Empty<string>()
+						: new[] { "EAST_PREPARE_COMP" };
+			}
+
+			if (string.Equals(questClassName, "EAST_PREPARE_1", StringComparison.OrdinalIgnoreCase))
+			{
+				if (string.Equals(npcDialogName, "EMILIA", StringComparison.OrdinalIgnoreCase))
+					return beforeAdvance
+						? new[] { "EAST_PREPARE_1_ST" }
+						: new[] { "EAST_PREPARE_1_AC", "EAST_PREPARE_1_SUCST" };
+
+				if (string.Equals(npcDialogName, "ALFONSO", StringComparison.OrdinalIgnoreCase))
+					return beforeAdvance
+						? Array.Empty<string>()
+						: new[] { "EAST_PREPARE_1_COMP" };
+			}
+
+			return beforeAdvance
+				? new[] { $"{questClassName}_dlg1" }
+				: new[] { $"{questClassName}_dlg2", $"{questClassName}_dlg3", $"{questClassName}_dlg4" };
 		}
 
 		private static bool StaticQuestUsesNpc(QuestStaticData questData, string npcDialogName)
@@ -188,7 +475,7 @@ namespace Melia.Zone.Scripting.Shared
 			{
 				if (ZoneServer.Instance.Conf.World.FastTravelEnabled)
 				{
-					await dialog.ExecuteScript("SIMPLEMAP_OPEN_WARP_MODE()");
+					await OpenGoddessStatueWarpMap(dialog);
 				}
 				else
 				{
@@ -322,6 +609,18 @@ namespace Melia.Zone.Scripting.Shared
 			}
 		}
 
+		private static async Task OpenGoddessStatueWarpMap(Dialog dialog)
+		{
+			// Papaya's current client opens Vakarine statue warps through worldmap2.
+			// SIMPLEMAP_OPEN_WARP_MODE is not present in this client branch.
+			await dialog.ExecuteScript(
+				"if INTE_WARP_OPEN_BY_NPC ~= nil then " +
+				"INTE_WARP_OPEN_BY_NPC(); " +
+				"elseif ui ~= nil then " +
+				"ui.OpenFrame('worldmap2_mainmap'); " +
+				"end");
+		}
+
 		/// <summary>
 		/// Bonus Stat Statues
 		/// </summary>
@@ -334,10 +633,12 @@ namespace Melia.Zone.Scripting.Shared
 			if (npc.GenType == 0)
 				return;
 
-			var npcState = character.GetMapNPCState(npc);
+			var handledQuest = false;
+			var opensWorldMapForLaimonasFavor = ShouldOpenWorldMapForLaimonasFavor(dialog);
 			var sessionObject = character.SessionObjects.Main;
 			var sessionObjectPropertyName = npc.DialogName + "_P";
 			sessionObject.TryGetProp(sessionObjectPropertyName, out float propValue);
+			var worshipCompleted = propValue != 0;
 			if (propValue == 0)
 			{
 				dialog.PlayAnimation("ON");
@@ -346,19 +647,21 @@ namespace Melia.Zone.Scripting.Shared
 				var result = await dialog.TimeAction(ScpArgMsg("Auto_KyeongBae_Jung"), "WORSHIP", TimeSpan.FromSeconds(2));
 				if (result == TimeActionResult.Completed)
 				{
+					worshipCompleted = true;
 					dialog.AttachEffect(character, "F_pc_statue_wing", 10, EffectLocation.Top);
 					var result1 = character.SessionObjects.GetOrCreate("SSN_ATTACH_EFF");
 					if (result1 != null)
 					{
-						var beforeValue = character.Properties[PropertyName.StatByBonus];
 						character.SetMapNPCState(npc, NpcState.Unknown_20);
 						character.ModifyProperty(PropertyName.StatByBonus, 1);
 						character.SetProperty(sessionObject, sessionObjectPropertyName, 300);
-						var afterValue = character.Properties[PropertyName.StatByBonus];
 						character.AddonMessage("NOTICE_Dm_Clear", "STATUE_STAT_01", 3);
 						dialog.DetachEffect(npc, "F_light024_orange");
 						character.RemoveSessionObject(result1.Id);
 					}
+
+					if (!string.IsNullOrWhiteSpace(npc.DialogName))
+						handledQuest = character.Quests.AdvanceStaticNpcDialogProgressOnly(npc.DialogName);
 				}
 				else
 				{
@@ -368,6 +671,44 @@ namespace Melia.Zone.Scripting.Shared
 					dialog.DetachEffect(npc, "statue_zemina_light1");
 				}
 			}
+			else if (!string.IsNullOrWhiteSpace(npc.DialogName))
+			{
+				// If the player worshiped before the quest bridge existed, allow the same statue to advance only the active objective.
+				handledQuest = character.Quests.AdvanceStaticNpcDialogProgressOnly(npc.DialogName);
+			}
+
+			dialog.PlayAnimation(character, "STD");
+			dialog.DetachEffect(character, "F_pc_statue_wing");
+			dialog.DetachEffect(npc, "F_light023_orange");
+			dialog.DetachEffect(npc, "F_light024_orange");
+			dialog.DetachEffect(npc, "statue_zemina_light1");
+
+			if (opensWorldMapForLaimonasFavor && worshipCompleted)
+			{
+				character.Quests.TrackQuestInClientSlot("SIAUL_WEST_LAIMONAS1");
+				character.RestoreCoreHudState(true, true);
+				await OpenGoddessStatueWarpMap(dialog);
+			}
+			else if (handledQuest)
+			{
+				character.Quests.SyncStaticQuestNpcStates();
+				character.RestoreCoreHudState(true, true);
+			}
+		}
+
+		private static bool ShouldOpenWorldMapForLaimonasFavor(Dialog dialog)
+		{
+			var character = dialog?.Player;
+			var npc = dialog?.Npc;
+			if (character == null || npc == null)
+				return false;
+
+			if (!string.Equals(character.Map?.ClassName, "f_siauliai_west", StringComparison.OrdinalIgnoreCase) ||
+				!string.Equals(npc.DialogName, "F_SIAULIAI_WEST_EV_55_001", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			return character.Quests.TryGetById(new QuestId(1015), out var laimonasFavor) &&
+				(laimonasFavor.InProgress || laimonasFavor.Status == QuestStatus.Success);
 		}
 
 		/// <summary>
@@ -1055,6 +1396,9 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task EMILIA(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			switch (await dialog.Select("Emilia_Select_1", "@dicID_^*$ETC_20150317_007303$*^", "!@#$Auto_JongLyo#@!"))
 			{
 				case 1:
@@ -1063,9 +1407,26 @@ namespace Melia.Zone.Scripting.Shared
 			}
 		}
 
+		private static async Task ShowKlapedaMerchantQuestHint(Dialog dialog, string questClassName, string message)
+		{
+			if (dialog?.Player == null || dialog.Player.Map?.ClassName != "c_Klaipe")
+				return;
+
+			if (!ZoneServer.Instance.Data.QuestDb.TryFind(questClassName, out var questData))
+				return;
+
+			if (!dialog.Player.Quests.TryGetById(new QuestId(questData.Id), out var quest) || !quest.InProgress)
+				return;
+
+			await dialog.Msg(L(message));
+		}
+
 		[DialogFunction]
 		public static async Task AKALABETH(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			switch (await dialog.Select("KLAPEDA_Akalabeth_basic28", "@dicID_^*$ETC_20150317_004443$*^", "@dicID_^*$ETC_20150317_004444$*^", "!@#$Auto_JongLyo#@!"))
 			{
 				case 1:
@@ -1080,6 +1441,9 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task ALFONSO(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			switch (await dialog.Select("ALFONSO_DLG1", "!@#$ALFONSO_1#@!", "!@#$ALFONSO_2#@!", "!@#$Auto_JongLyo#@!"))
 			{
 				case 1:
@@ -1094,7 +1458,15 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task KLAPEDA_USKA(Dialog dialog)
 		{
-			await COMMON_QUEST_HANDLER(dialog);
+			if (await RepairKlapedaUskaMainChain(dialog))
+				return;
+
+			if (await ShowKlapedaUskaMainChainHint(dialog))
+				return;
+
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			//await dialog.Msg("ACT_KNIGHT_basic1");
 			switch (await dialog.Select("ACT_KNIGHT_basic1", "{img minimap_1_SUB 16 16}@dicID_^*$QUEST_LV_0200_20150317_001589$*^", "@dicID_^*$ETC_20151224_018539$*^", "@dicID_^*$ETC_20151224_018540$*^", "@dicID_^*$ETC_20180418_032110$*^", "@dicID_^*$ITEM_20190104_021361$*^", "@dicID_^*$ETC_20210809_060225$*^", "!@#$Auto_JongLyo#@!"))
 			{
@@ -1526,7 +1898,10 @@ namespace Melia.Zone.Scripting.Shared
 
 		[DialogFunction]
 		public static async Task WARP_C_KLAIPE(Dialog dialog)
-			=> await STATUE_WARP(dialog);
+		{
+			await COMMON_QUEST_HANDLER(dialog);
+			await STATUE_WARP(dialog);
+		}
 
 		[DialogFunction]
 		public static async Task FEDIMIAN_ROTA_02(Dialog dialog)
@@ -2489,31 +2864,50 @@ namespace Melia.Zone.Scripting.Shared
 		{
 			await dialog.Msg("SIALUL_WEST_DRASIUS_basic1");
 			dialog.Player.RestoreCoreHudState(true, true);
+			RepairWestSiauliaiScoutMainChain(dialog.Player);
 			await COMMON_QUEST_HANDLER(dialog);
+			RepairWestSiauliaiScoutMainChain(dialog.Player);
 			dialog.Player.RestoreCoreHudState(true, true);
 			QueueWestSiauliaiScoutKepaTrack(dialog.Player);
 		}
 
-		private static void QueueWestSiauliaiScoutKepaTrack(Character character)
-		{
-			_ = Task.Run(async () =>
-			{
-				await Task.Delay(650);
-				await StartWestSiauliaiScoutKepaTrack(character);
-			});
-		}
-
-		private static async Task StartWestSiauliaiScoutKepaTrack(Character character)
+		private static void RepairWestSiauliaiScoutMainChain(Character character)
 		{
 			if (character == null || character.MapId != 1021)
 				return;
-			if (!character.Quests.IsActive(1003) || character.Quests.HasCompleted(1003))
-				return;
-			if (character.Tracks.ActiveTrack != null)
-				return;
 
-			try
+			if (character.Quests.TryGetById(1023, out var sideQuest) && sideQuest.Status != QuestStatus.Completed && sideQuest.Status != QuestStatus.Abandoned)
+				character.Quests.Cancel(sideQuest);
+
+			character.Quests.SyncStaticQuestNpcStates();
+		}
+
+		private static bool QueueWestSiauliaiScoutKepaTrack(Character character)
+		{
+			if (character == null || character.MapId != 1021)
+				return false;
+			if (!character.Quests.TryGetById(1003, out var scoutQuest) || !scoutQuest.InProgress || scoutQuest.ObjectivesCompleted)
+				return false;
+			if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_DRASIUS1_TRACK) == 1)
+				return false;
+			if (character.Tracks.ActiveTrack != null)
+				return false;
+
+			character.RestoreCoreHudState(true, true);
+
+			_ = Task.Run(async () =>
 			{
+				await Task.Delay(650);
+
+				if (character.Connection == null || character.MapId != 1021)
+					return;
+				if (character.Tracks.ActiveTrack != null)
+					return;
+				if (!character.Quests.TryGetById(1003, out var delayedQuest) || !delayedQuest.InProgress || delayedQuest.ObjectivesCompleted)
+					return;
+				if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_DRASIUS1_TRACK) == 1)
+					return;
+
 				var started = await character.Tracks.Start(
 					"SIAUL_WEST_DRASIUS1_TRACK",
 					TimeSpan.Zero,
@@ -2524,24 +2918,22 @@ namespace Melia.Zone.Scripting.Shared
 				);
 
 				if (started)
-					Log.Info("West Siauliai Scout: started SIAUL_WEST_DRASIUS1_TRACK for '{0}'.", character.Name);
+					Log.Info("West Siauliai Scout: started Papaya Scout/Kepa track for '{0}'.", character.Name);
 				else
-					Log.Warning("West Siauliai Scout: track did not start for '{0}'. activeTrack={1}, prop={2}, q1003={3}.", character.Name, character.Tracks.ActiveTrack?.Id ?? "none", character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_DRASIUS1_TRACK), character.Quests.IsActive(1003));
-			}
-			catch (Exception ex)
-			{
-				Log.Warning("West Siauliai Scout: failed to start SIAUL_WEST_DRASIUS1_TRACK for '{0}': {1}", character.Name, ex);
-				character.RestoreCoreHudState(true, true);
-			}
+					Log.Warning("West Siauliai Scout: failed to start Papaya Scout/Kepa track for '{0}'.", character.Name);
+			});
+
+			return true;
 		}
 
 		[DialogFunction("SIAUL_WEST_NAGLIS2")]
 		public static async Task SIAUL_WEST_NAGLIS2(Dialog dialog)
 		{
-			await dialog.Msg("SIAUL_WEST_NAGLIS2_basic1");
 			await RepairWestSiauliaiNaglisChain(dialog.Player);
+			await dialog.Msg("SIAUL_WEST_NAGLIS2_basic1");
 			await COMMON_QUEST_HANDLER(dialog);
 			await RepairWestSiauliaiNaglisChain(dialog.Player);
+			dialog.Player?.Quests.UpdateClient();
 		}
 
 		private static async Task RepairWestSiauliaiNaglisChain(Character character)
@@ -2551,24 +2943,23 @@ namespace Melia.Zone.Scripting.Shared
 
 			character.RestoreCoreHudState(true, true);
 
+			if (character.Quests.TryGetById(1014, out var largeKepaQuest) && largeKepaQuest.Status == QuestStatus.Success)
+			{
+				character.Quests.Complete(largeKepaQuest);
+				Log.Info("West Siauliai Naglis: completed SIAUL_WEST_MEET_NAGLIS for '{0}' at Search Scout.", character.Name);
+			}
+
 			if (character.Quests.TryGetById(1023, out var onionQuest) && onionQuest.ObjectivesCompleted && !character.Quests.HasCompleted(1023))
-				character.Quests.Complete(1023);
+				character.Quests.Cancel(onionQuest);
 
 			if (character.Quests.HasCompleted(1004) && !character.Quests.IsActive(1014) && !character.Quests.HasCompleted(1014))
 				await character.Quests.Start("SIAUL_WEST_MEET_NAGLIS");
 
 			if (character.Quests.HasCompleted(1014) && !character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
-				await character.Quests.Start("TUTO_SKILL_RUN");
-
-			if (character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
 			{
-				character.Quests.HandleStaticNpcDialog("SIAUL_WEST_NAGLIS2");
-				if (character.Quests.IsActive(8350))
-					character.Quests.Complete(8350);
+				await character.Quests.Start("TUTO_SKILL_RUN");
+				Log.Info("West Siauliai Naglis: started Papaya skill tutorial bridge TUTO_SKILL_RUN for '{0}'.", character.Name);
 			}
-
-			if (character.Quests.HasCompleted(8350) && !character.Quests.IsActive(1020) && !character.Quests.HasCompleted(1020))
-				await character.Quests.Start("SIAUL_WEST_SOLDIER3");
 
 			character.Quests.SyncStaticQuestNpcStates();
 		}
@@ -2583,9 +2974,6 @@ namespace Melia.Zone.Scripting.Shared
 			var character = dialog.Player;
 			await dialog.Msg("SIAUL_WEST_CAMP_MANAGER_basic1");
 
-			if (QueueWestSiauliaiTitasTrack(character))
-				return;
-
 			EnsureWestSiauliaiOpeningReady(character);
 			await COMMON_QUEST_HANDLER(dialog);
 			RevealWestSiauliaiScout(character);
@@ -2593,68 +2981,22 @@ namespace Melia.Zone.Scripting.Shared
 
 		private static bool QueueWestSiauliaiTitasTrack(Character character)
 		{
-			if (character == null || character.MapId != 1021)
-				return false;
-			if (!character.Quests.IsActive(1001) && character.Quests.HasCompleted(1001))
-				return false;
-			if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
-				return false;
-			if (character.Tracks.ActiveTrack != null)
-				return false;
-
-			character.RestoreCoreHudState(true, true);
-
-			if (character.Quests.IsActive(1001))
-			{
-				character.Quests.Complete(1001);
-				Log.Info("West Siauliai opening: completed SIAUL_WEST_MEET_TITAS for '{0}' before intro track.", character.Name);
-			}
-
-			_ = Task.Run(async () =>
-			{
-				await Task.Delay(650);
-
-				if (character.Connection == null || character.MapId != 1021)
-					return;
-				if (character.Etc.Properties.GetFloat(PropertyName.SIAUL_WEST_MEET_TITAS_TRACK) == 1)
-					return;
-				if (character.Tracks.ActiveTrack != null)
-					return;
-
-				var started = await character.Tracks.Start(
-					"SIAU_WEST_START_TRACK",
-					TimeSpan.Zero,
-					0,
-					QuestStatus.Possible,
-					QuestStatus.Possible,
-					PropertyName.SIAUL_WEST_MEET_TITAS_TRACK
-				);
-
-				if (started)
-					Log.Info("West Siauliai opening: started SIAU_WEST_START_TRACK for '{0}' after Titas interaction.", character.Name);
-				else
-				{
-					Log.Warning("West Siauliai opening: failed to start SIAU_WEST_START_TRACK for '{0}', falling back to SIAUL_WEST_WEST_FOREST.", character.Name);
-					await EnsureWestSiauliaiWestForestQuest(character);
-				}
-			});
-
-			return true;
+			return false;
 		}
 
-		private static async Task EnsureWestSiauliaiWestForestQuest(Character character)
+		private static void EnsureWestSiauliaiWestForestQuest(Character character)
 		{
 			if (character == null || character.MapId != 1021)
 				return;
 
 			if (character.Quests.IsActive(1001))
+			{
 				character.Quests.Complete(1001);
+				Log.Info("West Siauliai opening: completed SIAUL_WEST_MEET_TITAS for '{0}' after Titas dialog.", character.Name);
+			}
 
 			if (!character.Quests.IsActive(1002) && !character.Quests.HasCompleted(1002))
-			{
-				await character.Quests.Start("SIAUL_WEST_WEST_FOREST");
-				Log.Info("West Siauliai opening: started SIAUL_WEST_WEST_FOREST for '{0}' via fallback.", character.Name);
-			}
+				Log.Info("West Siauliai opening: SIAUL_WEST_WEST_FOREST is available at Titas for '{0}' via fallback.", character.Name);
 
 			character.RestoreCoreHudState(true, true);
 			character.Quests.SyncStaticQuestNpcStates();
@@ -2792,14 +3134,24 @@ namespace Melia.Zone.Scripting.Shared
 
 			character.RestoreCoreHudState(true, true);
 
-			if (character.Quests.HasCompleted(1014) && !character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
-				await character.Quests.Start("TUTO_SKILL_RUN");
-
-			if (character.Quests.IsActive(8350) && !character.Quests.HasCompleted(8350))
-				character.Quests.Complete(8350);
+			if (character.Quests.TryGetById(8350, out var skillQuest) && skillQuest.Status != QuestStatus.Completed && skillQuest.Status != QuestStatus.Abandoned)
+			{
+				if (skillQuest.Status == QuestStatus.Success)
+				{
+					character.Quests.Complete(skillQuest);
+					Log.Info("West Siauliai Battle Commander: completed TUTO_SKILL_RUN bridge for '{0}'.", character.Name);
+				}
+				else
+				{
+					character.Quests.TrackQuestInClientSlot("TUTO_SKILL_RUN");
+				}
+			}
 
 			if (character.Quests.HasCompleted(8350) && !character.Quests.IsActive(1020) && !character.Quests.HasCompleted(1020))
+			{
+				character.Variables.Perm.SetBool("Clover.WestSiauliai.Soldier3Accepted", true);
 				await character.Quests.Start("SIAUL_WEST_SOLDIER3");
+			}
 
 			character.Quests.SyncStaticQuestNpcStates();
 		}
@@ -2937,8 +3289,10 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIAUL_EAST_MANAGER")]
 		public static async Task SIAUL_EAST_MANAGER(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_MANAGER_basic1");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("SIAUL_EAST_SOLDIER6")]
@@ -2962,36 +3316,46 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIAUL_EAST_SOLDIER5")]
 		public static async Task SIAUL_EAST_SOLDIER5(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_SOLDIER5_BASIC02");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("SIAUL_EAST_SUPPLY_MANAGER")]
 		public static async Task SIAUL_EAST_SUPPLY_MANAGER(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_SUPPLY_MANAGER_basic1");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("SIAUL_EAST_SOLDIER8")]
 		public static async Task SIAUL_EAST_SOLDIER8(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_SOLDIER8_basic1");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("SIAUL_EAST_SOLDIER10")]
 		public static async Task SIAUL_EAST_SOLDIER10(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_SOLDIER10_basic1");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("SIAUL_EAST_SOLDIER9")]
 		public static async Task SIAUL_EAST_SOLDIER9(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_SOLDIER9_BASIC02");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("ACT2_DISS1_BOX")]
@@ -3007,8 +3371,10 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction("SIAUL_EAST_SUPPLY_MANAGER2")]
 		public static async Task SIAUL_EAST_SUPPLY_MANAGER2(Dialog dialog)
 		{
+			if (await COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			await dialog.Msg("SIAUL_EAST_SUPPLY_MANAGER2_basic1");
-			await COMMON_QUEST_HANDLER(dialog);
 		}
 
 		[DialogFunction("JOB_SAPPER2_1_NPC")]
@@ -3072,7 +3438,13 @@ namespace Melia.Zone.Scripting.Shared
 
 		[DialogFunction]
 		public static async Task WARP_F_SIAULIAI_OUT(Dialog dialog)
-			=> await STATUE_WARP(dialog);
+		{
+			dialog.Player.Quests.RepairPapayaMainQuestFlow();
+			dialog.Player.RestoreCoreHudState(true, true);
+			await STATUE_WARP(dialog);
+			dialog.Player.Quests.RepairPapayaMainQuestFlow();
+			dialog.Player.RestoreCoreHudState(true, true);
+		}
 
 		[DialogFunction("JOB_KRIWI1_OUT")]
 		public static async Task JOB_KRIWI1_OUT(Dialog dialog)
@@ -3152,6 +3524,13 @@ namespace Melia.Zone.Scripting.Shared
 		public static async Task SIAULIAIOUT_MINER_A(Dialog dialog)
 		{
 			await COMMON_QUEST_HANDLER(dialog);
+		}
+
+		[DialogFunction("SIAULIAIOUT_Q01")]
+		public static async Task SIAULIAIOUT_Q01(Dialog dialog)
+		{
+			await COMMON_QUEST_HANDLER(dialog);
+			dialog.Player.RestoreCoreHudState(true, true);
 		}
 
 		[DialogFunction("SIAULIAIOUT_CHIEF_A")]
@@ -3806,6 +4185,12 @@ namespace Melia.Zone.Scripting.Shared
 			await COMMON_QUEST_HANDLER(dialog);
 		}
 
+		[DialogFunction("GELE572_MQ_01")]
+		public static async Task GELE572_MQ_01(Dialog dialog)
+		{
+			await COMMON_QUEST_HANDLER(dialog);
+		}
+
 		[DialogFunction("GELE573_ALLEN")]
 		public static async Task GELE573_ALLEN(Dialog dialog)
 		{
@@ -3974,6 +4359,12 @@ namespace Melia.Zone.Scripting.Shared
 		public static async Task CHAPEL_TOMAS(Dialog dialog)
 		{
 			await dialog.Msg("CHAPEL_TOMAS_BASIC01");
+			await COMMON_QUEST_HANDLER(dialog);
+		}
+
+		[DialogFunction("CHAPLE575_MQ_04")]
+		public static async Task CHAPLE575_MQ_04(Dialog dialog)
+		{
 			await COMMON_QUEST_HANDLER(dialog);
 		}
 
@@ -4190,6 +4581,18 @@ namespace Melia.Zone.Scripting.Shared
 
 		[DialogFunction("HUEVILLAGE_58_1_PORTAL")]
 		public static async Task HUEVILLAGE_58_1_PORTAL(Dialog dialog)
+		{
+			await COMMON_QUEST_HANDLER(dialog);
+		}
+
+		[DialogFunction("HUEVILLAGE_58_1_MQ11_TRIGGER")]
+		public static async Task HUEVILLAGE_58_1_MQ11_TRIGGER(Dialog dialog)
+		{
+			await COMMON_QUEST_HANDLER(dialog);
+		}
+
+		[DialogFunction("HUEVILLAGE_58_3_MQ04_TO_HUE1")]
+		public static async Task HUEVILLAGE_58_3_MQ04_TO_HUE1(Dialog dialog)
 		{
 			await COMMON_QUEST_HANDLER(dialog);
 		}

@@ -80,7 +80,14 @@ namespace Melia.Web.Controllers
 					for (var i = 0; i < barracksServersData.Length; ++i)
 					{
 						var serverData = barracksServersData[i];
-						xml.WriteAttributeString($"Server{i}_IP", serverData.Ip);
+						var requestHost = this.Request.Headers.Get("Host");
+						var serverListHost = this.IsLocalServerListRequest(requestHost)
+							? "127.0.0.1"
+							: Environment.GetEnvironmentVariable("PUBLIC_HOST");
+						if (string.IsNullOrWhiteSpace(serverListHost))
+							serverListHost = serverData.Ip;
+
+						xml.WriteAttributeString($"Server{i}_IP", serverListHost);
 						xml.WriteAttributeString($"Server{i}_Port", serverData.Port.ToString());
 					}
 
@@ -94,6 +101,16 @@ namespace Melia.Web.Controllers
 
 				await this.SendText(MimeTypes.Application.Xml, str.ToString());
 			}
+		}
+
+		private bool IsLocalServerListRequest(string requestHost)
+		{
+			if (string.IsNullOrWhiteSpace(requestHost))
+				return false;
+
+			return requestHost.StartsWith("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+				requestHost.StartsWith("localhost", StringComparison.OrdinalIgnoreCase) ||
+				requestHost.StartsWith("[::1]", StringComparison.OrdinalIgnoreCase);
 		}
 
 		/// <summary>

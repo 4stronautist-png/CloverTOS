@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
 using Melia.Shared.Packages;
 using Melia.Zone.Scripting;
@@ -20,6 +21,7 @@ namespace Melia.Zone.Skills.Handlers
 	{
 		private readonly ConcurrentDictionary<SkillId, ISkillHandler> _handlers = new();
 		private readonly Dictionary<SkillId, int> _priorities = new();
+		private readonly GenericDamageSkillHandler _genericDamageHandler = new();
 
 		/// <summary>
 		/// Initializes the skill handlers, loading all it can find in
@@ -217,15 +219,49 @@ namespace Melia.Zone.Skills.Handlers
 			try
 			{
 				handler = this.GetHandler<TSkillHandler>(skillId);
-				return handler != null;
+				if (handler != null)
+					return true;
 			}
 			catch (ArgumentException ex)
 			{
 				// Handler exists but doesn't implement the requested interface
 				Log.Warning("TryGetHandler: {0}", ex.Message);
-				handler = default;
-				return false;
 			}
+
+			if (this.TryGetGenericDamageHandler(skillId, out handler))
+				return true;
+
+			handler = default;
+			return false;
+		}
+
+		private bool TryGetGenericDamageHandler<TSkillHandler>(SkillId skillId, out TSkillHandler handler) where TSkillHandler : ISkillHandler
+		{
+			if (_genericDamageHandler is TSkillHandler typedHandler && this.CanUseGenericDamageHandler(skillId))
+			{
+				handler = typedHandler;
+				return true;
+			}
+
+			handler = default;
+			return false;
+		}
+
+		private bool CanUseGenericDamageHandler(SkillId skillId)
+		{
+			if (!ZoneServer.Instance.Data.SkillDb.TryFind(skillId, out var data))
+				return false;
+
+			if (data.UseType == SkillUseType.Self || data.UseType == SkillUseType.Script || data.Type == SkillType.Buff)
+				return false;
+
+			return data.Type == SkillType.Attack
+				|| data.Type == SkillType.Magic
+				|| data.AttackType != SkillAttackType.None
+				|| data.Factor > 0
+				|| data.FactorByLevel > 0
+				|| data.AtkAdd > 0
+				|| data.AtkAddByLevel > 0;
 		}
 
 		/// <summary>

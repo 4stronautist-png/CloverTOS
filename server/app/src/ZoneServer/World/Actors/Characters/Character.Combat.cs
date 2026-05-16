@@ -256,8 +256,8 @@ namespace Melia.Zone.World.Actors.Characters
 					var startHp = this.Properties.GetFloat(PropertyName.MHP) * 0.25f;
 					this.Heal(startHp, 0);
 
-					var location = this.GetCityReturnLocation();
-					this.Warp(location);
+					var safePos = this.Map.GetSafePositionNear(this.Position, true);
+					this.Warp(this.MapId, safePos);
 					break;
 				}
 				case ResurrectOptions.TryAgain:

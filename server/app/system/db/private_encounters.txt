@@ -1,0 +1,2324 @@
+[
+	{
+		"id": 102201,
+		"questName": "SIAUL_WEST_BOSS_GOLEM",
+		"mapName": "f_siauliai_west",
+		"target": "boss_Golem",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_west -589 359 1377 150"
+		]
+	},
+	{
+		"id": 102301,
+		"questName": "SIAUL_WEST_ONION_BIG",
+		"mapName": "f_siauliai_west",
+		"target": "Onion_Big_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_west -1862 260 185 125"
+		]
+	},
+	{
+		"id": 101401,
+		"questName": "SIAUL_WEST_MEET_NAGLIS",
+		"mapName": "f_siauliai_west",
+		"target": "Onion_Big",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_west -1490 260 -140 100"
+		]
+	},
+	{
+		"id": 103101,
+		"questName": "SIAUL_EAST_CAMP4",
+		"mapName": "f_siauliai_2",
+		"target": "boss_poata",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_2 SIAUL_EAST_MANAGER 150",
+			"c_Klaipe WS_KLAPEDA_SIAULST2 150"
+		]
+	},
+	{
+		"id": 103401,
+		"questName": "SIAUL_EAST_RECLAIM3",
+		"mapName": "f_siauliai_2",
+		"target": "Chupacabra_Blue/Chupacabra_Blue/Chupacabra_Ibory",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_siauliai_2 SIAUL_EAST_RECLAIM3 250"
+		]
+	},
+	{
+		"id": 103701,
+		"questName": "SIAUL_EAST_RECLAIM7",
+		"mapName": "f_siauliai_2",
+		"target": "Weaver",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_siauliai_2 570 130 -870 150"
+		]
+	},
+	{
+		"id": 104301,
+		"questName": "SIAUL_EAST_REQUEST6",
+		"mapName": "f_siauliai_2",
+		"target": "boss_Goblin_Warrior_red",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_2 2008 185 -389 250"
+		]
+	},
+	{
+		"id": 104701,
+		"questName": "MINE_3_RESQUE3",
+		"mapName": "d_cmine_6",
+		"target": "boss_NetherBovine",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cmine_6 MINE_3_RESQUE3 100"
+		]
+	},
+	{
+		"id": 104801,
+		"questName": "MINE_3_BOSS",
+		"mapName": "d_cmine_6",
+		"target": "boss_mirtis",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cmine_6 CMINE6_TO_KATYN7_1_START 100"
+		]
+	},
+	{
+		"id": 105301,
+		"questName": "ROKAS30_PIPOTI01",
+		"mapName": "f_rokas_30",
+		"target": "Hogma_guard",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_30 ROKAS30_PIPOTI01_TRIGGER 100"
+		]
+	},
+	{
+		"id": 105501,
+		"questName": "ROKAS30_PIPOTI03",
+		"mapName": "f_rokas_30",
+		"target": "Hogma_guard",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_30 ROKAS30_PIPOTI03_TRIGGER 100"
+		]
+	},
+	{
+		"id": 105601,
+		"questName": "ROKAS30_PIPOTI04",
+		"mapName": "f_rokas_30",
+		"target": "hogma_warrior/hogma_sorcerer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_30 ROKAS30_PIPOTI04_TRIGGER 100"
+		]
+	},
+	{
+		"id": 105701,
+		"questName": "ROKAS30_PIPOTI05",
+		"mapName": "f_rokas_30",
+		"target": "boss_werewolf_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_30 ROKAS30_PIPOTI05_TRIGGER 100"
+		]
+	},
+	{
+		"id": 105901,
+		"questName": "ROKAS29_VACYS2",
+		"mapName": "f_rokas_29",
+		"target": "boss_Lithorex_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_29 VACYS_LIVE_ENTER 100"
+		]
+	},
+	{
+		"id": 106201,
+		"questName": "ROKAS29_VACYS5",
+		"mapName": "f_rokas_29",
+		"target": "Hogma_combat/Hogma_guard",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_29 ROKAS29_SLATE3 100"
+		]
+	},
+	{
+		"id": 431401,
+		"questName": "ROKAS24_KILL1",
+		"mapName": "f_rokas_24",
+		"target": "Pino/Geppetto",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_24 ROKAS_24_BEACON_TRIGGERGO 200"
+		]
+	},
+	{
+		"id": 431601,
+		"questName": "ROKAS24_KILL2",
+		"mapName": "f_rokas_24",
+		"target": "Dandel/Pino/Geppetto",
+		"minSpawnCount": 3,
+		"mapPointGroup": []
+	},
+	{
+		"id": 431801,
+		"questName": "ROKAS24_KILL3",
+		"mapName": "f_rokas_24",
+		"target": "boss_ginklas_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_24 ROKAS_24_RELIC_TRIGGERGO 100"
+		]
+	},
+	{
+		"id": 437201,
+		"questName": "THORN22_Q_1",
+		"mapName": "d_thorn_22",
+		"target": "wood_goblin/Meleech",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_22 THORN22_Q_1_TRIGGER 100"
+		]
+	},
+	{
+		"id": 438001,
+		"questName": "THORN22_Q_9",
+		"mapName": "d_thorn_22",
+		"target": "boss_GiantWoodGoblin_red",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_22 -54 539 -565 250"
+		]
+	},
+	{
+		"id": 438401,
+		"questName": "THORN22_Q_13",
+		"mapName": "d_thorn_22",
+		"target": "wood_goblin",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_22 THORN22_OROURKE 170"
+		]
+	},
+	{
+		"id": 438701,
+		"questName": "THORN22_Q_16",
+		"mapName": "d_thorn_22",
+		"target": "wood_goblin/Meleech",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_22 THORN22_Q_16_TRIGGER 50"
+		]
+	},
+	{
+		"id": 439001,
+		"questName": "THORN22_BOSSKILL_1",
+		"mapName": "d_thorn_22",
+		"target": "boss_Ironbaum",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_22 THORN22_Q_9_TRACK 100"
+		]
+	},
+	{
+		"id": 439401,
+		"questName": "THORN23_Q_4",
+		"mapName": "d_thorn_23",
+		"target": "boss_Rajapearl",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_23 -1851 1137 -2207 175"
+		]
+	},
+	{
+		"id": 439701,
+		"questName": "THORN23_Q_7",
+		"mapName": "d_thorn_23",
+		"target": "boss_Mushwort_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_23 -804 1070 -1405 200"
+		]
+	},
+	{
+		"id": 440801,
+		"questName": "THORN23_BOSSKILL_1",
+		"mapName": "d_thorn_23",
+		"target": "boss_Gaigalas_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_23 2389 289 1826 200"
+		]
+	},
+	{
+		"id": 441501,
+		"questName": "ROKAS27_QB_3",
+		"mapName": "f_rokas_27",
+		"target": "npc_rokas_cube",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_27 ROKAS27_QB_3 100"
+		]
+	},
+	{
+		"id": 441901,
+		"questName": "ROKAS27_QB_7",
+		"mapName": "f_rokas_27",
+		"target": "tucen/ticen",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_27 1000 1200 -1930 300"
+		]
+	},
+	{
+		"id": 442201,
+		"questName": "ROKAS27_QB_10",
+		"mapName": "f_rokas_27",
+		"target": "boss_Confinedion",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_27 ROKAS27_AIRINE2 175"
+		]
+	},
+	{
+		"id": 443601,
+		"questName": "ROKAS24_QB_9",
+		"mapName": "f_rokas_24",
+		"target": "boss_molich_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_24 ROKAS24_QB_9 250"
+		]
+	},
+	{
+		"id": 447101,
+		"questName": "MINE_1_CRYSTAL_10",
+		"mapName": "d_cmine_01",
+		"target": "boss_Strongholder",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cmine_01 MINE_1_CRYSTAL_10 100"
+		]
+	},
+	{
+		"id": 448401,
+		"questName": "MINE_2_CRYSTAL_3",
+		"mapName": "d_cmine_02",
+		"target": "boss_Carapace",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cmine_02 MINE_2_CRYSTAL_3_TRIGGER 300"
+		]
+	},
+	{
+		"id": 450101,
+		"questName": "MINE_2_CRYSTAL_20",
+		"mapName": "d_cmine_02",
+		"target": "boss_stone_whale",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cmine_02 MINE_2_CRYSTAL_20_TRIGGER 450"
+		]
+	},
+	{
+		"id": 470101,
+		"questName": "KATYN_KEY_01",
+		"mapName": "f_katyn_7",
+		"target": "bushspider/ellom",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_7 KATYN7_PREBOSS 100"
+		]
+	},
+	{
+		"id": 482101,
+		"questName": "KATYN13_1_TO_OWLJUNIOR2",
+		"mapName": "f_katyn_13",
+		"target": "HighBube_Spear",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_1_OWLJUNIOR2 100"
+		]
+	},
+	{
+		"id": 701801,
+		"questName": "ROKAS25_REXIPHER2",
+		"mapName": "f_rokas_25",
+		"target": "boss_Iltiswort_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_25 ROKAS25_REXIPHER2_MBOSS 125"
+		]
+	},
+	{
+		"id": 803501,
+		"questName": "ROKAS26_QUEST04",
+		"mapName": "f_rokas_26",
+		"target": "Dumaro/wendigo",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_26 ROKAS26_QUEST04 100"
+		]
+	},
+	{
+		"id": 804601,
+		"questName": "ROKAS26_SUB_Q10",
+		"mapName": "f_rokas_26",
+		"target": "Sauga_s",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_26 ROKAS26_SUB_Q10_TRIGGER 5"
+		]
+	},
+	{
+		"id": 804701,
+		"questName": "ROKAS26_SUB_Q11",
+		"mapName": "f_rokas_26",
+		"target": "wendigo/hogma_sorcerer/Sauga_s",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_26 ROKAS26_SUB_Q12 400"
+		]
+	},
+	{
+		"id": 807901,
+		"questName": "SOUT_Q_13",
+		"mapName": "f_siauliai_out",
+		"target": "Goblin_Spear/Goblin_Archer_Q2",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_siauliai_out SIAULIAIOUT_MIRTIS 200"
+		]
+	},
+	{
+		"id": 808101,
+		"questName": "SOUT_Q_15",
+		"mapName": "f_siauliai_out",
+		"target": "boss_Goblin_Warrior_red",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_out SIAULIAIOUT_BOSS 100"
+		]
+	},
+	{
+		"id": 821201,
+		"questName": "ZACHA1F_MQ_03",
+		"mapName": "d_zachariel_32",
+		"target": "npc_zachariel_lantern",
+		"minSpawnCount": 2,
+		"mapPointGroup": [
+			"d_zachariel_32 -981 332 85 275"
+		]
+	},
+	{
+		"id": 821901,
+		"questName": "KATYN72_SUB_03",
+		"mapName": "f_katyn_7_2",
+		"target": "boss_Golem_gray",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_7_2 KATYN72_SUB_03 100"
+		]
+	},
+	{
+		"id": 823001,
+		"questName": "KATYN71_MQ_06",
+		"mapName": "f_katyn_7",
+		"target": "ellom/Fisherman/bushspider",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_7 KATYN7_MQ06_TRACK 100"
+		]
+	},
+	{
+		"id": 823101,
+		"questName": "KATYN71_MQ_07",
+		"mapName": "f_katyn_7",
+		"target": "boss_deadbone",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_7 KATYN71_BOSS 100"
+		]
+	},
+	{
+		"id": 824301,
+		"questName": "KATYN14_MQ_02",
+		"mapName": "f_katyn_14",
+		"target": "honey_bee",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_14 KATYN14_VACENIN_CHASE 200"
+		]
+	},
+	{
+		"id": 825501,
+		"questName": "ZACHA1F_MQ_05",
+		"mapName": "d_zachariel_32",
+		"target": "boss_Achat",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_32 ZACHA1F_MQ_05 125"
+		]
+	},
+	{
+		"id": 826601,
+		"questName": "KATYN14_MQ_25",
+		"mapName": "f_katyn_14",
+		"target": "boss_Mushwort_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_14 -1782 229 -1175 200"
+		]
+	},
+	{
+		"id": 826801,
+		"questName": "KATYN14_SUB_02",
+		"mapName": "f_katyn_14",
+		"target": "Fisherman_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_14 KATYN14_SUB_02 275"
+		]
+	},
+	{
+		"id": 827201,
+		"questName": "KATYN14_SUB_06",
+		"mapName": "f_katyn_14",
+		"target": "Fisherman_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_14 KATYN14_SUB_06 275"
+		]
+	},
+	{
+		"id": 827401,
+		"questName": "KATYN14_SUB_08",
+		"mapName": "f_katyn_14",
+		"target": "boss_werewolf",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_14 KATYN14_SUB_08 275"
+		]
+	},
+	{
+		"id": 832401,
+		"questName": "KATYN18_MQ_18",
+		"mapName": "f_katyn_18",
+		"target": "banshee_purple",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_MQ_18_TRACK 250"
+		]
+	},
+	{
+		"id": 833701,
+		"questName": "KATYN18_SUB_01",
+		"mapName": "f_katyn_18",
+		"target": "puragi_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_01 275"
+		]
+	},
+	{
+		"id": 833801,
+		"questName": "KATYN18_SUB_02",
+		"mapName": "f_katyn_18",
+		"target": "puragi_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_02 275"
+		]
+	},
+	{
+		"id": 833901,
+		"questName": "KATYN18_SUB_03",
+		"mapName": "f_katyn_18",
+		"target": "boss_BiteRegina_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_03 275"
+		]
+	},
+	{
+		"id": 834001,
+		"questName": "KATYN18_SUB_04",
+		"mapName": "f_katyn_18",
+		"target": "New_desmodus",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_04 275"
+		]
+	},
+	{
+		"id": 834101,
+		"questName": "KATYN18_SUB_05",
+		"mapName": "f_katyn_18",
+		"target": "banshee_purple",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_05 275"
+		]
+	},
+	{
+		"id": 834201,
+		"questName": "KATYN18_SUB_06",
+		"mapName": "f_katyn_18",
+		"target": "slime_dark",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_06 275"
+		]
+	},
+	{
+		"id": 834301,
+		"questName": "KATYN18_SUB_07",
+		"mapName": "f_katyn_18",
+		"target": "slime_dark",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_07 275"
+		]
+	},
+	{
+		"id": 834401,
+		"questName": "KATYN18_SUB_08",
+		"mapName": "f_katyn_18",
+		"target": "banshee_purple",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_18 KATYN18_SUB_08 275"
+		]
+	},
+	{
+		"id": 834701,
+		"questName": "SOUT_SUDD_PREBOSS",
+		"mapName": "f_siauliai_out",
+		"target": "boss_chafer_sout",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_out SOUT_SUDD 250"
+		]
+	},
+	{
+		"id": 835801,
+		"questName": "KATYN7_2_ADD_BOSS_01",
+		"mapName": "f_katyn_7_2",
+		"target": "boss_Throneweaver",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_7_2 3595 227 -504 15"
+		]
+	},
+	{
+		"id": 837101,
+		"questName": "THORN22_ADD_SUB_02",
+		"mapName": "d_thorn_22",
+		"target": "Meleech",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_22 -2209.115967 444.027405 -1218.270630 10"
+		]
+	},
+	{
+		"id": 837401,
+		"questName": "THORN22_ADD_SUB_05",
+		"mapName": "d_thorn_22",
+		"target": "wood_goblin",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_22 -529.709412 554.691772 1000.645630 10"
+		]
+	},
+	{
+		"id": 838201,
+		"questName": "ZACHA3F_MQ_04",
+		"mapName": "d_zachariel_34",
+		"target": "boss_Denoptic_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_34 ZACHA3F_MQ_04 100"
+		]
+	},
+	{
+		"id": 838301,
+		"questName": "ZACHA4F_MQ_01",
+		"mapName": "d_zachariel_35",
+		"target": "shtayim/Wolf_statue",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_35 894 -53 -1165 200"
+		]
+	},
+	{
+		"id": 838401,
+		"questName": "ZACHA4F_MQ_02",
+		"mapName": "d_zachariel_35",
+		"target": "shtayim/schlesien_guard",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_35 ZACHA4F_MQ_02 125"
+		]
+	},
+	{
+		"id": 838501,
+		"questName": "ZACHA4F_MQ_03",
+		"mapName": "d_zachariel_35",
+		"target": "shtayim",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_35 536 -83 1091 400"
+		]
+	},
+	{
+		"id": 838701,
+		"questName": "ZACHA4F_MQ_05",
+		"mapName": "d_zachariel_35",
+		"target": "boss_bearkaras_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_35 -483 -27 1172 400"
+		]
+	},
+	{
+		"id": 842901,
+		"questName": "ZACHA1F_SQ_02",
+		"mapName": "d_zachariel_32",
+		"target": "boss_Clymen_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_32 1108 249 -964 325"
+		]
+	},
+	{
+		"id": 843101,
+		"questName": "ZACHA1F_SQ_04",
+		"mapName": "d_zachariel_32",
+		"target": "npc_zachariel_cube_05",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_32 ZACHA1F_SQ_04 125"
+		]
+	},
+	{
+		"id": 843201,
+		"questName": "ZACHA1F_SQ_05",
+		"mapName": "d_zachariel_32",
+		"target": "npc_zachariel_cube_05",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_32 ZACHA1F_SQ_05 125"
+		]
+	},
+	{
+		"id": 843401,
+		"questName": "ZACHA2F_SQ_02",
+		"mapName": "d_zachariel_33",
+		"target": "boss_TombLord_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_33 -1532 659 -751 325"
+		]
+	},
+	{
+		"id": 843901,
+		"questName": "ZACHA3F_SQ_02",
+		"mapName": "d_zachariel_34",
+		"target": "npc_zachariel_lantern",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_34 ZACHA3F_SQ_02 150"
+		]
+	},
+	{
+		"id": 844001,
+		"questName": "ZACHA3F_SQ_03",
+		"mapName": "d_zachariel_34",
+		"target": "npc_zachariel_lantern",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_34 ZACHA3F_SQ_03 275"
+		]
+	},
+	{
+		"id": 844101,
+		"questName": "ZACHA3F_SQ_04",
+		"mapName": "d_zachariel_34",
+		"target": "boss_archon_Q1/npc_rokas_6",
+		"minSpawnCount": 2,
+		"mapPointGroup": [
+			"d_zachariel_34 ZACHA3F_SQ_04 275"
+		]
+	},
+	{
+		"id": 844601,
+		"questName": "ZACHA4F_SQ_05",
+		"mapName": "d_zachariel_35",
+		"target": "boss_Rocktortuga_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_35 ZACHA4F_SQ_05 275"
+		]
+	},
+	{
+		"id": 845801,
+		"questName": "REMAINS40_MQ_07",
+		"mapName": "f_remains_40",
+		"target": "boss_Devilglove",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_remains_40 REMAINS_40_MQ_07 125"
+		]
+	},
+	{
+		"id": 846001,
+		"questName": "REMAINS40_SQ_02",
+		"mapName": "f_remains_40",
+		"target": "boss_moa",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_remains_40 REMAINS40_SQ_02 325"
+		]
+	},
+	{
+		"id": 848701,
+		"questName": "FTOWER43_MQ_05",
+		"mapName": "d_firetower_43",
+		"target": "boss_mineloader",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_43 670 360 -723 1"
+		]
+	},
+	{
+		"id": 849301,
+		"questName": "FTOWER45_MQ_01",
+		"mapName": "d_firetower_45",
+		"target": "spell_suppressors",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_MQ_01_D 100"
+		]
+	},
+	{
+		"id": 849401,
+		"questName": "FTOWER45_MQ_02",
+		"mapName": "d_firetower_45",
+		"target": "spell_suppressors",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_MQ_02_D 100"
+		]
+	},
+	{
+		"id": 849501,
+		"questName": "FTOWER45_MQ_03",
+		"mapName": "d_firetower_45",
+		"target": "spell_suppressors",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_MQ_03_D 100"
+		]
+	},
+	{
+		"id": 849601,
+		"questName": "FTOWER45_MQ_04",
+		"mapName": "d_firetower_45",
+		"target": "spell_suppressors",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_MQ_04_D 100"
+		]
+	},
+	{
+		"id": 849701,
+		"questName": "FTOWER45_MQ_05",
+		"mapName": "d_firetower_45",
+		"target": "boss_helgasercle",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_MQ_05_E 300"
+		]
+	},
+	{
+		"id": 850001,
+		"questName": "FTOWER41_SQ_06",
+		"mapName": "d_firetower_41",
+		"target": "boss_salamander_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_41 FTOWER41_MQ_05 100"
+		]
+	},
+	{
+		"id": 850401,
+		"questName": "FTOWER42_SQ_06",
+		"mapName": "d_firetower_42",
+		"target": "boss_archon_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_42 FTOWER42_MQ_05 100"
+		]
+	},
+	{
+		"id": 852201,
+		"questName": "CHAPLE575_MQ_04",
+		"mapName": "d_chapel_57_5",
+		"target": "boss_Unknocker",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_chapel_57_5 CHAPLE575_MQ_04 130"
+		]
+	},
+	{
+		"id": 851801,
+		"questName": "CHAPLE576_MQ_09",
+		"mapName": "d_chapel_57_6",
+		"target": "boss_Malletwyvern",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_chapel_57_6 CHAPLE576_MQ_09 125"
+		]
+	},
+	{
+		"id": 854301,
+		"questName": "GELE573_MQ_06",
+		"mapName": "f_gele_57_3",
+		"target": "boss_Minotaurs",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_gele_57_3 251 283 1015 450"
+		]
+	},
+	{
+		"id": 841901,
+		"questName": "ZACHA5F_EQ_01",
+		"mapName": "d_zachariel_36",
+		"target": "dog_of_king",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_36 -2492 326 -4605 150"
+		]
+	},
+	{
+		"id": 842001,
+		"questName": "ZACHA5F_EQ_02",
+		"mapName": "d_zachariel_36",
+		"target": "dog_of_king",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_36 -2501 333 -3691 150"
+		]
+	},
+	{
+		"id": 842101,
+		"questName": "ZACHA5F_EQ_03",
+		"mapName": "d_zachariel_36",
+		"target": "schlesien_darkmage",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_36 ZACHA5F_EQ_03 125"
+		]
+	},
+	{
+		"id": 842201,
+		"questName": "ZACHA5F_EQ_04",
+		"mapName": "d_zachariel_36",
+		"target": "schlesien_claw",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_36 ZACHA5F_EQ_04 125"
+		]
+	},
+	{
+		"id": 842301,
+		"questName": "ZACHA5F_EQ_05",
+		"mapName": "d_zachariel_36",
+		"target": "schlesien_heavycavarly/schlesien_darkmage/schlesien_claw",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_36 -2493 334 -2670 150"
+		]
+	},
+	{
+		"id": 2016901,
+		"questName": "ROKAS27_MQ_1",
+		"mapName": "f_rokas_27",
+		"target": "Sauga_s",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_27 ROKAS27_MQ1BOX 100"
+		]
+	},
+	{
+		"id": 2017301,
+		"questName": "ROKAS27_MQ_4",
+		"mapName": "f_rokas_27",
+		"target": "Sauga_s",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_27 ROKAS27_MQ4BOX 100"
+		]
+	},
+	{
+		"id": 2017801,
+		"questName": "ROKAS27_MQ_6",
+		"mapName": "f_rokas_27",
+		"target": "Sauga_s/ticen/tucen/loftlem",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_27 ROKAS27_REXITHER_1 15"
+		]
+	},
+	{
+		"id": 2018501,
+		"questName": "ZACHA2F_MQ_04",
+		"mapName": "d_zachariel_33",
+		"target": "Echad",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_zachariel_33 -141 714 215 275"
+		]
+	},
+	{
+		"id": 2018601,
+		"questName": "ZACHA2F_MQ_05",
+		"mapName": "d_zachariel_33",
+		"target": "boss_Shnayim_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_zachariel_33 64 716 1595 400"
+		]
+	},
+	{
+		"id": 2018701,
+		"questName": "ROKAS25_SQ_BRIDGE2",
+		"mapName": "f_rokas_25",
+		"target": "boss_yonazolem_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 860101,
+		"questName": "GELE574_MQ_01",
+		"mapName": "f_gele_57_4",
+		"target": "boss_BiteRegina_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_gele_57_4 GELE574_MQ_01 150"
+		]
+	},
+	{
+		"id": 900101,
+		"questName": "ROKAS31_REXITHER1",
+		"mapName": "f_rokas_31",
+		"target": "boss_bearkaras_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_31 ROKAS31_REXITHER1 100"
+		]
+	},
+	{
+		"id": 872901,
+		"questName": "REMAIN37_SQ08",
+		"mapName": "f_remains_37",
+		"target": "boss_MagBurk",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_remains_37 597 1426 2753 500"
+		]
+	},
+	{
+		"id": 875501,
+		"questName": "REMAIN38_SQ06",
+		"mapName": "f_remains_38",
+		"target": "boss_necrovanter_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_remains_38 REMAIN38_SQ06 350"
+		]
+	},
+	{
+		"id": 880401,
+		"questName": "FLASH59_SQ_05",
+		"mapName": "f_flash_59",
+		"target": "boss_Sparnashorn_2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_flash_59 FLASH59_SQ_03_2 150"
+		]
+	},
+	{
+		"id": 881201,
+		"questName": "FLASH59_SQ_13",
+		"mapName": "f_flash_59",
+		"target": "boss_Saltistter_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_flash_59 91 134 608 550"
+		]
+	},
+	{
+		"id": 883201,
+		"questName": "FLASH61_SQ_11",
+		"mapName": "f_flash_61",
+		"target": "boss_lepus_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_flash_61 FLASH61_SQ_09_1 150"
+		]
+	},
+	{
+		"id": 901901,
+		"questName": "ROKAS28_TRAP",
+		"mapName": "f_rokas_28",
+		"target": "boss_Ravinepede",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_28 ROKAS28_TRAP 300"
+		]
+	},
+	{
+		"id": 902201,
+		"questName": "ROKAS28_EXPOSURE",
+		"mapName": "f_rokas_28",
+		"target": "Lauzinute/hogma_archer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_28 ROKAS28_ENTICE 100"
+		]
+	},
+	{
+		"id": 1610001,
+		"questName": "SIAULIAI_46_4_SQ_01",
+		"mapName": "f_siauliai_46_4",
+		"target": "boss_sparnas_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_4 1199 149 -836 300"
+		]
+	},
+	{
+		"id": 1611001,
+		"questName": "SIAULIAI_46_4_SQ_02",
+		"mapName": "f_siauliai_46_4",
+		"target": "boss_BiteRegina_Q4",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_4 SIAULIAI_46_4_MEADBOX 100"
+		]
+	},
+	{
+		"id": 1630001,
+		"questName": "SIAULIAI_46_3_SQ_01",
+		"mapName": "f_siauliai_46_3",
+		"target": "boss_Strongholder_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_3 SIAULIAI_46_3_AUSTEJA_ALTAR_02 200"
+		]
+	},
+	{
+		"id": 1650001,
+		"questName": "SIAULIAI_46_2_SQ_01",
+		"mapName": "f_siauliai_46_2",
+		"target": "boss_Golem",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_2 SIAULIAI_46_2_SQ_01_NPC 100"
+		]
+	},
+	{
+		"id": 1651001,
+		"questName": "SIAULIAI_46_2_SQ_02",
+		"mapName": "f_siauliai_46_2",
+		"target": "boss_Taumas",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_2 SIAULIAI_46_2_SEAL 100"
+		]
+	},
+	{
+		"id": 1670001,
+		"questName": "SIAULIAI_46_1_SQ_01",
+		"mapName": "f_siauliai_46_1",
+		"target": "boss_Chafer_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_1 SIAULIAI_46_1_ALTAR 100"
+		]
+	},
+	{
+		"id": 1671001,
+		"questName": "SIAULIAI_46_1_SQ_02",
+		"mapName": "f_siauliai_46_1",
+		"target": "boss_Manticen_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_46_1 SIAULIAI_46_1_DEADTREE01 100"
+		]
+	},
+	{
+		"id": 1700601,
+		"questName": "FTOWER41_SQ_05",
+		"mapName": "d_firetower_41",
+		"target": "boss_ginklas_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_41 1199 1603 -891 250"
+		]
+	},
+	{
+		"id": 1700801,
+		"questName": "FTOWER42_SQ_02",
+		"mapName": "d_firetower_42",
+		"target": "boss_Golem_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_42 1021 71 70 100"
+		]
+	},
+	{
+		"id": 1701601,
+		"questName": "FTOWER43_SQ_05",
+		"mapName": "d_firetower_43",
+		"target": "boss_golem_Gray_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_43 1248 325 -57 250"
+		]
+	},
+	{
+		"id": 1701901,
+		"questName": "FTOWER44_SQ_03",
+		"mapName": "d_firetower_44",
+		"target": "boss_yonazolem_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_44 FTOWER44_SQ_03 15"
+		]
+	},
+	{
+		"id": 1702401,
+		"questName": "FTOWER45_SQ_03",
+		"mapName": "d_firetower_45",
+		"target": "boss_bearkaras_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_SQ_T 25"
+		]
+	},
+	{
+		"id": 1702601,
+		"questName": "FTOWER45_SQ_05",
+		"mapName": "d_firetower_45",
+		"target": "boss_stone_whale_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_firetower_45 FTOWER45_SQ_05 250"
+		]
+	},
+	{
+		"id": 1715001,
+		"questName": "GELE571_MQ_06",
+		"mapName": "f_gele_57_1",
+		"target": "boss_poata_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_gele_57_1 GELE571_MQ_05 150"
+		]
+	},
+	{
+		"id": 1716001,
+		"questName": "GELE571_MQ_07",
+		"mapName": "f_gele_57_1",
+		"target": "boss_capria",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_gele_57_1 GELE571_MQ_07 150"
+		]
+	},
+	{
+		"id": 1800301,
+		"questName": "HUEVILLAGE_58_4_MQ03",
+		"mapName": "f_huevillage_58_4",
+		"target": "boss_Mothstem",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_4 HUEVILLAGE_58_4_MQ03_NPC01 50"
+		]
+	},
+	{
+		"id": 1800401,
+		"questName": "HUEVILLAGE_58_4_MQ04",
+		"mapName": "f_huevillage_58_4",
+		"target": "boss_Merge",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_4 HUEVILLAGE_58_4_MQ04_NPC01 50"
+		]
+	},
+	{
+		"id": 1815001,
+		"questName": "HUEVILLAGE_58_1_SQ01",
+		"mapName": "f_huevillage_58_1",
+		"target": "boss_Moyabruka",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_1 HUEVILLAGE_58_1_PORTAL 100"
+		]
+	},
+	{
+		"id": 1817001,
+		"questName": "HUEVILLAGE_58_1_SQ03",
+		"mapName": "f_huevillage_58_1",
+		"target": "boss_merregina",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_1 HUEVILLAGE_58_1_MQ02_NPC 100"
+		]
+	},
+	{
+		"id": 1928001,
+		"questName": "ROKAS25_REXIPHER4_SEAL1",
+		"mapName": "f_rokas_25",
+		"target": "npc_rokas_7",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_25 ROKAS25_SWITCH3 30"
+		]
+	},
+	{
+		"id": 1929001,
+		"questName": "ROKAS25_REXIPHER6_SEAL1",
+		"mapName": "f_rokas_25",
+		"target": "boss_BiteRegina",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_25 ROKAS25_SWITCH5 30"
+		]
+	},
+	{
+		"id": 1933001,
+		"questName": "ROKAS29_MQ2_BRIDGE",
+		"mapName": "f_rokas_29",
+		"target": "Zinute_Big/zinutekas",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_29 ROKAS29_MQ_DEVICE2 200"
+		]
+	},
+	{
+		"id": 1934001,
+		"questName": "ROKAS29_MQ4_BRIDGE",
+		"mapName": "f_rokas_29",
+		"target": "zinutekas",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_29 ROKAS29_MQ_DEVICE4 200"
+		]
+	},
+	{
+		"id": 1935001,
+		"questName": "ROKAS30_MQ2_1",
+		"mapName": "f_rokas_30",
+		"target": "hogma_warrior/hogma_archer/hogma_sorcerer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_30 ROKAS30_MQ2_1_SCAR 30"
+		]
+	},
+	{
+		"id": 1936001,
+		"questName": "ROKAS30_MQ6_1",
+		"mapName": "f_rokas_30",
+		"target": "Hogma_combat/Hogma_guard/warleader_hogma/hogma_archer/hogma_sorcerer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_30 ROKAS30_SEALDESTROY2 30"
+		]
+	},
+	{
+		"id": 1937001,
+		"questName": "ROKAS31_SUB_01",
+		"mapName": "f_rokas_31",
+		"target": "hogma_warrior/hogma_archer/hogma_sorcerer/warleader_hogma/Hogma_combat/Hogma_guard",
+		"minSpawnCount": 3,
+		"mapPointGroup": []
+	},
+	{
+		"id": 1940001,
+		"questName": "KATYN7_2_ADD_BOSS_01_1",
+		"mapName": "f_katyn_7_2",
+		"target": "boss_Throneweaver",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_7_2 KATYN7_2_FALL 100"
+		]
+	},
+	{
+		"id": 1941001,
+		"questName": "KATYN72_MQ_10_1",
+		"mapName": "f_katyn_7_2",
+		"target": "boss_Fallen_Statue",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 1943001,
+		"questName": "KATYN13_NEWSUB_02",
+		"mapName": "f_katyn_13",
+		"target": "boss_mushwort",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_ADDQUEST3_NPC 15"
+		]
+	},
+	{
+		"id": 1946001,
+		"questName": "PILGRIM46_SQ_030",
+		"mapName": "f_pilgrimroad_46",
+		"target": "boss_Carnivore_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_46 PILGRIM46_NPC01 200"
+		]
+	},
+	{
+		"id": 1951001,
+		"questName": "PILGRIM46_SQ_080",
+		"mapName": "f_pilgrimroad_46",
+		"target": "boss_Reaverpede_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_46 PILGRIM46_BOSS 150"
+		]
+	},
+	{
+		"id": 1955001,
+		"questName": "PILGRIM47_SQ_010",
+		"mapName": "f_pilgrimroad_47",
+		"target": "spell_crystal_gem_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_47 PILGRIM47_CRYST01 15"
+		]
+	},
+	{
+		"id": 1958001,
+		"questName": "PILGRIM47_SQ_040",
+		"mapName": "f_pilgrimroad_47",
+		"target": "boss_cactusvel_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_47 PILGRIM47_CRYST04 200"
+		]
+	},
+	{
+		"id": 1961001,
+		"questName": "PILGRIM47_SQ_070",
+		"mapName": "f_pilgrimroad_47",
+		"target": "boss_glutton",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_47 PILGRIM47_CRYST07 300"
+		]
+	},
+	{
+		"id": 1962001,
+		"questName": "PILGRIM50_SQ_010",
+		"mapName": "f_pilgrimroad_50",
+		"target": "kodomor/Romor",
+		"minSpawnCount": 3,
+		"mapPointGroup": []
+	},
+	{
+		"id": 1967001,
+		"questName": "PILGRIM50_SQ_060",
+		"mapName": "f_pilgrimroad_50",
+		"target": "kodomor/Romor/Prisonfighter",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_50 1861 296 1878 300"
+		]
+	},
+	{
+		"id": 1970001,
+		"questName": "PILGRIM50_SQ_090",
+		"mapName": "f_pilgrimroad_50",
+		"target": "boss_Merge_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_50 PILGRIM50_ALTAR01 30"
+		]
+	},
+	{
+		"id": 1973001,
+		"questName": "PILGRIM51_SQ_2_1",
+		"mapName": "f_pilgrimroad_51",
+		"target": "Prisonfighter/kowak/kodomor",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_51 PILGRIM51_SR02 100"
+		]
+	},
+	{
+		"id": 1975001,
+		"questName": "PILGRIM51_SQ_3",
+		"mapName": "f_pilgrimroad_51",
+		"target": "boss_Sparnashorn_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_51 PILGRIM51_FGOD01 15"
+		]
+	},
+	{
+		"id": 1986001,
+		"questName": "PILGRIM51_SQ_10",
+		"mapName": "f_pilgrimroad_51",
+		"target": "boss_Ironbaum_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 1991001,
+		"questName": "PILGRIM52_SQ_050",
+		"mapName": "f_pilgrimroad_52",
+		"target": "boss_Hepatica_King_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_52 PILGRIM52_NPC02 15"
+		]
+	},
+	{
+		"id": 1995001,
+		"questName": "PILGRIM52_SQ_090",
+		"mapName": "f_pilgrimroad_52",
+		"target": "boss_succubus",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_52 517 47 -782 300"
+		]
+	},
+	{
+		"id": 1997001,
+		"questName": "PILGRIM52_SQ_110",
+		"mapName": "f_pilgrimroad_52",
+		"target": "boss_Velorchard_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_52 2662 156 -104 300"
+		]
+	},
+	{
+		"id": 2006801,
+		"questName": "KATYN13_1_KEY_SUB1",
+		"mapName": "f_katyn_13",
+		"target": "arburn_pokubu_green",
+		"minSpawnCount": 2,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_1_KEY_SUB1_TRIGGER 100"
+		]
+	},
+	{
+		"id": 2006901,
+		"questName": "KATYN13_1_TO_OWLJUNIOR2_S1",
+		"mapName": "f_katyn_13",
+		"target": "HighBube_Spear",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_1_TO_OWLJUNIOR2_S1_TRIGGER 100"
+		]
+	},
+	{
+		"id": 2007001,
+		"questName": "KATYN13_1_TO_OWLJUNIOR3_S1",
+		"mapName": "f_katyn_13",
+		"target": "HighBube_Archer/HighBube_Spear",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_1_TO_OWLJUNIOR3_S1_TRIGGER 100"
+		]
+	},
+	{
+		"id": 2007101,
+		"questName": "KATYN13_ADDQUEST1",
+		"mapName": "f_katyn_13",
+		"target": "arburn_pokubu_green/HighBube_Spear",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_ADDQUEST1_TRIGGER1 100"
+		]
+	},
+	{
+		"id": 2007201,
+		"questName": "KATYN13_ADDQUEST2",
+		"mapName": "f_katyn_13",
+		"target": "arburn_pokubu_green/HighBube_Spear/HighBube_Archer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_ADDQUEST2_TRIGGER1 100"
+		]
+	},
+	{
+		"id": 2007301,
+		"questName": "KATYN13_ADDQUEST3",
+		"mapName": "f_katyn_13",
+		"target": "boss_mushwort",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_ADDQUEST3_TRIGGER1 100"
+		]
+	},
+	{
+		"id": 2007401,
+		"questName": "KATYN13_ADDQUEST4",
+		"mapName": "f_katyn_13",
+		"target": "HighBube_Spear",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_ADDQUEST4_NPC 30"
+		]
+	},
+	{
+		"id": 2007501,
+		"questName": "KATYN13_ADDQUEST5",
+		"mapName": "f_katyn_13",
+		"target": "boss_woodspirit_green",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 2007801,
+		"questName": "KATYN13_ADDQUEST7",
+		"mapName": "f_katyn_13",
+		"target": "HighBube_Spear/HighBube_Archer/arburn_pokubu_green",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_katyn_13 KATYN13_ADDQUEST7_NPC 100"
+		]
+	},
+	{
+		"id": 2012801,
+		"questName": "SIAUL_WEST_LAIMONAS3_2",
+		"mapName": "f_siauliai_west",
+		"target": "boss_mushcaria",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_west SIAUL_WEST_LAIMONAS3_2_TRIGGER 100"
+		]
+	},
+	{
+		"id": 2013101,
+		"questName": "ACT2_DISS1_2_BOSS",
+		"mapName": "f_siauliai_2",
+		"target": "boss_tutu",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 2013201,
+		"questName": "KATYN7_MOVE",
+		"mapName": "f_katyn_7",
+		"target": "boss_Saltistter",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_7 1026 295 -3727 200"
+		]
+	},
+	{
+		"id": 2014201,
+		"questName": "ROKAS28_MQ1",
+		"mapName": "f_rokas_28",
+		"target": "Lauzinute/hogma_archer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_rokas_28 ROKAS28_MQ1_1 150"
+		]
+	},
+	{
+		"id": 2014701,
+		"questName": "ROKAS28_MQ5",
+		"mapName": "f_rokas_28",
+		"target": "boss_Bebraspion_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_rokas_28 ROKAS28_MQ5_NPC 100"
+		]
+	},
+	{
+		"id": 2021201,
+		"questName": "REMAIN38_MQ05",
+		"mapName": "f_remains_38",
+		"target": "boss_Chapparition_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_remains_38 REMAIN38_MQ_MONUMENT5 150"
+		]
+	},
+	{
+		"id": 2021901,
+		"questName": "REMAINS39_MQ07",
+		"mapName": "f_remains_39",
+		"target": "boss_Reaverpede",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_remains_39 1028 173 1282 300"
+		]
+	},
+	{
+		"id": 2026001,
+		"questName": "THORN19_MQ14_2",
+		"mapName": "d_thorn_19",
+		"target": "boss_poata_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_19 2257 622 -164 300"
+		]
+	},
+	{
+		"id": 2026201,
+		"questName": "THORN20_MQ02",
+		"mapName": "d_thorn_20",
+		"target": "boss_spector_gh",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_20 THORN20_MQ02_TRACK 150"
+		]
+	},
+	{
+		"id": 2026301,
+		"questName": "THORN20_MQ03",
+		"mapName": "d_thorn_20",
+		"target": "merog_wizzard",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_20 THORN20_MQ03_TRIGGER 240"
+		]
+	},
+	{
+		"id": 2026401,
+		"questName": "THORN20_MQ04",
+		"mapName": "d_thorn_20",
+		"target": "npc_pollution_crystal",
+		"minSpawnCount": 2,
+		"mapPointGroup": [
+			"d_thorn_20 THORN20_MQ04_TRACK 50"
+		]
+	},
+	{
+		"id": 2026601,
+		"questName": "THORN20_MQ06",
+		"mapName": "d_thorn_20",
+		"target": "npc_pollution_crystal",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_20 THORN20_MAGIC3STAGE 100"
+		]
+	},
+	{
+		"id": 2026701,
+		"questName": "THORN20_MQ07",
+		"mapName": "d_thorn_20",
+		"target": "boss_archon/npc_pollution_crystal",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_20 THORN20_MQ07_TRIGGER 150"
+		]
+	},
+	{
+		"id": 2026801,
+		"questName": "THORN21_MQ01",
+		"mapName": "d_thorn_21",
+		"target": "Chafperor/Infroholder_mage",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"d_thorn_21 -147 221 -75 150"
+		]
+	},
+	{
+		"id": 2027001,
+		"questName": "THORN21_MQ03",
+		"mapName": "d_thorn_21",
+		"target": "boss_Gaigalas/npc_bramble_root",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_21 2625 122 -1249 200"
+		]
+	},
+	{
+		"id": 2027201,
+		"questName": "THORN21_MQ05",
+		"mapName": "d_thorn_21",
+		"target": "boss_molich/npc_bramble_root",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_21 THORN21_BRAMBLE02_ROOT 50"
+		]
+	},
+	{
+		"id": 2027301,
+		"questName": "THORN21_MQ06",
+		"mapName": "d_thorn_21",
+		"target": "boss_honeypin",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_thorn_21 THORN21_MQ06_TRACK 100"
+		]
+	},
+	{
+		"id": 2028001,
+		"questName": "HUEVILLAGE_58_2_SQ01",
+		"mapName": "f_huevillage_58_2",
+		"target": "boss_Moldyhorn",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_2 HUEVILLAGE_58_2_SQ01_NPC 100"
+		]
+	},
+	{
+		"id": 2028201,
+		"questName": "HUEVILLAGE_58_2_SQ03",
+		"mapName": "f_huevillage_58_2",
+		"target": "boss_woodspirit_blue",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_2 HUEVILLAGE_58_2_OBELISK_BEFORE 200"
+		]
+	},
+	{
+		"id": 2028801,
+		"questName": "HUEVILLAGE_58_3_SQ02",
+		"mapName": "f_huevillage_58_3",
+		"target": "boss_Colimencia",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_huevillage_58_3 HUEVILLAGE_58_3_MQ02_FLOWER 100"
+		]
+	},
+	{
+		"id": 2029201,
+		"questName": "SUCH_POINT_07",
+		"mapName": "f_katyn_7",
+		"target": "boss_honeypin_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_katyn_7 KATYN_SUCH_POINT_05 200"
+		]
+	},
+	{
+		"id": 2031801,
+		"questName": "CHATHEDRAL54_SQ05_PART2",
+		"mapName": "d_cathedral_54",
+		"target": "boss_Riteris",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cathedral_54 CHATHEDRAL54_MQ04_PART2 100"
+		]
+	},
+	{
+		"id": 2032201,
+		"questName": "PILGRIMROAD55_SQ05",
+		"mapName": "f_pilgrimroad_55",
+		"target": "boss_Chapparition_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_55 PILGRIMROAD55_SQ05 50"
+		]
+	},
+	{
+		"id": 2032701,
+		"questName": "PILGRIMROAD55_SQ10",
+		"mapName": "f_pilgrimroad_55",
+		"target": "InfroHoglan_red/Infro_blud_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_55 PILGRIMROAD55_SQ11_TOMB 300"
+		]
+	},
+	{
+		"id": 2033701,
+		"questName": "CHATHEDRAL56_SQ01",
+		"mapName": "d_cathedral_56",
+		"target": "boss_Naktis",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cathedral_56 -1539 0 218 250"
+		]
+	},
+	{
+		"id": 2033901,
+		"questName": "CHATHEDRAL56_SQ03",
+		"mapName": "d_cathedral_56",
+		"target": "boss_RingCrawler",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_cathedral_56 CHATHEDRAL56_NPC_HIDE 150"
+		]
+	},
+	{
+		"id": 2034301,
+		"questName": "PILGRIMROAD55_SQ04",
+		"mapName": "f_pilgrimroad_55",
+		"target": "boss_Glackuman_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_55 PRIST_DEAD 100"
+		]
+	},
+	{
+		"id": 3002301,
+		"questName": "CATACOMB_38_1_SQ_07",
+		"mapName": "id_catacomb_38_1",
+		"target": "boss_Genmagnus_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"id_catacomb_38_1 1315 278 1167 450"
+		]
+	},
+	{
+		"id": 3003001,
+		"questName": "CATACOMB_02_SQ_07",
+		"mapName": "id_catacomb_02",
+		"target": "boss_archon_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"id_catacomb_02 CATACOMB_02_OBJ_01 100"
+		]
+	},
+	{
+		"id": 3004001,
+		"questName": "PRISON623_SQ_04",
+		"mapName": "d_prison_62_3",
+		"target": "boss_Kerberos_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 4023001,
+		"questName": "FARM47_3_SQ_060",
+		"mapName": "f_farm_47_3",
+		"target": "Kepo_seed_violet/ellom_violet/dandel_orange/Ashrong/operor_white",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_farm_47_3 -38 90 -531 200"
+		]
+	},
+	{
+		"id": 4025001,
+		"questName": "FARM47_3_SQ_080",
+		"mapName": "f_farm_47_3",
+		"target": "ellom_violet/Kepo_seed_violet/dandel_orange/Ashrong/operor_white",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_farm_47_3 FARM47_MAGIC03 100"
+		]
+	},
+	{
+		"id": 4027001,
+		"questName": "FARM47_3_SQ_100",
+		"mapName": "f_farm_47_3",
+		"target": "boss_Manticen_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_farm_47_3 -2080 -10 870 300"
+		]
+	},
+	{
+		"id": 4043001,
+		"questName": "FARM47_1_SQ_070",
+		"mapName": "f_farm_47_1",
+		"target": "pino_white/geppetto_white",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_farm_47_1 FARM47_WHOUSE 300"
+		]
+	},
+	{
+		"id": 4045001,
+		"questName": "FARM47_1_SQ_090",
+		"mapName": "f_farm_47_1",
+		"target": "boss_Kimeleech_Q1/farm47_circle_01",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_farm_47_1 FARM47_FENCE 200"
+		]
+	},
+	{
+		"id": 4047001,
+		"questName": "FARM47_1_SQ_110",
+		"mapName": "f_farm_47_1",
+		"target": "farm47_circle_01",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_farm_47_1 FARM47_MAGIC32 200"
+		]
+	},
+	{
+		"id": 4050001,
+		"questName": "REMAINS37_1_SQ_020",
+		"mapName": "f_remains_37_1",
+		"target": "Wendigo_magician/Wendigo_archer",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_remains_37_1 REMAINS37_1_MT02 300"
+		]
+	},
+	{
+		"id": 4054001,
+		"questName": "REMAINS37_1_SQ_060",
+		"mapName": "f_remains_37_1",
+		"target": "Wendigo_magician/Wendigo_archer/Templeslave_sword",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_remains_37_1 REMAINS37_1_MT05 15"
+		]
+	},
+	{
+		"id": 4064001,
+		"questName": "REMAINS37_2_SQ_060",
+		"mapName": "f_remains_37_2",
+		"target": "Lizardman_mage/Minos/minos_bow",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_remains_37_2 REMAINS37_2_VINE 200"
+		]
+	},
+	{
+		"id": 4066101,
+		"questName": "REMAINS37_2_SQ_081",
+		"mapName": "f_remains_37_2",
+		"target": "ALL",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_remains_37_2 REMAINS37_2_FAKEMT 300"
+		]
+	},
+	{
+		"id": 4067001,
+		"questName": "REMAINS37_3_SQ_010",
+		"mapName": "f_remains_37_3",
+		"target": "Hallowventor_bow/Hallowventor_mage",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_remains_37_3 REMAINS37_3_JUSTAS 100"
+		]
+	},
+	{
+		"id": 4074001,
+		"questName": "REMAINS37_3_SQ_080",
+		"mapName": "f_remains_37_3",
+		"target": "Hallowventor_bow/Hallowventor_mage/vine_01",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_remains_37_3 REMAINS37_3_BIGVINES 150"
+		]
+	},
+	{
+		"id": 4077001,
+		"questName": "REMAINS37_3_SQ_110",
+		"mapName": "",
+		"target": "boss_archon_Q4",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 4085001,
+		"questName": "FLASH_29_1_SQ_080",
+		"mapName": "f_flash_29_1",
+		"target": "Minos_orange/Infroholder_bow_red/minos_mage_green",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_flash_29_1 FLASH_29_1_BOX 500"
+		]
+	},
+	{
+		"id": 4093001,
+		"questName": "FLASH_58_SQ_080",
+		"mapName": "f_flash_58",
+		"target": "Infroholder_red/Socket_purple/Infroholder_mage_green",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_flash_58 FLASH_SOUL_COLLECTOR 200"
+		]
+	},
+	{
+		"id": 4103001,
+		"questName": "PILGRIM_36_2_SQ_030",
+		"mapName": "f_pilgrimroad_36_2",
+		"target": "npc_pilgrim_shrine",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_36_2 PILGRIM_36_2_SHRINE_REAL 150"
+		]
+	},
+	{
+		"id": 4115001,
+		"questName": "PILGRIM_36_2_SQ_150",
+		"mapName": "f_pilgrimroad_36_2",
+		"target": "boss_Fireload_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_36_2 PILGRIM_36_2_SQ_150_TRIGGER 300"
+		]
+	},
+	{
+		"id": 4175001,
+		"questName": "PILGRIM_49_SQ_060",
+		"mapName": "f_pilgrimroad_49",
+		"target": "Sec_Beetle/Sec_dandel_orange/Sec_Kepari_mage",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_49 PILGRIM_49_KESTAS 300"
+		]
+	},
+	{
+		"id": 5001001,
+		"questName": "SIAULIAI_50_1_SQ_030",
+		"mapName": "f_siauliai_50_1",
+		"target": "austeja_alter",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_50_1 SIAULIAI_50_1_SQ_GRASS 200",
+			"c_firemage WS_FIREMAGE_KLAPEDA 100",
+			"c_Klaipe KLAPEDA_TO_SIAUL50_1 100"
+		]
+	},
+	{
+		"id": 5001901,
+		"questName": "SIAULIAI_50_1_SQ_120",
+		"mapName": "f_siauliai_50_1",
+		"target": "boss_Gorgon",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_50_1 SIAULIAI_50_1_SQ_SOLDIER03 100"
+		]
+	},
+	{
+		"id": 5002501,
+		"questName": "SIAULIAI_50_1_SQ_180",
+		"mapName": "f_siauliai_50_1",
+		"target": "Ridimed_purple/Sakmoli_orange",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_siauliai_50_1 SIAULIAI50_PLANT_BIGREPRESS_01 300"
+		]
+	},
+	{
+		"id": 5003401,
+		"questName": "PARTY_Q_041",
+		"mapName": "f_huevillage_58_1",
+		"target": "mon_paladin_follower1_1/mon_paladin_follower1_3",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_huevillage_58_1 411 371 -593 300"
+		]
+	},
+	{
+		"id": 5003801,
+		"questName": "PARTY_Q_060",
+		"mapName": "f_huevillage_58_4",
+		"target": "npc_bramble_root/npc_bramble_root_m/npc_bramble_root_s",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_huevillage_58_4 PARTY_Q06_THORN 100"
+		]
+	},
+	{
+		"id": 5004301,
+		"questName": "PARTY_Q_090",
+		"mapName": "f_farm_47_2",
+		"target": "magicsquare_1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_farm_47_2 PARTY_Q9_TRIGGER 200"
+		]
+	},
+	{
+		"id": 5007001,
+		"questName": "UNDERFORTRESS_67_SQ020",
+		"mapName": "d_underfortress_67",
+		"target": "boss_necrovanter_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": []
+	},
+	{
+		"id": 6004301,
+		"questName": "PILGRIM311_SQ_01",
+		"mapName": "f_pilgrimroad_31_1",
+		"target": "Sec_ellomago",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_31_1 -548 1 -342 450"
+		]
+	},
+	{
+		"id": 6005001,
+		"questName": "PILGRIM311_SQ_08",
+		"mapName": "f_pilgrimroad_31_1",
+		"target": "boss_werewolf_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_31_1 247 1 -351 500"
+		]
+	},
+	{
+		"id": 6005201,
+		"questName": "PILGRIM312_SQ_02",
+		"mapName": "f_pilgrimroad_31_2",
+		"target": "Sec_New_desmodus",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_pilgrimroad_31_2 PILGRIM312_AGATAS_01 150"
+		]
+	},
+	{
+		"id": 6005601,
+		"questName": "PILGRIM312_SQ_06",
+		"mapName": "f_pilgrimroad_31_2",
+		"target": "boss_Drapeliun_Q2",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_31_2 PILGRIM312_SQ_06_NPC 150"
+		]
+	},
+	{
+		"id": 6006301,
+		"questName": "PILGRIM313_SQ_06",
+		"mapName": "f_pilgrimroad_31_3",
+		"target": "boss_durahan_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_pilgrimroad_31_3 PILGRIM313_SQ_06_NPC 50"
+		]
+	},
+	{
+		"id": 6008001,
+		"questName": "SIAU16_SQ_04",
+		"mapName": "f_siauliai_16",
+		"target": "boss_woodspirit_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_16 SIAU16_SQ_04_NPC 150"
+		]
+	},
+	{
+		"id": 6009801,
+		"questName": "SIAU15RE_SQ_05",
+		"mapName": "f_siauliai_15_re",
+		"target": "boss_Chafer_Q4",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_15_re SIAU15RE_SQ_05_NPC 150"
+		]
+	},
+	{
+		"id": 6010801,
+		"questName": "SIAU11RE_SQ_04",
+		"mapName": "f_siauliai_11_re",
+		"target": "boss_golem_Gray_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_siauliai_11_re SIAU11RE_SQ_04_NPC 150"
+		]
+	},
+	{
+		"id": 7004901,
+		"questName": "FARM49_3_SQ04",
+		"mapName": "f_farm_49_3",
+		"target": "boss_Glass_mole",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_farm_49_3 -186 248 1849 350"
+		]
+	},
+	{
+		"id": 7016301,
+		"questName": "ABBEY39_4_MQ04",
+		"mapName": "d_abbey_39_4",
+		"target": "boss_Teraox",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"d_abbey_39_4 -1745 144 309 350"
+		]
+	},
+	{
+		"id": 7020001,
+		"questName": "TABLELAND28_1_SQ01",
+		"mapName": "f_tableland_28_1",
+		"target": "Repusbunny_green/saltisdaughter_mage_red",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"f_tableland_28_1 TABLELAND281_SQ_02 250"
+		]
+	},
+	{
+		"id": 7022601,
+		"questName": "TABLELAND28_2_SQ07",
+		"mapName": "f_tableland_28_2",
+		"target": "boss_Sparnashorn_Blue",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_tableland_28_2 TABLELAND282_SQ_07_BOSS 100"
+		]
+	},
+	{
+		"id": 8000601,
+		"questName": "CATACOMB_33_1_SQ_07",
+		"mapName": "id_catacomb_33_1",
+		"target": "boss_Abomination_Q1",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"id_catacomb_33_1 CATACOMB_33_1_BOSS 200"
+		]
+	},
+	{
+		"id": 8000801,
+		"questName": "CATACOMB_33_2_SQ_01",
+		"mapName": "id_catacomb_33_2",
+		"target": "Sec_Stoulet_green/Sec_colitile",
+		"minSpawnCount": 3,
+		"mapPointGroup": [
+			"id_catacomb_33_1 CATACOMB_33_1_TO_CATACOMB_33_2 100",
+			"id_catacomb_33_2 CATACOMB_33_2_SQ_01_TRIG 300"
+		]
+	},
+	{
+		"id": 8001301,
+		"questName": "CATACOMB_33_2_SQ_06",
+		"mapName": "id_catacomb_33_2",
+		"target": "npc_pilgrim_shrine",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"id_catacomb_33_2 CATACOMB_33_2_UNHOLY 100"
+		]
+	},
+	{
+		"id": 8001401,
+		"questName": "CATACOMB_33_2_SQ_07",
+		"mapName": "id_catacomb_33_2",
+		"target": "boss_ShadowGaoler_Q3",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"id_catacomb_33_2 CATACOMB_33_2_KARLYLE 100"
+		]
+	},
+	{
+		"id": 9000801,
+		"questName": "F_3CMLAKE_83_SQ_03",
+		"mapName": "f_3cmlake_83",
+		"target": "boss_Rocksodon",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_3cmlake_83 -1525 303 755 300"
+		]
+	}
+]

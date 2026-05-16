@@ -70,8 +70,8 @@ namespace Melia.Zone.World.Tracks
 		{
 			if (!TrackScript.TryGet(trackId, out var trackScript))
 			{
-				Log.Warning($"Track.Create: Track '{trackId}' not found.");
-				throw new ArgumentException($"Track '{trackId}' not found.");
+				Log.Warning($"Track.Create: Track '{trackId}' has no server script. Starting it as a client-native generic track.");
+				return new Track(new TrackData { Id = trackId });
 			}
 
 			var result = new Track(trackScript.Data);

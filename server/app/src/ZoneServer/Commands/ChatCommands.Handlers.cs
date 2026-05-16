@@ -111,6 +111,7 @@ namespace Melia.Zone.Commands
 			this.Add("where", "", "Displays current location.", this.HandleWhere);
 			this.Add("distance", "", "Calculates distance between two positions.", this.HandleDistance);
 			this.Add("time", "", "Displays the current server and game time.", this.HandleTime);
+			this.Add("gametime", "<time>", "Sets the current game time.", this.HandleGameTime);
 			this.Add("main", "", "Displays invite for global main chat.", this.HandleMainChat);
 			this.Add("help", "[command]", "Displays available commands or information about a certain command.", this.HandleHelp);
 			this.Add("iteminfo", "<name>", "Displays information about an item.", this.HandleItemInfo);
@@ -871,6 +872,100 @@ namespace Melia.Zone.Commands
 			target.ServerMessage(Localization.Get("Game Time: {0:y-M-dd HH:mm} ({1})"), now, now.TimeOfDay);
 
 			return CommandResult.Okay;
+		}
+
+		/// <summary>
+		/// Sets the current game time.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="target"></param>
+		/// <param name="message"></param>
+		/// <param name="commandName"></param>
+		/// <param name="args"></param>
+		/// <returns></returns>
+		private CommandResult HandleGameTime(Character sender, Character target, string message, string commandName, Arguments args)
+		{
+			var commandIndex = message.IndexOf(commandName, StringComparison.OrdinalIgnoreCase);
+			var timeText = commandIndex >= 0
+				? message.Substring(commandIndex + commandName.Length).Trim()
+				: "";
+
+			if (timeText.Length == 0)
+			{
+				sender.ServerMessage(Localization.Get("Usage: /gametime <HH:mm|HH:mmam|HH:mmpm>"));
+				return CommandResult.Okay;
+			}
+
+			timeText = timeText.TrimStart('/', ' ', '\t').TrimEnd(',', '.', ';');
+
+			if (!TryParseGameTime(timeText, out var hour, out var minute))
+			{
+				sender.ServerMessage(Localization.Get("Invalid game time. Examples: /gametime 06:00am, /gametime 16:00, /gametime 7:30pm"));
+				return CommandResult.Okay;
+			}
+
+			var newTime = GameTime.SetTimeOfDay(hour, minute);
+
+			if (ZoneServer.Instance.Conf.World.EnableDayNightCycle)
+			{
+				ZoneServer.Instance.World.DayNightCycle.UnfixTimeOfDay();
+
+				if (OpTable.Exists(Op.ZC_DAYLIGHT_SYNCHRONIZE_TIME))
+					Send.ZC_DAYLIGHT_SYNCHRONIZE_TIME(newTime);
+			}
+
+			Send.ZC_LOGIN_TIME(newTime);
+			Send.ZC_SYNC_MINIMAP_GAME_TIME(newTime);
+
+			sender.ServerMessage(Localization.Get("Game Time set to {0:HH:mm} ({1})."), newTime, newTime.TimeOfDay);
+
+			return CommandResult.Okay;
+		}
+
+		/// <summary>
+		/// Parses a game time from a command argument.
+		/// </summary>
+		/// <param name="timeText"></param>
+		/// <param name="hour"></param>
+		/// <param name="minute"></param>
+		/// <returns></returns>
+		private static bool TryParseGameTime(string timeText, out int hour, out int minute)
+		{
+			hour = 0;
+			minute = 0;
+
+			timeText = timeText.Replace(" ", "").Replace(".", "").ToUpperInvariant();
+			var isAm = timeText.EndsWith("AM");
+			var isPm = timeText.EndsWith("PM");
+
+			if (isAm || isPm)
+				timeText = timeText.Substring(0, timeText.Length - 2);
+
+			var parts = timeText.Split(':');
+			if (parts.Length > 2)
+				return false;
+
+			if (!int.TryParse(parts[0], out hour))
+				return false;
+
+			if (parts.Length == 2 && !int.TryParse(parts[1], out minute))
+				return false;
+
+			if (isAm || isPm)
+			{
+				if (hour < 1 || hour > 12)
+					return false;
+
+				if (isAm && hour == 12)
+					hour = 0;
+				else if (isPm && hour < 12)
+					hour += 12;
+			}
+
+			if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60)
+				return false;
+
+			return true;
 		}
 
 		/// <summary>
