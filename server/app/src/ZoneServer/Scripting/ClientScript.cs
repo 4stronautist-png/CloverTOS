@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -18,6 +19,10 @@ namespace Melia.Zone.Scripting
 		public const int ScriptMaxLength = 2048;
 
 		private readonly Dictionary<string, string> _files = new();
+		private static readonly object _readyLock = new();
+		private static readonly Dictionary<string, HashSet<string>> _readyScriptsBySession = new();
+		private static readonly Dictionary<string, DateTime> _readySessionLastSeen = new();
+		private static DateTime _lastReadySessionPrune = DateTime.MinValue;
 
 		/// <summary>
 		/// Initializes the script and explicitly subscribes the inherited
@@ -63,6 +68,15 @@ namespace Melia.Zone.Scripting
 		}
 
 		/// <summary>
+		/// Called on map changes after the static Lua payload for this
+		/// client session has already been installed.
+		/// </summary>
+		/// <param name="character"></param>
+		protected virtual void ReadyAgain(Character character)
+		{
+		}
+
+		/// <summary>
 		/// Called when the player logs in and is ready to receive scripts.
 		/// </summary>
 		/// <param name="sender"></param>
@@ -70,7 +84,57 @@ namespace Melia.Zone.Scripting
 		[On("PlayerReady")]
 		protected void OnPlayerReadyInternal(object sender, PlayerEventArgs e)
 		{
+			if (!this.TryActivateClientScriptReady(e.Character))
+			{
+				this.ReadyAgain(e.Character);
+				return;
+			}
+
 			this.Ready(e.Character);
+		}
+
+		private bool TryActivateClientScriptReady(Character character)
+		{
+			var sessionKey = character?.Connection?.SessionKey;
+			if (string.IsNullOrWhiteSpace(sessionKey))
+				return true;
+
+			var scriptKey = this.GetType().AssemblyQualifiedName ?? this.GetType().FullName ?? this.GetType().Name;
+			var now = DateTime.UtcNow;
+
+			lock (_readyLock)
+			{
+				this.PruneReadySessionCache(now);
+
+				_readySessionLastSeen[sessionKey] = now;
+
+				if (!_readyScriptsBySession.TryGetValue(sessionKey, out var sentScripts))
+				{
+					sentScripts = new HashSet<string>();
+					_readyScriptsBySession[sessionKey] = sentScripts;
+				}
+
+				return sentScripts.Add(scriptKey);
+			}
+		}
+
+		private void PruneReadySessionCache(DateTime now)
+		{
+			if ((now - _lastReadySessionPrune).TotalMinutes < 15)
+				return;
+
+			_lastReadySessionPrune = now;
+
+			var expiredKeys = _readySessionLastSeen
+				.Where(pair => (now - pair.Value).TotalHours >= 6)
+				.Select(pair => pair.Key)
+				.ToList();
+
+			foreach (var sessionKey in expiredKeys)
+			{
+				_readySessionLastSeen.Remove(sessionKey);
+				_readyScriptsBySession.Remove(sessionKey);
+			}
 		}
 
 		/// <summary>

@@ -899,6 +899,16 @@
 		]
 	},
 	{
+		"id": 854601,
+		"questName": "GELE573_MQ_09",
+		"mapName": "f_gele_57_3",
+		"target": "boss_Minotaurs",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_gele_57_3 871 -68 -514 325"
+		]
+	},
+	{
 		"id": 841901,
 		"questName": "ZACHA5F_EQ_01",
 		"mapName": "d_zachariel_36",
@@ -1014,6 +1024,16 @@
 		"minSpawnCount": 1,
 		"mapPointGroup": [
 			"f_gele_57_4 GELE574_MQ_01 150"
+		]
+	},
+	{
+		"id": 860901,
+		"questName": "GELE574_MQ_09",
+		"mapName": "f_gele_57_4",
+		"target": "boss_Chapparition",
+		"minSpawnCount": 1,
+		"mapPointGroup": [
+			"f_gele_57_4 1287 -78 1811 350"
 		]
 	},
 	{

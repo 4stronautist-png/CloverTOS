@@ -495,6 +495,45 @@ function Validate-NativeSessionObjectiveCoverage {
     }
 }
 
+function Validate-PapayaPlayableBossTrackCoverage {
+    param($Quest)
+
+    $playableBossTrackQuests = @(
+        'GELE573_MQ_09',
+        'GELE574_MQ_09'
+    )
+
+    if ($playableBossTrackQuests -notcontains $Quest.ClassName) {
+        return
+    }
+
+    $key = $Quest.ClassName.ToLowerInvariant()
+    if (-not $script:QuestAutoByName.ContainsKey($key)) {
+        Add-Error "Quest $($Quest.ClassName) must run a Papaya boss track, but quest_auto.txt has no entry for it."
+        return
+    }
+
+    $track = $script:QuestAutoByName[$key].Track
+    if ($track -notmatch '/m_boss_') {
+        Add-Error "Quest $($Quest.ClassName) must remain a playable boss encounter, but its quest_auto track '$track' is not a boss track."
+    }
+
+    if (-not $Quest.HasObjectives) {
+        Add-Error "Quest $($Quest.ClassName) uses Papaya boss track '$track' but has no real server objective; it would auto-complete by timer."
+        return
+    }
+
+    $objectiveTargets = Get-ObjectiveMonsterTargets $Quest.Raw
+    if ($objectiveTargets.Count -eq 0) {
+        Add-Error "Quest $($Quest.ClassName) uses Papaya boss track '$track' but no Kill target or Collect dropTarget is defined."
+        return
+    }
+
+    foreach ($objectiveTarget in $objectiveTargets) {
+        Validate-ObjectiveSpawnCoverage $Quest $objectiveTarget 'forced'
+    }
+}
+
 function Validate-MapField {
     param($Quest, [string]$FieldName, [string]$MapName)
 
@@ -554,6 +593,7 @@ function Complete-Quest {
     Validate-MapField $Quest 'end' $Quest.EndMap
     Validate-MapPopulation $Quest
 
+    Validate-PapayaPlayableBossTrackCoverage $Quest
     Validate-NativeSessionObjectiveCoverage $Quest $Phase
     Validate-And-Apply-Objectives $Quest $Phase
 
@@ -664,6 +704,23 @@ function Read-SessionQuestRows {
     return $result
 }
 
+function Read-QuestAutoRows {
+    param([string]$Path)
+
+    $result = @{}
+    $text = Get-Content -LiteralPath $Path -Raw
+    foreach ($match in [regex]::Matches($text, '(?s)\{.*?"questName"\s*:\s*"([^"]+)".*?"track"\s*:\s*"([^"]*)".*?\}')) {
+        $questName = $match.Groups[1].Value
+        if ([string]::IsNullOrWhiteSpace($questName)) { continue }
+
+        $result[$questName.ToLowerInvariant()] = [pscustomobject]@{
+            QuestName = $questName
+            Track = $match.Groups[2].Value
+        }
+    }
+    return $result
+}
+
 function Read-ForcedOrder {
     param([string]$QuestComponentSource)
 
@@ -693,6 +750,7 @@ function Read-ForcedOrder {
 }
 
 $questPath = Join-Path $Root 'system/db/quests.txt'
+$questAutoPath = Join-Path $Root 'system/db/quest_auto.txt'
 $expPath = Join-Path $Root 'system/db/exp.txt'
 $mapPath = Join-Path $Root 'system/db/maps.txt'
 $monsterPath = Join-Path $Root 'system/db/monsters.txt'
@@ -707,7 +765,7 @@ $packetHandlerPath = Join-Path $Root 'src/ZoneServer/Network/PacketHandler.cs'
 $packageExpConfPath = Join-Path $Root 'packages/laima/conf/world/exp.conf'
 $userExpConfPath = Join-Path $Root 'user/conf/world/exp.conf'
 
-foreach ($requiredPath in @($questPath, $expPath, $mapPath, $monsterPath, $itemPath, $sessionObjectPath, $questComponentPath, $npcFunctionsPath, $characterStatsPath, $trackComponentPath, $packetHandlerPath, $packageExpConfPath)) {
+foreach ($requiredPath in @($questPath, $questAutoPath, $expPath, $mapPath, $monsterPath, $itemPath, $sessionObjectPath, $questComponentPath, $npcFunctionsPath, $characterStatsPath, $trackComponentPath, $packetHandlerPath, $packageExpConfPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Missing required simulator input: $requiredPath"
     }
@@ -757,6 +815,7 @@ foreach ($line in Get-Content -LiteralPath $monsterPath) {
 
 $script:ActiveMapSpawns = Read-ActiveMapSpawns $Root
 $script:PrivateEncounterTargets = Read-PrivateEncounters $privateEncounterPath
+$script:QuestAutoByName = Read-QuestAutoRows $questAutoPath
 $script:SessionQuestByName = Read-SessionQuestRows $sessionObjectPath
 
 $quests = Read-QuestRows $questPath
@@ -828,6 +887,13 @@ if ($npcFunctionsSource -notmatch 'WARP_F_SIAULIAI_OUT[\s\S]*RepairPapayaMainQue
 
 if ($npcFunctionsSource -notmatch 'SIAULIAIOUT_Q01[\s\S]*COMMON_QUEST_HANDLER') {
     Add-Error "Miners' Village first Papaya actor SIAULIAIOUT_Q01 has no quest-dialog bridge."
+}
+
+if ($questComponentSource -notmatch 'RepairPapayaGelePlateauImminentInvasion' -or
+    $questComponentSource -notmatch 'TryCompletePapayaGelePlateauImminentInvasion' -or
+    $questComponentSource -notmatch 'GELE572_MQ_01_TRACK' -or
+    $questComponentSource -notmatch 'client-native track is not reliable') {
+    Add-Error "Gele Plateau GELE572_MQ_01 still relies on the generic client-native quest_auto track instead of completing on server-side map sync."
 }
 
 foreach ($requiredSkippedQuest in @(

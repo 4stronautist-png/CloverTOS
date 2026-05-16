@@ -486,6 +486,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			changed |= this.CompletePapayaKlaipedaHandoffRoadQuests(mapClassName);
 			changed |= this.SuppressOutOfSequencePapayaCapturedMainQuestState();
 			changed |= this.SuppressOutOfSequencePapayaAutoMainQuestState();
+			changed |= this.RepairPapayaGelePlateauImminentInvasion(mapClassName);
 			changed |= this.RepairPapayaCapturedMainQuestChain();
 			changed |= this.RepairPapayaMapTransitionQuestHandoffs(mapClassName);
 			changed |= this.RepairPapayaCrystalMineSkipAfterMinersVillage(mapClassName);
@@ -507,6 +508,37 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			return changed;
+		}
+
+		private bool RepairPapayaGelePlateauImminentInvasion(string mapClassName)
+		{
+			if (!string.Equals(mapClassName, "f_gele_57_2", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (!ZoneServer.Instance.Data.QuestDb.TryFind("GELE572_MQ_01", out var questData) ||
+				!this.TryGetById(new QuestId(questData.Id), out var quest))
+				return false;
+
+			return this.TryCompletePapayaGelePlateauImminentInvasion(quest, mapClassName, "map-entry repair");
+		}
+
+		private bool TryCompletePapayaGelePlateauImminentInvasion(Quest quest, string mapClassName, string reason)
+		{
+			if (quest?.QuestStaticData == null ||
+				!string.Equals(quest.QuestStaticData.ClassName, "GELE572_MQ_01", StringComparison.OrdinalIgnoreCase) ||
+				!string.Equals(mapClassName, "f_gele_57_2", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (!quest.InProgress && quest.Status != QuestStatus.Success)
+				return false;
+
+			if (this.Character.Tracks.ActiveTrack?.Id == "GELE572_MQ_01_TRACK")
+				this.Character.Tracks.Cancel();
+
+			Log.Info("Papaya main quest flow: completing GELE572_MQ_01 for '{0}' on Gele Plateau via {1}; the client-native track is not reliable here.", this.Character.Name, reason);
+			quest.CompleteObjectives();
+			this.Complete(quest);
+			return true;
 		}
 
 		private bool RepairPapayaCapturedMainQuestChain()
@@ -2105,6 +2137,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (questData == null || !string.Equals(questData.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase))
 				return false;
 
+			if (this.TryCompletePapayaGelePlateauImminentInvasion(quest, mapClassName, "runtime map sync"))
+				return true;
+
 			var questAutoData = ZoneServer.Instance.Data.QuestAutoDb.Find(questData.ClassName);
 			if (!this.TryParseStaticQuestAutoTrack(questAutoData, out var track))
 				return false;
@@ -2821,7 +2856,10 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				var existingMonsters = this.GetStaticQuestObjectiveMonsters(request, radius).ToList();
 				existingMonsters = this.DeduplicateStaticQuestObjectiveMonsters(request, existingMonsters);
 				foreach (var existingMonster in existingMonsters)
+				{
 					this.ConfigureStaticQuestObjectiveMonster(existingMonster);
+					this.SendStaticQuestObjectiveMonsterIfNeeded(existingMonster, request);
+				}
 
 				var existingCount = existingMonsters.Count;
 				var pendingKey = this.GetStaticQuestObjectiveSpawnPendingKey(request);
@@ -2854,8 +2892,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					monster.SpawnPosition = monster.Position;
 					this.ConfigureStaticQuestObjectiveMonster(monster);
 
-					if (this.Character.Layer != 0 && this.Character.Connection != null)
-						Send.ZC_ENTER_MONSTER(this.Character.Connection, monster);
+					this.SendStaticQuestObjectiveMonsterIfNeeded(monster, request);
 
 					if (this.Character.Connection != null && this.StaticQuestMonsterMarkerEnabled(request.QuestClassName))
 						Send.ZC_NORMAL.MinimapMarker(this.Character.Connection, monster, 1, 1, 0);
@@ -2863,6 +2900,22 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 				Log.Info("Static quest chain: spawned {0} fallback objective monster(s) '{1}' for quest '{2}' on map '{3}' layer {4} at {5:0.##}/{6:0.##}/{7:0.##}.", spawnCount, request.ClassName, request.QuestClassName, mapClassName, this.Character.Layer, request.X, request.Y, request.Z);
 			}
+		}
+
+		private void SendStaticQuestObjectiveMonsterIfNeeded(Mob monster, StaticQuestMonsterSpawnRequest request)
+		{
+			if (monster == null || this.Character?.Connection == null)
+				return;
+
+			if (!request.IsPrivateEncounter && this.Character.Layer == 0)
+				return;
+
+			var sentKey = $"Clover.StaticQuestObjective.EnterSent.{this.Character.ObjectId}";
+			if (monster.Vars.GetBool(sentKey, false))
+				return;
+
+			monster.Vars.SetBool(sentKey, true);
+			Send.ZC_ENTER_MONSTER(this.Character.Connection, monster);
 		}
 
 		private string GetStaticQuestObjectiveSpawnPendingKey(StaticQuestMonsterSpawnRequest request)
@@ -6372,10 +6425,10 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		private List<string> FilterQuestMapPointGroupsWithFallback(Quest quest, List<string> mapPointGroups)
 		{
 			var filtered = this.FilterClientSafeQuestMapPointGroups(mapPointGroups ?? new List<string>());
-			if (filtered.Count != 0)
+			var currentMap = this.Character?.Map?.ClassName;
+			if (filtered.Count != 0 && this.MapPointGroupsReferenceCurrentMap(filtered, currentMap))
 				return filtered;
 
-			var currentMap = this.Character?.Map?.ClassName;
 			var successNextPoints = this.GetPapayaSuccessNextMapPointGroups(quest, currentMap);
 			if (successNextPoints.Count != 0)
 				return successNextPoints;
@@ -6385,6 +6438,27 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				return routePoints;
 
 			return filtered;
+		}
+
+		private bool MapPointGroupsReferenceCurrentMap(List<string> mapPointGroups, string currentMap)
+		{
+			if (string.IsNullOrWhiteSpace(currentMap) || mapPointGroups == null || mapPointGroups.Count == 0)
+				return true;
+
+			foreach (var mapPointGroup in mapPointGroups)
+			{
+				if (this.IsNone(mapPointGroup))
+					continue;
+
+				var parts = mapPointGroup.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				if (parts.Length == 0)
+					continue;
+
+				if (string.Equals(parts[0], currentMap, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+
+			return false;
 		}
 
 		private List<string> GetPapayaSuccessNextMapPointGroups(Quest quest, string mapClassName)
