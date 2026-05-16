@@ -124,6 +124,7 @@ namespace Melia.Zone.World.Actors
 			var effectiveTarget = target;
 
 			if (actor is IMonster actorMonster && actorMonster.OwnerHandle != 0
+				&& !IsStaticQuestPrivateEncounter(actorMonster)
 				&& actor.Map.TryGetCombatEntity(actorMonster.OwnerHandle, out var actorOwner))
 			{
 				effectiveActor = actorOwner;
@@ -134,6 +135,7 @@ namespace Melia.Zone.World.Actors
 			}
 
 			if (target is IMonster targetMonster && targetMonster.OwnerHandle != 0
+				&& !IsStaticQuestPrivateEncounter(targetMonster)
 				&& target.Map.TryGetCombatEntity(targetMonster.OwnerHandle, out var targetOwner))
 			{
 				effectiveTarget = targetOwner;
@@ -197,6 +199,11 @@ namespace Melia.Zone.World.Actors
 
 			// Other actors are always neutral to everything
 			return RelationType.Neutral;
+		}
+
+		private static bool IsStaticQuestPrivateEncounter(IMonster monster)
+		{
+			return monster is Mob mob && mob.Vars.GetBool("Clover.StaticQuestPrivateEncounter", false);
 		}
 	}
 }

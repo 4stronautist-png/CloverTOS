@@ -32,6 +32,7 @@ namespace Melia.Zone.Database
 			var charNameForLog = $"ID:{adjustedCharId}"; // Initial name for logging
 
 			var character = new Character();
+			var dbAbilityPoints = 0;
 
 			using (var conn = this.GetConnection())
 			using (var mc = new MySqlCommand("SELECT * FROM `characters` WHERE `accountId` = @accountId AND `characterId` = @characterId", conn))
@@ -57,6 +58,7 @@ namespace Melia.Zone.Database
 					character.Exp = reader.GetInt64("exp");
 					character.MaxExp = reader.GetInt64("maxExp");
 					character.TotalExp = reader.GetInt64("totalExp");
+					dbAbilityPoints = reader.GetInt32Safe("abilityPoints");
 					character.VisibleEquip = (VisibleEquip)reader.GetInt32("equipVisibility");
 					character.EquippedTitleId = reader.GetInt32("equippedTitleId");
 					var x = reader.GetFloat("x");
@@ -72,6 +74,9 @@ namespace Melia.Zone.Database
 
 			// Calls to partial class methods for loading components
 			this.LoadCharacterComponentData(character, charNameForLog);
+
+			if (dbAbilityPoints > character.Properties.AbilityPoints)
+				character.Properties.SetString(PropertyName.AbilityPoint, dbAbilityPoints.ToString());
 
 			if (character.EquippedTitleId != -1)
 				character.EquipTitle(character.EquippedTitleId);
@@ -175,6 +180,7 @@ namespace Melia.Zone.Database
 								cmd.Set("maxExp", character.MaxExp);
 								cmd.Set("totalExp", character.TotalExp);
 								cmd.Set("level", character.Level);
+								cmd.Set("abilityPoints", character.Properties.AbilityPoints);
 								cmd.Set("equipVisibility", (int)character.VisibleEquip);
 								cmd.Set("equippedTitleId", character.EquippedTitleId);
 								cmd.Set("stamina", character.Properties.Stamina);

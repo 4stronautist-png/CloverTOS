@@ -310,6 +310,7 @@ namespace Melia.Zone.Network
 			character.ItemSets?.RecalculateAllSetBonuses();
 
 			conn.GameReady = true;
+			character.Quests.RepairWestSiauliaiMainQuestState();
 
 			if (Versions.Protocol >= 500)
 			{
@@ -371,7 +372,7 @@ namespace Melia.Zone.Network
 				Send.ZC_UPDATE_SP(character, character.Sp, false);
 				Send.ZC_RES_DAMAGEFONT_SKIN(conn, character);
 				Send.ZC_RES_DAMAGEEFFECT_SKIN(conn, character);
-				Send.ZC_LOGIN_TIME(conn, DateTime.Now);
+				Send.ZC_LOGIN_TIME(conn, Melia.Zone.GameTime.Now);
 				Send.ZC_MYPC_ENTER(character);
 
 				character.ActivateCompanions();
@@ -411,6 +412,7 @@ namespace Melia.Zone.Network
 				}
 				Send.ZC_ADDITIONAL_SKILL_POINT(character);
 				Send.ZC_SET_DAYLIGHT_INFO(character);
+				Send.ZC_SYNC_MINIMAP_GAME_TIME(character, Melia.Zone.GameTime.Now);
 				//Send.ZC_DAYLIGHT_FIXED(character);
 				Send.ZC_SEND_APPLY_HUD_SKIN_MYSELF(conn, character);
 
@@ -534,8 +536,9 @@ namespace Melia.Zone.Network
 				}
 				Send.ZC_START_GAME(conn);
 				Send.ZC_OBJECT_PROPERTY(character);
-				Send.ZC_LOGIN_TIME(conn, DateTime.Now);
+				Send.ZC_LOGIN_TIME(conn, Melia.Zone.GameTime.Now);
 				Send.ZC_MYPC_ENTER(character);
+				Send.ZC_SYNC_MINIMAP_GAME_TIME(character, Melia.Zone.GameTime.Now);
 				// ZC_NORMAL...
 				// ZC_OBJECT_PROPERTY...
 				// ZC_SKILL_ADD...
@@ -561,6 +564,7 @@ namespace Melia.Zone.Network
 
 			character.IsWarping = false;
 			character.OpenEyes();
+			Send.ZC_MEMBERINFO_VISIBILITY_UI(character);
 
 			ZoneServer.Instance.ServerEvents.PlayerReady.Raise(new PlayerEventArgs(character));
 		}
@@ -3850,10 +3854,11 @@ namespace Melia.Zone.Network
 
 			conn.LoadComplete = true;
 
-			Send.ZC_LOAD_COMPLETE(conn);
+				Send.ZC_LOAD_COMPLETE(conn);
 
-			character.AddonMessage(AddonMessage.RECEIVE_SERVER_NATION);
-			character.RestoreCoreHudState(true, true);
+				character.AddonMessage(AddonMessage.RECEIVE_SERVER_NATION);
+				character.Tracks.AbortGenericTrackAfterMapTransition(character.Map?.ClassName);
+				character.RestoreCoreHudState(true, true);
 
 			// Removed: Personal House loading - PersonalHouse type deleted during Laima merge
 			// If character is on a housing map, warp them out since houses aren't available
@@ -3877,7 +3882,12 @@ namespace Melia.Zone.Network
 					handler.Handle(skill, skill.Owner);
 			}
 
-			ZoneServer.Instance.ServerEvents.PlayerLoadComplete.Raise(new PlayerEventArgs(character));
+				character.Quests.RepairPapayaMainQuestFlow();
+				character.Quests.SyncStaticQuestNpcStates();
+				character.Quests.UpdateClient();
+				character.RestoreCoreHudState(true, true);
+
+				ZoneServer.Instance.ServerEvents.PlayerLoadComplete.Raise(new PlayerEventArgs(character));
 
 			//character.ShowHelp("TUTO_MOVE_KB");
 			//character.ShowHelp("TUTO_MOVE_JUMP");
@@ -5027,7 +5037,18 @@ namespace Melia.Zone.Network
 			// information from the relation server, as there's a request
 			// op for it. This is not sent currently though.
 
-			Send.ZC_PROPERTY_COMPARE(conn, targetCharacter, openWindow, like);
+			var showEquipment = character.Connection?.Account?.Authority >= 99 || targetCharacter.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			if (!showEquipment)
+			{
+				var language = conn.SelectedLanguage ?? "";
+				var message = language.Equals("English", StringComparison.OrdinalIgnoreCase)
+					? "This character has not enabled memberinfo."
+					: "Este personagem não habilitou o memberinfo.";
+				character.MsgBox(message);
+				return;
+			}
+
+			Send.ZC_PROPERTY_COMPARE(conn, targetCharacter, openWindow, like, showEquipment);
 			if (like)
 			{
 				//TODO Send poses and rotate?

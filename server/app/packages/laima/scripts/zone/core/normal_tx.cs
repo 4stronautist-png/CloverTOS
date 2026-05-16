@@ -42,6 +42,8 @@ public class NormalTxFunctionsScript : GeneralScript
 	[ScriptableFunction]
 	public NormalTxResult GUIDE_QUEST_OPEN_UI(Character character, string strArg)
 	{
+		character?.Quests.SyncTrackedQuestSlots();
+
 		switch (strArg)
 		{
 			case "status":
@@ -64,7 +66,14 @@ public class NormalTxFunctionsScript : GeneralScript
 			}
 		}
 
-		return NormalTxResult.Fail;
+		return NormalTxResult.Okay;
+	}
+
+	[ScriptableFunction]
+	public NormalTxResult GUIDE_QUEST_CHECK_SLOT_ADD(Character character, string strArg)
+	{
+		character?.Quests.TrackQuestInClientSlot(strArg);
+		return NormalTxResult.Okay;
 	}
 
 	[ScriptableFunction]

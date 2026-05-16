@@ -6502,6 +6502,17 @@ public static class MonsterId
 	public const int Boss_Laimara_Web = 71047;
 	public const int Boss_Laimara_Owl_Soul = 71048;
 	public const int Boss_Veliora_Owl_Soul = 71049;
+	public const int Ep18_1_Spion_White = 71100;
+	public const int Ep18_1_Cronewt_Mage_Blue = 71101;
+	public const int Ep18_1_Hohen_Orben_Red = 71102;
+	public const int Ep18_1_Lapasape_Brown = 71103;
+	public const int Ep18_1_Wendigo_Archer_Gray = 71104;
+	public const int Ep18_1_Tiny_Bow_Blue = 71105;
+	public const int Ep18_1_Hohen_Gulak_Blue = 71106;
+	public const int Ep18_1_Tiny_Mage_Brown = 71107;
+	public const int Ep18_1_Spion_Mage_White = 71108;
+	public const int Ep18_1_Harugal_Blue = 71109;
+	public const int Ep18_1_Kepari_Purple = 71110;
 	public const int Mon_Paladin_Follower1_2_Hp = 101001;
 	public const int Mon_Paladin_Follower1_3_Hp = 101002;
 	public const int Mon_Paladin_Follower1_3_Q = 103015;

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Melia.Zone.Network;
 using Melia.Zone.Scripting;
 using Melia.Zone.Scripting.Dialogues;
+using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Quests;
 using Melia.Zone.World.Tracks;
 using Yggdrasil.Logging;
@@ -52,7 +53,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		/// </summary>
 		/// <param name="trackId"></param>
 		/// <returns></returns>
-		public async Task<bool> Start(string trackId, TimeSpan startDelay, int questId, QuestStatus onStart, QuestStatus onComplete, string overrideTrackProperty = "")
+		public async Task<bool> Start(string trackId, TimeSpan startDelay, int questId, QuestStatus onStart, QuestStatus onComplete, string overrideTrackProperty = "", int sourceQuestId = 0)
 		{
 			if (!this.Character.EyesOpen)
 				return false;
@@ -67,10 +68,12 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			track.Status = TrackStatus.Started;
 			track.Data.StartDelay = startDelay;
-			track.Data.QuestId = questId;
-			track.Data.OnStartQuestStatus = onStart;
-			track.Data.OnCompleteQuestStatus = onComplete;
-			track.Data.PropertyId = string.IsNullOrEmpty(overrideTrackProperty) ? trackId : overrideTrackProperty;
+				track.Data.QuestId = questId;
+				track.Data.SourceQuestId = sourceQuestId > 0 ? sourceQuestId : questId;
+				track.Data.OnStartQuestStatus = onStart;
+				track.Data.OnCompleteQuestStatus = onComplete;
+				track.Data.PropertyId = string.IsNullOrEmpty(overrideTrackProperty) ? trackId : overrideTrackProperty;
+				track.Data.SourceMapClassName = this.Character.Map?.ClassName;
 
 			if (this.Character.Connection?.CurrentDialog != null && this.Character.Connection.CurrentDialog.State != DialogState.Ended)
 			{
@@ -84,10 +87,11 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			this.ActiveTrack = track;
 
 			IActor[] actors;
-			if (TrackScript.TryGet(track.Id, out var trackScript))
+			var hasTrackScript = TrackScript.TryGet(track.Id, out var trackScript);
+			if (hasTrackScript)
 				actors = trackScript.OnStart(this.Character, this.ActiveTrack);
 			else
-				actors = Array.Empty<IActor>();
+				actors = this.OnGenericTrackStart(track);
 			track.Actors = actors;
 
 			var hideUi = track.Id != "SIAU_WEST_START_TRACK" && track.Id != "SIAUL_WEST_DRASIUS1_TRACK";
@@ -98,9 +102,41 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			this.TrackStarted?.Invoke(this.Character, this.ActiveTrack);
 
+			if (!hasTrackScript)
+				this.QueueGenericTrackFallbackEnd(track.Id, track.Data.StartDelay);
+
 			await Task.Delay(track.Data.StartDelay);
 
 			return true;
+		}
+
+		private IActor[] OnGenericTrackStart(Track track)
+		{
+			this.Character.StartLayer();
+			if (track.Data.QuestId != 0)
+				this.Character.Quests.UpdateQuestStatus(track.Data.QuestId, track.Data.OnStartQuestStatus);
+			return this.Character.Quests.CreateGenericQuestAutoTrackActors(track);
+		}
+
+		private void QueueGenericTrackFallbackEnd(string trackId, TimeSpan startDelay)
+		{
+			var fallbackDelay = startDelay + TimeSpan.FromSeconds(2.5);
+			if (fallbackDelay < TimeSpan.FromSeconds(6))
+				fallbackDelay = TimeSpan.FromSeconds(6);
+
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(fallbackDelay);
+
+				if (this.Character?.Connection == null)
+					return;
+
+				if (this.ActiveTrack?.Id != trackId)
+					return;
+
+				Log.Info("TrackComponent: force-ending client-native generic track '{0}' for '{1}' after {2:0.##}s.", trackId, this.Character.Name, fallbackDelay.TotalSeconds);
+				this.End(trackId);
+			});
 		}
 
 		/// <summary>
@@ -125,13 +161,16 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		/// End a track.
 		/// </summary>
 		/// <param name="trackId"></param>
-		public void End(string trackId)
-		{
+			public void End(string trackId)
+			{
 			if (this.ActiveTrack == null || this.ActiveTrack.Id != trackId)
 				return;
 
-			if (TrackScript.TryGet(trackId, out var trackScript))
+			var hasTrackScript = TrackScript.TryGet(trackId, out var trackScript);
+			if (hasTrackScript)
 				trackScript.OnComplete(this.Character, this.ActiveTrack);
+			else
+				this.OnGenericTrackComplete(this.ActiveTrack);
 
 			if (this.Character.Layer != 0)
 			{
@@ -145,6 +184,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			this.Character.RestoreCoreHudState(true, true);
 
+			if (!hasTrackScript)
+				this.Character.Quests.QueueGenericQuestAutoTrackFollowUp(this.ActiveTrack);
+
 			this.TrackCompleted?.Invoke(this.Character, this.ActiveTrack);
 
 			// Clean up the track dialog to prevent blocking future NPC interactions
@@ -155,7 +197,63 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				this.Character.Connection.CurrentDialog = null;
 			}
 
-			this.ActiveTrack = null;
+				this.ActiveTrack = null;
+			}
+
+			public bool AbortGenericTrackAfterMapTransition(string mapClassName)
+			{
+				if (this.ActiveTrack == null ||
+					TrackScript.TryGet(this.ActiveTrack.Id, out _) ||
+					string.IsNullOrWhiteSpace(this.ActiveTrack.Data.SourceMapClassName) ||
+					string.Equals(this.ActiveTrack.Data.SourceMapClassName, mapClassName, StringComparison.OrdinalIgnoreCase))
+					return false;
+
+				var trackId = this.ActiveTrack.Id;
+				Log.Info("TrackComponent: aborting stale generic track '{0}' for '{1}' after map transition from '{2}' to '{3}'.", trackId, this.Character.Name, this.ActiveTrack.Data.SourceMapClassName, mapClassName);
+
+				if (this.Character.Layer != 0)
+					this.Character.StopLayer();
+				else
+					Send.ZC_NORMAL.SetupCutscene(this.Character, false, false, false);
+
+				this.Character.RestoreCoreHudState(true, true);
+
+				if (this.ActiveTrack.Dialog != null)
+				{
+					this.ActiveTrack.Dialog.State = DialogState.Ended;
+					this.Character.Connection.CurrentDialog?.Cancel();
+					this.Character.Connection.CurrentDialog = null;
+				}
+
+				this.ActiveTrack = null;
+				return true;
+			}
+
+			private void OnGenericTrackComplete(Track track)
+			{
+			if (string.IsNullOrEmpty(track.Data.PropertyId))
+				this.Character.SetEtcProperty(track.Id, 1);
+			else
+				this.Character.SetEtcProperty(track.Data.PropertyId, 1);
+
+			if (track.Data.QuestId != 0)
+			{
+				this.Character.Quests.UpdateQuestStatus(track.Data.QuestId, track.Data.OnCompleteQuestStatus);
+				if (track.Data.OnCompleteQuestStatus == QuestStatus.Completed)
+					this.Character.Quests.Complete(track.Data.QuestId);
+			}
+
+			if (track.HasBattleBoxInLayer)
+			{
+				Send.ZC_REMOVE_SCROLLLOCKBOX(this.Character);
+				track.HasBattleBoxInLayer = false;
+			}
+
+			foreach (var actor in track.Actors)
+			{
+				if (actor != this.Character && actor is IMonster monster)
+					this.Character.Map.RemoveMonster(monster);
+			}
 		}
 
 		/// <summary>
@@ -168,6 +266,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			if (TrackScript.TryGet(this.ActiveTrack.Id, out var trackScript))
 				trackScript.OnCancel(this.Character, this.ActiveTrack);
+			else
+				this.OnGenericTrackCancel(this.ActiveTrack);
 
 			if (this.Character.Layer != 0)
 			{
@@ -190,6 +290,28 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			this.ActiveTrack = null;
+		}
+
+		private void OnGenericTrackCancel(Track track)
+		{
+			if (string.IsNullOrEmpty(track.Data.PropertyId))
+				this.Character.SetEtcProperty(track.Id, 0);
+			else
+				this.Character.SetEtcProperty(track.Data.PropertyId, 0);
+
+			if (track.Data.QuestId != 0 &&
+				track.Data.OriginalQuestStatus == QuestStatus.Possible &&
+				this.Character.Quests.TryGetById(track.Data.QuestId, out var quest))
+				this.Character.Quests.Cancel(quest);
+
+			if (track.Actors == null)
+				return;
+
+			foreach (var actor in track.Actors)
+			{
+				if (actor != this.Character && actor is IMonster monster)
+					this.Character.Map.RemoveMonster(monster);
+			}
 		}
 	}
 }

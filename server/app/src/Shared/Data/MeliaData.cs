@@ -59,7 +59,9 @@ namespace Melia.Shared.Data
 		public NavGraphDb NavGraphDb { get; } = new NavGraphDb();
 		public NormalTxDb NormalTxDb { get; } = new NormalTxDb();
 		public PacketStringDb PacketStringDb { get; } = new PacketStringDb();
+		public PrivateEncounterDb PrivateEncounterDb { get; } = new PrivateEncounterDb();
 		public PropertiesDb PropertiesDb { get; } = new PropertiesDb();
+		public QuestAutoDb QuestAutoDb { get; } = new QuestAutoDb();
 		public QuestDb QuestDb { get; } = new QuestDb();
 		public RecipeDb RecipeDb { get; }
 		public RedemptionSetDb RedemptionDb { get; }

@@ -23,6 +23,9 @@ public class FSiauliaiOutQuestNpcsScript : GeneralScript
 {
 	protected override void Load()
 	{
+		if (!string.Equals(Environment.GetEnvironmentVariable("CLOVER_ENABLE_CUSTOM_SIDE_QUESTS"), "1", StringComparison.OrdinalIgnoreCase))
+			return;
+
 		// =====================================================================
 		// MINER'S VILLAGE QUEST NPCs
 		// =====================================================================

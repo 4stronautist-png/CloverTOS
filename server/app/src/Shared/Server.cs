@@ -315,7 +315,9 @@ namespace Melia.Shared
 					this.LoadDb(this.Data.MonsterDb, "db/monsters.txt");
 					this.LoadDb(this.Data.NormalTxDb, "db/normal_tx_scripts.txt");
 					this.LoadDb(this.Data.PacketStringDb, "db/packetstrings.txt");
+					this.LoadDb(this.Data.PrivateEncounterDb, "db/private_encounters.txt", true);
 					this.LoadDb(this.Data.PropertiesDb, "db/properties.txt");
+					this.LoadDb(this.Data.QuestAutoDb, "db/quest_auto.txt", true);
 					this.LoadDb(this.Data.QuestDb, "db/quests.txt");
 					this.LoadDb(this.Data.RecipeDb, "db/recipes.txt");
 					this.LoadDb(this.Data.ResurrectionPointDb, "db/resurrection_points.txt");
@@ -412,6 +414,8 @@ namespace Melia.Shared
 					this.LoadDb(this.Data.MonsterDb, "db/monsters.txt");
 					this.LoadDb(this.Data.NormalTxDb, "db/normal_tx_scripts.txt");
 					this.LoadDb(this.Data.PacketStringDb, "db/packetstrings.txt");
+					this.LoadDb(this.Data.PrivateEncounterDb, "db/private_encounters.txt", true);
+					this.LoadDb(this.Data.QuestAutoDb, "db/quest_auto.txt", true);
 					this.LoadDb(this.Data.QuestDb, "db/quests.txt");
 					this.LoadDb(this.Data.RecipeDb, "db/recipes.txt");
 					this.LoadDb(this.Data.ResurrectionPointDb, "db/resurrection_points.txt");

@@ -12,6 +12,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    echo -e "${BLUE}[INFO]${NC} start-server.sh foi chamado com sudo; reexecutando como $SUDO_USER para evitar processos root presos nas portas."
+    exec sudo -u "$SUDO_USER" -E -H bash "$(readlink -f "$0")" "$@"
+fi
+
 detect_local_host() {
     local host_ip
 
@@ -30,11 +35,22 @@ SERVER_MODE="${SERVER_MODE:-local}"
 PUBLIC_HOST="${PUBLIC_HOST:-127.0.0.1}"
 PUBLIC_WEB_PORT="${PUBLIC_WEB_PORT:-8080}"
 LOCAL_HOST="${LOCAL_HOST:-$(detect_local_host)}"
+LOCAL_CLIENT_HOST="${LOCAL_CLIENT_HOST:-127.0.0.1}"
 LOCAL_WEB_PORT="${LOCAL_WEB_PORT:-8080}"
 WINDOWS_CLIENT_ROOT="${WINDOWS_CLIENT_ROOT:-/mnt/c/CloverTOS-Local}"
 WINDOWS_CLIENT_XML="${WINDOWS_CLIENT_XML:-$WINDOWS_CLIENT_ROOT/release/client.xml}"
 WINDOWS_USER_XML="${WINDOWS_USER_XML:-$WINDOWS_CLIENT_ROOT/release/user.xml}"
 WINDOWS_START_BAT="${WINDOWS_START_BAT:-$WINDOWS_CLIENT_ROOT/release/Start-CloverTOS-Local.bat}"
+WINDOWS_CLIENT_PATCH_RELEASE="${WINDOWS_CLIENT_PATCH_RELEASE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)/client/patches/loading-screen/release}"
+WINDOWS_PORTPROXY_SCRIPT="${WINDOWS_PORTPROXY_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/tools/Configure-Windows-PortProxy.ps1}"
+if [ -z "${AUTO_CONFIGURE_PORTPROXY+x}" ]; then
+    if [ "$SERVER_MODE" = "local" ]; then
+        AUTO_CONFIGURE_PORTPROXY=auto
+    else
+        AUTO_CONFIGURE_PORTPROXY=1
+    fi
+fi
+PORTPROXY_EXPOSE_LAN="${PORTPROXY_EXPOSE_LAN:-0}"
 DB_NAME="${DB_NAME:-clover_local}"
 DB_USER="${DB_USER:-melia}"
 DB_PASS="${DB_PASS:-melia123}"
@@ -60,7 +76,7 @@ log_error() {
 
 ensure_server_config() {
     local target_host
-    target_host="$LOCAL_HOST"
+    target_host="$LOCAL_CLIENT_HOST"
 
     if [ "$SERVER_MODE" != "local" ]; then
         target_host="$PUBLIC_HOST"
@@ -90,13 +106,13 @@ ensure_windows_client_config() {
     mkdir -p "$WINDOWS_CLIENT_ROOT/release"
 
     if [ "$SERVER_MODE" = "local" ]; then
-        expected_url="http://${LOCAL_HOST}:${LOCAL_WEB_PORT}/toslive/patch/"
+        expected_url="http://${LOCAL_CLIENT_HOST}:${LOCAL_WEB_PORT}/toslive/patch/"
     else
         expected_url="http://${PUBLIC_HOST}:${PUBLIC_WEB_PORT}/toslive/patch/"
     fi
 
     expected_serverlist="${expected_url}serverlist.xml"
-    expected_register="http://${LOCAL_HOST}:${LOCAL_WEB_PORT}/register/index.html"
+    expected_register="http://${LOCAL_CLIENT_HOST}:${LOCAL_WEB_PORT}/register/index.html"
 
     if [ "$SERVER_MODE" != "local" ]; then
         expected_register="http://${PUBLIC_HOST}:${PUBLIC_WEB_PORT}/register/index.html"
@@ -117,17 +133,143 @@ ensure_windows_client_config() {
 </client>
 EOF
 
-    cat > "$WINDOWS_START_BAT" <<'EOF'
+    if [ -d "$WINDOWS_CLIENT_PATCH_RELEASE" ]; then
+        cp -rf "$WINDOWS_CLIENT_PATCH_RELEASE"/. "$WINDOWS_CLIENT_ROOT/release/"
+    else
+        log_warning "Patch de loading screen nao encontrado em $WINDOWS_CLIENT_PATCH_RELEASE; criando launcher basico."
+        cat > "$WINDOWS_START_BAT" <<'EOF'
 @echo off
 cd /d "%~dp0"
 start "CloverTOS" "%~dp0Client_tos_x64.exe" -SERVICE GLOBAL
 EOF
+    fi
 
     if [ -f "$WINDOWS_USER_XML" ]; then
         rm -f "$WINDOWS_USER_XML"
     fi
 
+    if [ -f "$WINDOWS_CLIENT_ROOT/release/serverlist_recent.xml" ]; then
+        rm -f "$WINDOWS_CLIENT_ROOT/release/serverlist_recent.xml"
+    fi
+
     log_success "Cliente local configurado em $WINDOWS_CLIENT_ROOT"
+}
+
+get_wsl_ip() {
+    ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -n 1
+}
+
+windows_portproxy_entry() {
+    local listen_address=$1
+    local listen_port=$2
+
+    powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null \
+        | tr -d '\r' \
+        | awk -v address="$listen_address" -v port="$listen_port" '$1 == address && $2 == port { print $3 ":" $4; exit }'
+}
+
+portproxy_addresses_to_check() {
+    echo "127.0.0.1"
+
+    if [ "$PORTPROXY_EXPOSE_LAN" = "1" ] || [ "$SERVER_MODE" != "local" ]; then
+        echo "0.0.0.0"
+    fi
+}
+
+portproxy_is_current() {
+    local wsl_ip
+    local listen_address
+    local port
+    local entry
+    local expected
+
+    if ! command -v powershell.exe >/dev/null 2>&1; then
+        return 1
+    fi
+
+    wsl_ip=$(get_wsl_ip)
+    if [ -z "$wsl_ip" ]; then
+        return 1
+    fi
+
+    while read -r listen_address; do
+        [ -n "$listen_address" ] || continue
+
+        for port in "${MELIA_PORTS[@]}"; do
+            expected="${wsl_ip}:${port}"
+            entry=$(windows_portproxy_entry "$listen_address" "$port" || true)
+            if [ "$entry" != "$expected" ]; then
+                log_warning "Portproxy ${listen_address}:${port} esta '${entry:-ausente}', esperado '$expected'."
+                return 1
+            fi
+        done
+
+        if [ "$LOCAL_WEB_PORT" != "8080" ]; then
+            expected="${wsl_ip}:8080"
+            entry=$(windows_portproxy_entry "$listen_address" "$LOCAL_WEB_PORT" || true)
+            if [ "$entry" != "$expected" ]; then
+                log_warning "Portproxy ${listen_address}:${LOCAL_WEB_PORT} esta '${entry:-ausente}', esperado '$expected'."
+                return 1
+            fi
+        fi
+
+        if [ "$LOCAL_WEB_PORT" != "18080" ]; then
+            expected="${wsl_ip}:8080"
+            entry=$(windows_portproxy_entry "$listen_address" 18080 || true)
+            if [ "$entry" != "$expected" ]; then
+                log_warning "Portproxy legado ${listen_address}:18080 esta '${entry:-ausente}', esperado '$expected'."
+                return 1
+            fi
+        fi
+    done < <(portproxy_addresses_to_check)
+
+    return 0
+}
+
+configure_windows_portproxy() {
+    local script_path_win
+    local script_arg
+    local script_arg_escaped
+
+    if [ "$AUTO_CONFIGURE_PORTPROXY" = "0" ]; then
+        log_info "Configuracao automatica de portproxy desativada."
+        return 0
+    fi
+
+    if ! command -v powershell.exe >/dev/null 2>&1; then
+        log_warning "powershell.exe nao encontrado no WSL; pulando configuracao automatica de portproxy."
+        return 0
+    fi
+
+    if [ ! -f "$WINDOWS_PORTPROXY_SCRIPT" ]; then
+        log_warning "Script de portproxy nao encontrado: $WINDOWS_PORTPROXY_SCRIPT"
+        return 0
+    fi
+
+    if [ "$AUTO_CONFIGURE_PORTPROXY" = "auto" ] && portproxy_is_current; then
+        log_success "Windows portproxy ja aponta para o IP atual do WSL."
+        return 0
+    fi
+
+    script_path_win=$(wslpath -w "$WINDOWS_PORTPROXY_SCRIPT" 2>/dev/null || true)
+    if [ -z "$script_path_win" ]; then
+        log_warning "Nao consegui converter o caminho do script de portproxy para Windows."
+        return 0
+    fi
+
+    script_arg="-NoProfile -ExecutionPolicy Bypass -File \"${script_path_win}\""
+    if [ "$PORTPROXY_EXPOSE_LAN" = "1" ] || [ "$SERVER_MODE" != "local" ]; then
+        script_arg="$script_arg -ExposeLan"
+    fi
+
+    script_arg_escaped=$(printf "%s" "$script_arg" | sed "s/'/''/g")
+
+    log_info "Atualizando Windows portproxy para o IP atual do WSL..."
+    if timeout "${PORTPROXY_TIMEOUT:-90}" powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList '$script_arg_escaped'" >/dev/null 2>&1; then
+        log_success "Windows portproxy atualizado."
+    else
+        log_warning "Nao consegui atualizar o Windows portproxy automaticamente. A validacao final vai confirmar se ele ja esta OK."
+    fi
 }
 
 wait_for_port() {
@@ -253,10 +395,13 @@ verify_http_endpoint() {
 
 verify_windows_client_connectivity() {
     local client_host
-    client_host="$LOCAL_HOST"
+    local client_web_port
+    client_host="$LOCAL_CLIENT_HOST"
+    client_web_port="$LOCAL_WEB_PORT"
 
     if [ "$SERVER_MODE" != "local" ]; then
         client_host="$PUBLIC_HOST"
+        client_web_port="$PUBLIC_WEB_PORT"
     fi
 
     if ! command -v powershell.exe >/dev/null 2>&1; then
@@ -266,10 +411,10 @@ verify_windows_client_connectivity() {
 
     log_info "Validando conectividade do cliente Windows em ${client_host}..."
 
-    if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$hostName='${client_host}'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri \"http://\$(\$hostName):${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml\"; if (-not \$r.Content.Contains('Server0_IP=\"' + \$hostName + '\"')) { throw \"serverlist nao aponta para \$hostName\" }" >/dev/null 2>&1; then
-        log_success "Cliente Windows consegue acessar serverlist em ${client_host}:${PUBLIC_WEB_PORT}"
+    if powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$hostName='${client_host}'; \$webPort='${client_web_port}'; \$r=Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri \"http://\$(\$hostName):\$(\$webPort)/toslive/patch/serverlist.xml\"; if (-not \$r.Content.Contains('Server0_IP=\"' + \$hostName + '\"')) { throw \"serverlist nao aponta para \$hostName\" }" >/dev/null 2>&1; then
+        log_success "Cliente Windows consegue acessar serverlist em ${client_host}:${client_web_port}"
     else
-        log_error "Cliente Windows nao consegue acessar http://${client_host}:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
+        log_error "Cliente Windows nao consegue acessar http://${client_host}:${client_web_port}/toslive/patch/serverlist.xml"
         log_error "Verifique firewall/antivirus, portproxy do Windows ou encaminhamento localhost do WSL."
         return 1
     fi
@@ -355,6 +500,7 @@ printf '#define VERSION %s\n' "$CLOVER_CLIENT_VERSION" > user/versions/version.t
 
 ensure_server_config
 ensure_windows_client_config
+configure_windows_portproxy
 
 if ! command -v dotnet >/dev/null 2>&1; then
     log_error ".NET SDK nao encontrado."
@@ -417,7 +563,7 @@ for port in 2000 7001 7002 8080 9001 9002; do
     fi
 done
 
-if verify_http_endpoint "http://${LOCAL_HOST}:${LOCAL_WEB_PORT}/toslive/patch/serverlist.xml"; then
+if verify_http_endpoint "http://${LOCAL_CLIENT_HOST}:${LOCAL_WEB_PORT}/toslive/patch/serverlist.xml"; then
     :
 else
     final_check_failed=1
@@ -463,4 +609,8 @@ fi
 
 log_success "Clover local pronto."
 log_info "Cliente Windows: $WINDOWS_CLIENT_ROOT"
-log_info "ServerListURL: http://${LOCAL_HOST}:${LOCAL_WEB_PORT}/toslive/patch/serverlist.xml"
+if [ "$SERVER_MODE" = "local" ]; then
+    log_info "ServerListURL: http://${LOCAL_CLIENT_HOST}:${LOCAL_WEB_PORT}/toslive/patch/serverlist.xml"
+else
+    log_info "ServerListURL: http://${PUBLIC_HOST}:${PUBLIC_WEB_PORT}/toslive/patch/serverlist.xml"
+fi

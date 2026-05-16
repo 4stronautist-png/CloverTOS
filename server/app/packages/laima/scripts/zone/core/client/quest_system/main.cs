@@ -21,12 +21,15 @@ public class CustomQuestSystemClientScript : ClientScript
 		// The custom Laima overlay replaces F5 with a lightweight active-quest
 		// list and removes the Episodes/Complete tabs, which is the opposite of
 		// the Clover goal of exposing the full episode chain.
+		this.LoadLuaScript("901_api.lua");
 	}
 
 	protected override void Ready(Character character)
 	{
-		// No-op on purpose; the stock client quest UI should rely on the
-		// regular session-object and quest-property sync from the server.
+		// Send only the data API used by map tracking; the stock quest UI
+		// still relies on regular session-object and quest-property sync.
+		this.SendLuaScript(character, "901_api.lua");
+		character.Quests.UpdateClient();
 	}
 
 	private CommandResult HandleQuestSearch(Character sender, Character target, string message, string commandName, Arguments args)

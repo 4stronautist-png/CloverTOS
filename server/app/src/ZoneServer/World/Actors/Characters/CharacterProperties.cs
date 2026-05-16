@@ -64,7 +64,7 @@ namespace Melia.Zone.World.Actors.Characters
 		/// Returns the character's ability points based on the string
 		/// property "AbilityPoint".
 		/// </summary>
-		public int AbilityPoints => int.Parse(this.GetString(PropertyName.AbilityPoint, "0"));
+		public int AbilityPoints => int.TryParse(this.GetString(PropertyName.AbilityPoint, "0"), out var points) ? points : 0;
 
 		/// <summary>
 		/// Creates new instance for the character.

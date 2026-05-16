@@ -23,6 +23,7 @@ namespace Melia.Zone.World
 		private readonly TimeSpan _transitionTime;
 		private long _transitionId;
 		private TimeOfDay _prevTimeOfDay;
+		private int _prevSyncedMinuteOfDay;
 
 		/// <summary>
 		/// Returns true if the time of day is currently fixed.
@@ -40,7 +41,9 @@ namespace Melia.Zone.World
 		public DayNightCycle()
 		{
 			_transitionTime = GameTime.OneHour;
-			_prevTimeOfDay = GameTime.Now.TimeOfDay;
+			var now = GameTime.Now;
+			_prevTimeOfDay = now.TimeOfDay;
+			_prevSyncedMinuteOfDay = now.Hour * 60 + now.Minute;
 
 			switch (_prevTimeOfDay)
 			{
@@ -63,6 +66,9 @@ namespace Melia.Zone.World
 			if (!ZoneServer.Instance.Conf.World.EnableDayNightCycle || !OpTable.Exists(Op.ZC_DAYLIGHT_FIXED))
 				return;
 
+			if (OpTable.Exists(Op.ZC_DAYLIGHT_SYNCHRONIZE_TIME))
+				Send.ZC_DAYLIGHT_SYNCHRONIZE_TIME(e.Character, GameTime.Now);
+
 			Send.ZC_DAYLIGHT_FIXED(e.Character, true, this.CurrentParameters);
 		}
 
@@ -80,6 +86,14 @@ namespace Melia.Zone.World
 				return;
 
 			var now = GameTime.Now;
+			var minuteOfDay = now.Hour * 60 + now.Minute;
+			if (minuteOfDay != _prevSyncedMinuteOfDay && OpTable.Exists(Op.ZC_DAYLIGHT_SYNCHRONIZE_TIME))
+			{
+				Send.ZC_DAYLIGHT_SYNCHRONIZE_TIME(now);
+				Send.ZC_SYNC_MINIMAP_GAME_TIME(now);
+				_prevSyncedMinuteOfDay = minuteOfDay;
+			}
+
 			var timeOfDay = now.TimeOfDay;
 
 			if (timeOfDay != _prevTimeOfDay)

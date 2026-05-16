@@ -706,9 +706,9 @@ namespace Melia.Zone.Database
 					foreach (var job in jobsToSave)
 					{
 						var totalExp = job.TotalExp;
-						if (totalExp <= 0 && job.SkillPoints > 0)
+						if (totalExp <= 0 && job.SkillPoints > 1)
 						{
-							var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints + 1);
+							var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints);
 							if (restoredLevel > 1)
 								totalExp = ZoneServer.Instance.Data.ExpDb.GetNextTotalJobExp(character.Jobs.GetJobRank(job.Id), restoredLevel - 1);
 						}

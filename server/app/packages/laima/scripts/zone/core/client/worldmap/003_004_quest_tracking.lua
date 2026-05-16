@@ -73,6 +73,64 @@ local function M_QUEST_TRACKING_ACTIVE(quest)
 	return true
 end
 
+local function M_QUEST_TRACKING_CLASS_ID(quest)
+	if quest == nil or quest.ClassId == nil then
+		return nil
+	end
+
+	if type(quest.ClassId) == "number" then
+		return quest.ClassId
+	end
+
+	local classId = tostring(quest.ClassId)
+	local hex = string.match(classId, "0x(%x+)")
+	if hex ~= nil then
+		return tonumber(hex, 16)
+	end
+
+	return tonumber(classId)
+end
+
+local function M_QUEST_TRACKING_HAS_ACTIVE_EARLIER_WEST_SIAULIAI_MAIN(quests, targetQuestId)
+	local order = { 1001, 1002, 1003, 20127, 1004, 1014, 1020, 1021, 1013, 1015 }
+	local targetIndex = nil
+
+	for i = 1, #order do
+		if order[i] == targetQuestId then
+			targetIndex = i
+			break
+		end
+	end
+
+	if targetIndex == nil then
+		return false
+	end
+
+	for _, quest in ipairs(quests) do
+		if M_QUEST_TRACKING_ACTIVE(quest) then
+			local questId = M_QUEST_TRACKING_CLASS_ID(quest)
+			if questId ~= nil then
+				for i = 1, targetIndex - 1 do
+					if order[i] == questId then
+						return true
+					end
+				end
+			end
+		end
+	end
+
+	return false
+end
+
+local function M_QUEST_TRACKING_BLOCKED_BY_WEST_SIAULIAI_MAIN_ORDER(quest, quests)
+	local questId = M_QUEST_TRACKING_CLASS_ID(quest)
+	if questId == nil then
+		return false
+	end
+
+	return M_QUEST_TRACKING_HAS_ACTIVE_EARLIER_WEST_SIAULIAI_MAIN(quests, questId)
+end
+
 local function M_SET_QUEST_TRACKING_CIRCLE(picture)
 	tolua.cast(picture, "ui::CPicture")
 	picture:SetEnable(1)
@@ -118,7 +176,7 @@ local function M_DRAW_QUEST_TRACKING(parent, prefix, mapName, mapProp, mapWidth,
 
 	local index = 0
 	for _, quest in ipairs(quests) do
-		if M_QUEST_TRACKING_ACTIVE(quest) then
+		if M_QUEST_TRACKING_ACTIVE(quest) and not M_QUEST_TRACKING_BLOCKED_BY_WEST_SIAULIAI_MAIN_ORDER(quest, quests) then
 			for _, trackingPoint in ipairs(quest.TrackingPoints) do
 				local points = M_QUEST_TRACKING_TO_POINTS(trackingPoint, mapName, mapProp)
 				for _, point in ipairs(points) do

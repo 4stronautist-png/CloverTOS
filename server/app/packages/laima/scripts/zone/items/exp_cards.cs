@@ -18,6 +18,7 @@ public class ExpCardScripts : GeneralScript
 	{
 		var baseExp = (long)numArg1;
 		var jobExp = (long)(baseExp * 0.77f);
+		(baseExp, jobExp) = character.GetWorldScaledExperienceAmounts(baseExp, jobExp);
 
 		character.GiveExp(baseExp, jobExp, null);
 		character.PlayEffect("F_sys_expcard_normal", 2.5f);
@@ -43,6 +44,7 @@ public class ExpCardScripts : GeneralScript
 
 			baseExp *= amount;
 			jobExp *= amount;
+			(baseExp, jobExp) = character.GetWorldScaledExperienceAmounts(baseExp, jobExp);
 
 			character.GiveExp(baseExp, jobExp, null);
 			character.SystemMessage("GetExp{CHAR}{JOB}", new MsgParameter("CHAR", baseExp), new MsgParameter("JOB", jobExp));

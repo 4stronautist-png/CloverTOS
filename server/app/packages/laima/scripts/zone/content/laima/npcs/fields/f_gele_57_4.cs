@@ -42,5 +42,10 @@ public class FGele574NpcScript : GeneralScript
 			TimeSpan.FromSeconds(1), direction: 45, color: "green");
 		AddPlatformNpc("f_gele_57_4", 2302, 384, -992, 45, "white");
 		AddFloatingTreasureChestSpawner("Laima.Treasures.f_gele_57_4.Chest1", "f_gele_57_4", 2302, 384, -992, 45, ItemId.Unity_Emotion146, monsterId: 147393);
+
+		// Papaya main quest actors: Grown Apart From Hope
+		//-------------------------------------------------------------------------
+		AddNpc(90, 147390, "Paladin Follower", "f_gele_57_4", -833, -80, -48, 0, "GELE574_ALLGES", "", "");
+		AddNpc(91, 147390, "Paladin Follower", "f_gele_57_4", 1125, -78, 1975, 0, "GELE574_ARUNE_1", "", "");
 	}
 }
