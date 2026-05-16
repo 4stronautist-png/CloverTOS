@@ -830,6 +830,13 @@ if ($npcFunctionsSource -notmatch 'SIAULIAIOUT_Q01[\s\S]*COMMON_QUEST_HANDLER') 
     Add-Error "Miners' Village first Papaya actor SIAULIAIOUT_Q01 has no quest-dialog bridge."
 }
 
+if ($questComponentSource -notmatch 'RepairPapayaGelePlateauImminentInvasion' -or
+    $questComponentSource -notmatch 'TryCompletePapayaGelePlateauImminentInvasion' -or
+    $questComponentSource -notmatch 'GELE572_MQ_01_TRACK' -or
+    $questComponentSource -notmatch 'client-native track is not reliable') {
+    Add-Error "Gele Plateau GELE572_MQ_01 still relies on the generic client-native quest_auto track instead of completing on server-side map sync."
+}
+
 foreach ($requiredSkippedQuest in @(
     'SOUT_Q_16',
     'MINE_1_ALCHEMIST',

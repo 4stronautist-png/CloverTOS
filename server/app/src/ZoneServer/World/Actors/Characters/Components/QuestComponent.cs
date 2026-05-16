@@ -486,6 +486,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			changed |= this.CompletePapayaKlaipedaHandoffRoadQuests(mapClassName);
 			changed |= this.SuppressOutOfSequencePapayaCapturedMainQuestState();
 			changed |= this.SuppressOutOfSequencePapayaAutoMainQuestState();
+			changed |= this.RepairPapayaGelePlateauImminentInvasion(mapClassName);
 			changed |= this.RepairPapayaCapturedMainQuestChain();
 			changed |= this.RepairPapayaMapTransitionQuestHandoffs(mapClassName);
 			changed |= this.RepairPapayaCrystalMineSkipAfterMinersVillage(mapClassName);
@@ -507,6 +508,37 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			return changed;
+		}
+
+		private bool RepairPapayaGelePlateauImminentInvasion(string mapClassName)
+		{
+			if (!string.Equals(mapClassName, "f_gele_57_2", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (!ZoneServer.Instance.Data.QuestDb.TryFind("GELE572_MQ_01", out var questData) ||
+				!this.TryGetById(new QuestId(questData.Id), out var quest))
+				return false;
+
+			return this.TryCompletePapayaGelePlateauImminentInvasion(quest, mapClassName, "map-entry repair");
+		}
+
+		private bool TryCompletePapayaGelePlateauImminentInvasion(Quest quest, string mapClassName, string reason)
+		{
+			if (quest?.QuestStaticData == null ||
+				!string.Equals(quest.QuestStaticData.ClassName, "GELE572_MQ_01", StringComparison.OrdinalIgnoreCase) ||
+				!string.Equals(mapClassName, "f_gele_57_2", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (!quest.InProgress && quest.Status != QuestStatus.Success)
+				return false;
+
+			if (this.Character.Tracks.ActiveTrack?.Id == "GELE572_MQ_01_TRACK")
+				this.Character.Tracks.Cancel();
+
+			Log.Info("Papaya main quest flow: completing GELE572_MQ_01 for '{0}' on Gele Plateau via {1}; the client-native track is not reliable here.", this.Character.Name, reason);
+			quest.CompleteObjectives();
+			this.Complete(quest);
+			return true;
 		}
 
 		private bool RepairPapayaCapturedMainQuestChain()
@@ -2104,6 +2136,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			var questData = quest?.QuestStaticData;
 			if (questData == null || !string.Equals(questData.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase))
 				return false;
+
+			if (this.TryCompletePapayaGelePlateauImminentInvasion(quest, mapClassName, "runtime map sync"))
+				return true;
 
 			var questAutoData = ZoneServer.Instance.Data.QuestAutoDb.Find(questData.ClassName);
 			if (!this.TryParseStaticQuestAutoTrack(questAutoData, out var track))
