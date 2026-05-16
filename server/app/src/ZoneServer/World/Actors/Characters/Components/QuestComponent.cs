@@ -2856,7 +2856,10 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				var existingMonsters = this.GetStaticQuestObjectiveMonsters(request, radius).ToList();
 				existingMonsters = this.DeduplicateStaticQuestObjectiveMonsters(request, existingMonsters);
 				foreach (var existingMonster in existingMonsters)
+				{
 					this.ConfigureStaticQuestObjectiveMonster(existingMonster);
+					this.SendStaticQuestObjectiveMonsterIfNeeded(existingMonster, request);
+				}
 
 				var existingCount = existingMonsters.Count;
 				var pendingKey = this.GetStaticQuestObjectiveSpawnPendingKey(request);
@@ -2889,8 +2892,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					monster.SpawnPosition = monster.Position;
 					this.ConfigureStaticQuestObjectiveMonster(monster);
 
-					if (this.Character.Layer != 0 && this.Character.Connection != null)
-						Send.ZC_ENTER_MONSTER(this.Character.Connection, monster);
+					this.SendStaticQuestObjectiveMonsterIfNeeded(monster, request);
 
 					if (this.Character.Connection != null && this.StaticQuestMonsterMarkerEnabled(request.QuestClassName))
 						Send.ZC_NORMAL.MinimapMarker(this.Character.Connection, monster, 1, 1, 0);
@@ -2898,6 +2900,22 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 				Log.Info("Static quest chain: spawned {0} fallback objective monster(s) '{1}' for quest '{2}' on map '{3}' layer {4} at {5:0.##}/{6:0.##}/{7:0.##}.", spawnCount, request.ClassName, request.QuestClassName, mapClassName, this.Character.Layer, request.X, request.Y, request.Z);
 			}
+		}
+
+		private void SendStaticQuestObjectiveMonsterIfNeeded(Mob monster, StaticQuestMonsterSpawnRequest request)
+		{
+			if (monster == null || this.Character?.Connection == null)
+				return;
+
+			if (!request.IsPrivateEncounter && this.Character.Layer == 0)
+				return;
+
+			var sentKey = $"Clover.StaticQuestObjective.EnterSent.{this.Character.ObjectId}";
+			if (monster.Vars.GetBool(sentKey, false))
+				return;
+
+			monster.Vars.SetBool(sentKey, true);
+			Send.ZC_ENTER_MONSTER(this.Character.Connection, monster);
 		}
 
 		private string GetStaticQuestObjectiveSpawnPendingKey(StaticQuestMonsterSpawnRequest request)
