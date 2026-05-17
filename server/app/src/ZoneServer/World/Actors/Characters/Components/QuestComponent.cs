@@ -2847,6 +2847,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 		private void EnsureStaticQuestObjectiveMonsters(string mapClassName)
 		{
+			if (!this.CanSendStaticQuestObjectiveActors())
+				return;
+
 			if (this.Character?.Tracks.ActiveTrack != null)
 				return;
 
@@ -2900,6 +2903,14 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 				Log.Info("Static quest chain: spawned {0} fallback objective monster(s) '{1}' for quest '{2}' on map '{3}' layer {4} at {5:0.##}/{6:0.##}/{7:0.##}.", spawnCount, request.ClassName, request.QuestClassName, mapClassName, this.Character.Layer, request.X, request.Y, request.Z);
 			}
+		}
+
+		private bool CanSendStaticQuestObjectiveActors()
+		{
+			if (this.Character?.Connection == null || this.Character.Map == null)
+				return false;
+
+			return !this.Character.IsWarping;
 		}
 
 		private void SendStaticQuestObjectiveMonsterIfNeeded(Mob monster, StaticQuestMonsterSpawnRequest request)
@@ -3032,7 +3043,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 		private void SyncStaticQuestObjectiveMonsterMarkers(string mapClassName)
 		{
-			if (this.Character?.Connection == null || this.Character.Map == null)
+			if (!this.CanSendStaticQuestObjectiveActors())
 				return;
 
 			foreach (var request in this.GetRelevantStaticMonsterSpawnRequests(mapClassName))
