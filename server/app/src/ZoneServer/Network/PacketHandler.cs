@@ -3711,6 +3711,8 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			var removedSkillStateBuffs = character.ClearClassChangeUnsafeSkillStateBuffs();
+
 			var newJob = new Job(character, newJobId);
 			character.Jobs.AddSilent(newJob);
 			character.JobId = newJob.Id;
@@ -3727,6 +3729,9 @@ namespace Melia.Zone.Network
 			character.InvalidateProperties();
 
 			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(character));
+			if (removedSkillStateBuffs > 0)
+				Log.Info("CZ_REQ_CHANGEJOB: Removed {0} unsafe skill-state buff(s) before advancing character '{1}'.", removedSkillStateBuffs, character.Name);
+
 			Log.Info("CZ_REQ_CHANGEJOB: User '{0}' advanced character '{1}' into '{2}'.", conn.Account.Name, character.Name, newJobId);
 		}
 

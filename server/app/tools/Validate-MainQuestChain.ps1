@@ -62,6 +62,13 @@ $questComponentPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters
 $characterStatsPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters\Character.Stats.cs"
 $sendPath = Join-Path $AppRoot "src\ZoneServer\Network\Send.cs"
 $packetHandlerPath = Join-Path $AppRoot "src\ZoneServer\Network\PacketHandler.cs"
+$characterJobSkillsPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters\Character.JobSkills.cs"
+$zoneDbCharacterPath = Join-Path $AppRoot "src\ZoneServer\Database\ZoneDb.Character.cs"
+$zoneDbInternalPath = Join-Path $AppRoot "src\ZoneServer\Database\ZoneDbInternal.cs"
+$buffComponentPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\CombatEntities\Components\BuffComponent.cs"
+$buffsPath = Join-Path $AppRoot "system\db\buffs.txt"
+$packageBuffsPath = Join-Path $AppRoot "packages\laima\db\buffs.txt"
+$version390044BuffsPath = Join-Path $AppRoot "system\versions\390044\db\buffs.txt"
 $npcFunctionsPath = Join-Path $AppRoot "src\ZoneServer\Scripting\Shared\NPCFunctions.cs"
 $westSiauliaiWarpPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\warps\fields\f_siauliai_west.cs"
 $tenetB1NpcsPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\npcs\dungeons\d_chapel_57_5.cs"
@@ -220,6 +227,41 @@ if (Test-Path -LiteralPath $sendPath) {
 $packetHandlerSource = ""
 if (Test-Path -LiteralPath $packetHandlerPath) {
     $packetHandlerSource = Get-Content -LiteralPath $packetHandlerPath -Raw
+}
+
+$characterJobSkillsSource = ""
+if (Test-Path -LiteralPath $characterJobSkillsPath) {
+    $characterJobSkillsSource = Get-Content -LiteralPath $characterJobSkillsPath -Raw
+}
+
+$zoneDbCharacterSource = ""
+if (Test-Path -LiteralPath $zoneDbCharacterPath) {
+    $zoneDbCharacterSource = Get-Content -LiteralPath $zoneDbCharacterPath -Raw
+}
+
+$zoneDbInternalSource = ""
+if (Test-Path -LiteralPath $zoneDbInternalPath) {
+    $zoneDbInternalSource = Get-Content -LiteralPath $zoneDbInternalPath -Raw
+}
+
+$buffComponentSource = ""
+if (Test-Path -LiteralPath $buffComponentPath) {
+    $buffComponentSource = Get-Content -LiteralPath $buffComponentPath -Raw
+}
+
+$buffsSource = ""
+if (Test-Path -LiteralPath $buffsPath) {
+    $buffsSource = Get-Content -LiteralPath $buffsPath -Raw
+}
+
+$packageBuffsSource = ""
+if (Test-Path -LiteralPath $packageBuffsPath) {
+    $packageBuffsSource = Get-Content -LiteralPath $packageBuffsPath -Raw
+}
+
+$version390044BuffsSource = ""
+if (Test-Path -LiteralPath $version390044BuffsPath) {
+    $version390044BuffsSource = Get-Content -LiteralPath $version390044BuffsPath -Raw
 }
 
 $npcFunctionsSource = ""
@@ -391,6 +433,7 @@ $runtimeChecks = @{
 	"HUD recovery does not rebuild sysmenu with native RemoveChildByType during quest/map transitions" = $characterStatsSource -match 'SOUL_RESTORE_CORE_HUD' -and $characterStatsSource -notmatch 'Melia\.Ui\.SysMenu\.Refresh'
 	"DX11 class/job progression does not send crashing ZC_JOB_EXP_UP deltas" = $sendSource -match 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*Versions\.Protocol\s*>\s*500(?:(?!public static void ZC_ADDON_MSG)[\s\S])*return;' -and $sendSource -notmatch 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*packet\.PutLong'
 	"native class advancement adds the requested same-tree job in zone" = $packetHandlerSource -match '\[PacketHandler\(Op\.CZ_REQ_CHANGEJOB\)\]' -and $packetHandlerSource -match 'TryResolveRequestedChangeJobId' -and $packetHandlerSource -match 'character\.Jobs\.AddSilent\(newJob\)' -and $packetHandlerSource -notmatch 'CZ_REQ_CHANGEJOB[\s\S]{0,3200}ZC_MOVE_BARRACK'
+	"unsafe Scout skill-state buffs are cleared, filtered, and not persisted" = $packetHandlerSource -match 'ClearClassChangeUnsafeSkillStateBuffs' -and $characterJobSkillsSource -match 'IsClassChangeUnsafeSkillStateBuff' -and $characterJobSkillsSource -match 'DoubleAttack_Buff' -and $characterJobSkillsSource -match 'FreeStep_Buff' -and $zoneDbCharacterSource -match 'LoadBuffs[\s\S]*IsClassChangeUnsafeSkillStateBuff' -and $zoneDbInternalSource -match 'savableBuffs[\s\S]*!Character\.IsClassChangeUnsafeSkillStateBuff\(buff\.Id\)' -and $buffComponentSource -match 'Remove\(BuffId buffId,\s*bool silently = false\)' -and $buffsSource -match 'DoubleAttack_Buff[^\r\n]*save:\s*false' -and $buffsSource -match 'FreeStep_Buff[^\r\n]*save:\s*false' -and $packageBuffsSource -match 'DoubleAttack_Buff[^\r\n]*save:\s*false' -and $packageBuffsSource -match 'FreeStep_Buff[^\r\n]*save:\s*false' -and $version390044BuffsSource -match 'DoubleAttack_Buff[^\r\n]*save:\s*false' -and $version390044BuffsSource -match 'FreeStep_Buff[^\r\n]*save:\s*false'
 	"unavailable static quest NPCs are hidden until the active chain reaches them" = $questComponent -match 'ShouldSuppressStaticQuestNpcState\(npc\.DialogName,\s*mapClassName\)'
 	"static objective fallback waits for active tracks to finish" = $questComponent -match 'Tracks\.ActiveTrack\s*!=\s*null[\s\S]*return;'
 	"static objective actors wait until map warp is finished before entering client" = $questComponent -match 'CanSendStaticQuestObjectiveActors' -and $questComponent -match '!this\.Character\.IsWarping' -and $questComponent -match 'EnsureStaticQuestObjectiveMonsters[\s\S]*CanSendStaticQuestObjectiveActors' -and $questComponent -match 'SyncStaticQuestObjectiveMonsterMarkers[\s\S]*CanSendStaticQuestObjectiveActors'

@@ -18,6 +18,28 @@ namespace Melia.Zone.World.Actors.Characters
 	public partial class Character
 	{
 		#region Job & Skill Management
+		private static readonly BuffId[] ClassChangeUnsafeSkillStateBuffs =
+		[
+			BuffId.DoubleAttack_Buff,
+			BuffId.FreeStep_Buff,
+		];
+
+		public static bool IsClassChangeUnsafeSkillStateBuff(BuffId buffId)
+			=> ClassChangeUnsafeSkillStateBuffs.Contains(buffId);
+
+		public int ClearClassChangeUnsafeSkillStateBuffs(bool silently = false)
+		{
+			var removed = 0;
+
+			foreach (var buffId in ClassChangeUnsafeSkillStateBuffs)
+			{
+				if (this.Buffs.Remove(buffId, silently))
+					removed++;
+			}
+
+			return removed;
+		}
+
 		/// <summary>
 		/// Increases character's job level by the given amount. Returns the amount of levels actually gained.
 		/// </summary>
