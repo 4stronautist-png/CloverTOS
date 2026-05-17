@@ -500,7 +500,8 @@ function Validate-PapayaPlayableBossTrackCoverage {
 
     $playableBossTrackQuests = @(
         'GELE573_MQ_09',
-        'GELE574_MQ_09'
+        'GELE574_MQ_09',
+        'CHAPLE575_MQ_04'
     )
 
     if ($playableBossTrackQuests -notcontains $Quest.ClassName) {
@@ -894,6 +895,16 @@ if ($questComponentSource -notmatch 'RepairPapayaGelePlateauImminentInvasion' -o
     $questComponentSource -notmatch 'GELE572_MQ_01_TRACK' -or
     $questComponentSource -notmatch 'client-native track is not reliable') {
     Add-Error "Gele Plateau GELE572_MQ_01 still relies on the generic client-native quest_auto track instead of completing on server-side map sync."
+}
+
+if ($questComponentSource -notmatch 'StaticQuestAutoTrackStartStatusMatches[\s\S]*return quest\.Status == QuestStatus\.InProgress;') {
+    Add-Error "Player-step simulation requires quest_auto SProgress tracks to match only exact InProgress state, not already-Success quests."
+}
+
+if ($questComponentSource -notmatch 'RepairStaticQuestObjectiveSuccessStatus' -or
+    $questComponentSource -notmatch 'TryStartStaticQuestAutoTracks[\s\S]*RepairStaticQuestObjectiveSuccessStatus\("quest_auto scan"\)' -or
+    $questComponentSource -notmatch 'StaticQuestAutoTrackWouldRegressQuestStatus') {
+    Add-Error "Player-step simulation requires completed objective quests to be repaired before quest_auto tracks can re-sync and regress status."
 }
 
 foreach ($requiredSkippedQuest in @(
