@@ -60,8 +60,12 @@ $mapPath = Join-Path $AppRoot "system\db\maps.txt"
 $privateEncounterPath = Join-Path $AppRoot "system\db\private_encounters.txt"
 $questComponentPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters\Components\QuestComponent.cs"
 $characterStatsPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters\Character.Stats.cs"
+$sendPath = Join-Path $AppRoot "src\ZoneServer\Network\Send.cs"
+$packetHandlerPath = Join-Path $AppRoot "src\ZoneServer\Network\PacketHandler.cs"
 $npcFunctionsPath = Join-Path $AppRoot "src\ZoneServer\Scripting\Shared\NPCFunctions.cs"
 $westSiauliaiWarpPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\warps\fields\f_siauliai_west.cs"
+$tenetB1NpcsPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\npcs\dungeons\d_chapel_57_5.cs"
+$tenetB1WarpsPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\warps\dungeons\d_chapel_57_5.cs"
 $scoutTrackPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\tracks\fields\siaul_west_drasius1_track.cs"
 $shortcutsPath = Join-Path $AppRoot "src\ZoneServer\Scripting\Shortcuts.cs"
 $layeredKillPath = Join-Path $AppRoot "src\ZoneServer\World\Quests\Objectives\LayeredKillObjective.cs"
@@ -208,6 +212,16 @@ if (Test-Path -LiteralPath $characterStatsPath) {
     $characterStatsSource = Get-Content -LiteralPath $characterStatsPath -Raw
 }
 
+$sendSource = ""
+if (Test-Path -LiteralPath $sendPath) {
+    $sendSource = Get-Content -LiteralPath $sendPath -Raw
+}
+
+$packetHandlerSource = ""
+if (Test-Path -LiteralPath $packetHandlerPath) {
+    $packetHandlerSource = Get-Content -LiteralPath $packetHandlerPath -Raw
+}
+
 $npcFunctionsSource = ""
 if (Test-Path -LiteralPath $npcFunctionsPath) {
     $npcFunctionsSource = Get-Content -LiteralPath $npcFunctionsPath -Raw
@@ -216,6 +230,16 @@ if (Test-Path -LiteralPath $npcFunctionsPath) {
 $westSiauliaiWarpSource = ""
 if (Test-Path -LiteralPath $westSiauliaiWarpPath) {
     $westSiauliaiWarpSource = Get-Content -LiteralPath $westSiauliaiWarpPath -Raw
+}
+
+$tenetB1NpcsSource = ""
+if (Test-Path -LiteralPath $tenetB1NpcsPath) {
+    $tenetB1NpcsSource = Get-Content -LiteralPath $tenetB1NpcsPath -Raw
+}
+
+$tenetB1WarpsSource = ""
+if (Test-Path -LiteralPath $tenetB1WarpsPath) {
+    $tenetB1WarpsSource = Get-Content -LiteralPath $tenetB1WarpsPath -Raw
 }
 
 $scoutTrack = ""
@@ -365,6 +389,8 @@ $runtimeChecks = @{
 	"disabled static quests cannot emit native Mission Objectives updates" = $questComponent -match 'StaticQuestShouldNotifyNativeQuestState[\s\S]*StaticQuestDisabledForCloverFlow\(questData\)[\s\S]*return false;'
 	"Papaya bridge quests stay server-only and auto-complete on success" = $questComponent -match 'StaticQuestIsClientHiddenPapayaBridge' -and $questComponent -match 'CompleteSucceededClientHiddenPapayaBridgeQuests' -and $questComponent -match 'TryAutoCompleteStaticQuestOnSuccess[\s\S]*StaticQuestIsClientHiddenPapayaBridge'
 	"HUD recovery does not rebuild sysmenu with native RemoveChildByType during quest/map transitions" = $characterStatsSource -match 'SOUL_RESTORE_CORE_HUD' -and $characterStatsSource -notmatch 'Melia\.Ui\.SysMenu\.Refresh'
+	"DX11 class/job progression does not send crashing ZC_JOB_EXP_UP deltas" = $sendSource -match 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*Versions\.Protocol\s*>\s*500(?:(?!public static void ZC_ADDON_MSG)[\s\S])*return;' -and $sendSource -notmatch 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*packet\.PutLong'
+	"native class advancement adds the requested same-tree job in zone" = $packetHandlerSource -match '\[PacketHandler\(Op\.CZ_REQ_CHANGEJOB\)\]' -and $packetHandlerSource -match 'TryResolveRequestedChangeJobId' -and $packetHandlerSource -match 'character\.Jobs\.AddSilent\(newJob\)' -and $packetHandlerSource -notmatch 'CZ_REQ_CHANGEJOB[\s\S]{0,3200}ZC_MOVE_BARRACK'
 	"unavailable static quest NPCs are hidden until the active chain reaches them" = $questComponent -match 'ShouldSuppressStaticQuestNpcState\(npc\.DialogName,\s*mapClassName\)'
 	"static objective fallback waits for active tracks to finish" = $questComponent -match 'Tracks\.ActiveTrack\s*!=\s*null[\s\S]*return;'
 	"static objective actors wait until map warp is finished before entering client" = $questComponent -match 'CanSendStaticQuestObjectiveActors' -and $questComponent -match '!this\.Character\.IsWarping' -and $questComponent -match 'EnsureStaticQuestObjectiveMonsters[\s\S]*CanSendStaticQuestObjectiveActors' -and $questComponent -match 'SyncStaticQuestObjectiveMonsterMarkers[\s\S]*CanSendStaticQuestObjectiveActors'
@@ -372,6 +398,7 @@ $runtimeChecks = @{
 	"captured named anchors resolve private encounter locations" = $questComponent -match 'TryResolvePapayaCapturedStaticNpcPosition\(mapClassName, anchorName'
 	"captured named anchors resolve native tracker map points" = $questComponent -match 'GetStaticQuestLocationPoints[\s\S]*TryResolvePapayaCapturedStaticNpcPosition\(mapClassName, anchorName'
 	"remote objective map points route through current-map warps first" = $questComponent -match 'MapPointGroupsReferenceCurrentMap' -and $questComponent -match 'GetStaticQuestRouteFallbackMapPointGroups\(quest, currentMap\)[\s\S]*return routePoints'
+	"Tenet B1 Beyond the Darkness gate is open and routed to Tenet Church 1F" = $tenetB1NpcsSource -match 'AddNpc\(73,\s*147381[\s\S]*"CHAPLE575_MQ_09"' -and $tenetB1WarpsSource -match 'CHAPEL575_CHAPEL576[\s\S]*To\("d_chapel_57_6",\s*746,\s*-251\)'
 	"SIAUL_EAST_REQUEST6 Vubbe Fighter spawns in Nudage logging site" = $privateEncounterSource -match '"questName"\s*:\s*"SIAUL_EAST_REQUEST6"[\s\S]*"f_siauliai_2 2008 185 -389 250"' -and $questComponent -match 'SIAUL_EAST_REQUEST6[\s\S]*x\s*=\s*2008[\s\S]*y\s*=\s*185[\s\S]*z\s*=\s*-389'
 	"Scout combat Kepas spawn on real layer after track cleanup" = $scoutTrack -match 'QueueRealScoutEncounter' -and $scoutTrack -match 'character\.Tracks\.ActiveTrack == null' -and $scoutTrack -match 'mob\.Layer = 0' -and $scoutTrack -match 'new\s+MovementComponent' -and $scoutTrack -match 'SetTarget\(character\)' -and $scoutTrack -match 'InsertHate\(character, 5000\)' -and $scoutTrack -match 'TendencyType\.Aggressive'
 	"Zemyna statue advances only the active Laimonas objective and clears worship effects" = $questComponent -match 'AdvanceStaticNpcDialogProgressOnly' -and $npcFunctionsSource -match 'F_SIAULIAI_WEST_EV_55_001[\s\S]*ZEMINA_STATUE\(dialog\)' -and $npcFunctionsSource -match 'ZEMINA_STATUE[\s\S]*AdvanceStaticNpcDialogProgressOnly\(npc\.DialogName\)' -and $npcFunctionsSource -match 'ZEMINA_STATUE[\s\S]*DetachEffect\(character,\s*"F_pc_statue_wing"\)' -and $npcFunctionsSource -match 'ZEMINA_STATUE[\s\S]*OpenGoddessStatueWarpMap\(dialog\)'

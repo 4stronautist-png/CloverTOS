@@ -762,11 +762,14 @@ $questComponentPath = Join-Path $Root 'src/ZoneServer/World/Actors/Characters/Co
 $npcFunctionsPath = Join-Path $Root 'src/ZoneServer/Scripting/Shared/NPCFunctions.cs'
 $characterStatsPath = Join-Path $Root 'src/ZoneServer/World/Actors/Characters/Character.Stats.cs'
 $trackComponentPath = Join-Path $Root 'src/ZoneServer/World/Actors/Characters/Components/TrackComponent.cs'
+$sendPath = Join-Path $Root 'src/ZoneServer/Network/Send.cs'
 $packetHandlerPath = Join-Path $Root 'src/ZoneServer/Network/PacketHandler.cs'
+$tenetB1NpcsPath = Join-Path $Root 'packages/laima/scripts/zone/content/laima/npcs/dungeons/d_chapel_57_5.cs'
+$tenetB1WarpsPath = Join-Path $Root 'packages/laima/scripts/zone/content/laima/warps/dungeons/d_chapel_57_5.cs'
 $packageExpConfPath = Join-Path $Root 'packages/laima/conf/world/exp.conf'
 $userExpConfPath = Join-Path $Root 'user/conf/world/exp.conf'
 
-foreach ($requiredPath in @($questPath, $questAutoPath, $expPath, $mapPath, $monsterPath, $itemPath, $sessionObjectPath, $questComponentPath, $npcFunctionsPath, $characterStatsPath, $trackComponentPath, $packetHandlerPath, $packageExpConfPath)) {
+foreach ($requiredPath in @($questPath, $questAutoPath, $expPath, $mapPath, $monsterPath, $itemPath, $sessionObjectPath, $questComponentPath, $npcFunctionsPath, $characterStatsPath, $trackComponentPath, $sendPath, $packetHandlerPath, $tenetB1NpcsPath, $tenetB1WarpsPath, $packageExpConfPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Missing required simulator input: $requiredPath"
     }
@@ -865,7 +868,10 @@ $questComponentSource = Get-Content -LiteralPath $questComponentPath -Raw
 $npcFunctionsSource = Get-Content -LiteralPath $npcFunctionsPath -Raw
 $characterStatsSource = Get-Content -LiteralPath $characterStatsPath -Raw
 $trackComponentSource = Get-Content -LiteralPath $trackComponentPath -Raw
+$sendSource = Get-Content -LiteralPath $sendPath -Raw
 $packetHandlerSource = Get-Content -LiteralPath $packetHandlerPath -Raw
+$tenetB1NpcsSource = Get-Content -LiteralPath $tenetB1NpcsPath -Raw
+$tenetB1WarpsSource = Get-Content -LiteralPath $tenetB1WarpsPath -Raw
 
 foreach ($requiredFrameName in @('mainstatus', 'buff', 'buff_separatedlist', 'questinfoset_2', 'quickslotnexpbar')) {
     if ($characterStatsSource -notmatch [regex]::Escape($requiredFrameName)) {
@@ -880,6 +886,23 @@ if ($trackComponentSource -notmatch 'AbortGenericTrackAfterMapTransition' -or
 
 if ($packetHandlerSource -notmatch 'AbortGenericTrackAfterMapTransition') {
     Add-Error "Map load completion does not clear stale generic quest_auto tracks before restoring HUD."
+}
+
+if ($sendSource -notmatch 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*Versions\.Protocol\s*>\s*500(?:(?!public static void ZC_ADDON_MSG)[\s\S])*return;' -or
+    $sendSource -match 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*packet\.PutLong') {
+    Add-Error "DX11 class/job progression still sends the native ZC_JOB_EXP_UP delta that crashes ON_JOB_EXP_UPDATE."
+}
+
+if ($packetHandlerSource -notmatch '\[PacketHandler\(Op\.CZ_REQ_CHANGEJOB\)\]' -or
+    $packetHandlerSource -notmatch 'TryResolveRequestedChangeJobId' -or
+    $packetHandlerSource -notmatch 'character\.Jobs\.AddSilent\(newJob\)' -or
+    $packetHandlerSource -match 'CZ_REQ_CHANGEJOB[\s\S]{0,3200}ZC_MOVE_BARRACK') {
+    Add-Error "Native class advancement is not handled as an in-zone same-tree job add."
+}
+
+if ($tenetB1NpcsSource -notmatch 'AddNpc\(73,\s*147381[\s\S]*"CHAPLE575_MQ_09"' -or
+    $tenetB1WarpsSource -notmatch 'CHAPEL575_CHAPEL576[\s\S]*To\("d_chapel_57_6",\s*746,\s*-251\)') {
+    Add-Error "Tenet B1 Beyond the Darkness passage is not open and routed to Tenet Church 1F."
 }
 
 if ($npcFunctionsSource -notmatch 'WARP_F_SIAULIAI_OUT[\s\S]*RepairPapayaMainQuestFlow[\s\S]*RestoreCoreHudState') {

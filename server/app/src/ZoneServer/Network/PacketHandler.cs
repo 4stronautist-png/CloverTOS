@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -3678,6 +3679,114 @@ namespace Melia.Zone.Network
 			{
 				Log.Debug("CZ_CUSTOM_COMMAND: Exception while executing script '{0}({1}, {2}, {3})': {4}", data.Script, numArg1, numArg2, numArg3, ex);
 			}
+		}
+
+		/// <summary>
+		/// Request to advance into a new job.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_REQ_CHANGEJOB)]
+		public void CZ_REQ_CHANGEJOB(IZoneConnection conn, Packet packet)
+		{
+			var character = conn.SelectedCharacter;
+			if (character == null)
+				return;
+
+			if (!this.TryResolveRequestedChangeJobId(character, packet, out var newJobId))
+			{
+				Log.Warning("CZ_REQ_CHANGEJOB: User '{0}' requested an invalid or unsupported job advancement.\n{1}", conn.Account.Name, packet.ToString());
+				return;
+			}
+
+			if (character.Jobs.Count >= ZoneServer.Instance.Conf.World.JobMaxRank)
+			{
+				Log.Warning("CZ_REQ_CHANGEJOB: User '{0}' tried to advance past the max job rank ({1}).", conn.Account.Name, ZoneServer.Instance.Conf.World.JobMaxRank);
+				return;
+			}
+
+			var newJob = new Job(character, newJobId);
+			character.Jobs.AddSilent(newJob);
+			character.JobId = newJob.Id;
+			character.Properties.SetFloat(PropertyName.Job, (int)newJob.Id);
+
+			Send.ZC_PC(character, PcUpdateType.Job, (int)newJob.Id, newJob.Level);
+			Send.ZC_JOB_PTS(character, newJob);
+			Send.ZC_SKILL_LIST(character);
+			Send.ZC_COMMON_SKILL_LIST(character);
+			Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
+			Send.ZC_NORMAL.UpdateSkillUI(character);
+			character.AddonMessage(AddonMessage.JOB_UPDATE);
+			character.AddonMessage(AddonMessage.RESET_SKL_UP);
+			character.InvalidateProperties();
+
+			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(character));
+			Log.Info("CZ_REQ_CHANGEJOB: User '{0}' advanced character '{1}' into '{2}'.", conn.Account.Name, character.Name, newJobId);
+		}
+
+		private bool TryResolveRequestedChangeJobId(Character character, Packet packet, out JobId jobId)
+		{
+			jobId = JobId.None;
+
+			foreach (var candidate in ReadJobChangeCandidates(packet))
+			{
+				if (candidate == JobId.None || candidate == character.JobId)
+					continue;
+
+				if (character.Jobs.TryGet(candidate, out _))
+					continue;
+
+				if (ZoneServer.Instance.Data.JobDb.Find(candidate) == null)
+					continue;
+
+				try
+				{
+					if (candidate.ToClass() != character.JobClass)
+						continue;
+				}
+				catch
+				{
+					continue;
+				}
+
+				jobId = candidate;
+				return true;
+			}
+
+			return false;
+		}
+
+		private static List<JobId> ReadJobChangeCandidates(Packet packet)
+		{
+			var result = new List<JobId>();
+			var seen = new HashSet<short>();
+			var startIndex = packet.GetCurrentIndex();
+			var remaining = Math.Max(0, packet.Length - startIndex);
+
+			void AddCandidate(short raw)
+			{
+				if (raw <= 0 || !seen.Add(raw))
+					return;
+
+				result.Add((JobId)raw);
+			}
+
+			for (var offset = 0; offset + 2 <= remaining; offset += 2)
+			{
+				packet.Seek(startIndex + offset, SeekOrigin.Begin);
+				AddCandidate(packet.GetShort());
+			}
+
+			for (var offset = 0; offset + 4 <= remaining; offset += 4)
+			{
+				packet.Seek(startIndex + offset, SeekOrigin.Begin);
+				var raw = packet.GetInt();
+				if (raw >= short.MinValue && raw <= short.MaxValue)
+					AddCandidate((short)raw);
+			}
+
+			packet.Seek(startIndex, SeekOrigin.Begin);
+			return result;
 		}
 
 		/// <summary>

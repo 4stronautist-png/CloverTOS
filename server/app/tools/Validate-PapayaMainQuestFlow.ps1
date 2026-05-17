@@ -39,6 +39,8 @@ $requiredFiles = @{
     PrivateEncounters = 'system/db/private_encounters.txt'
     SessionObjects = 'system/db/sessionobjects.txt'
     ClientScript = 'src/ZoneServer/Scripting/ClientScript.cs'
+    Send = 'src/ZoneServer/Network/Send.cs'
+    PacketHandler = 'src/ZoneServer/Network/PacketHandler.cs'
     CharacterStats = 'src/ZoneServer/World/Actors/Characters/Character.Stats.cs'
     QuestComponent = 'src/ZoneServer/World/Actors/Characters/Components/QuestComponent.cs'
     CustomPropertyShopClient = 'packages/laima/scripts/zone/core/client/custom_propertyshop/main.cs'
@@ -49,6 +51,8 @@ $requiredFiles = @{
     Gele572Npcs = 'packages/laima/scripts/zone/content/laima/npcs/fields/f_gele_57_2.cs'
     NefritasNpcs = 'packages/laima/scripts/zone/content/laima/npcs/fields/f_gele_57_3.cs'
     Gele574Npcs = 'packages/laima/scripts/zone/content/laima/npcs/fields/f_gele_57_4.cs'
+    TenetB1Npcs = 'packages/laima/scripts/zone/content/laima/npcs/dungeons/d_chapel_57_5.cs'
+    TenetB1Warps = 'packages/laima/scripts/zone/content/laima/warps/dungeons/d_chapel_57_5.cs'
     WestMobs = 'packages/laima/scripts/zone/content/laima/mobs/fields/f_siauliai_west.cs'
     EastMobs = 'packages/laima/scripts/zone/content/laima/mobs/fields/f_siauliai_2.cs'
     TenetB1Mobs = 'packages/laima/scripts/zone/content/laima/mobs/dungeons/d_chapel_57_5.cs'
@@ -116,6 +120,8 @@ $criticalChecks = @{
     'Out-of-sequence quest_auto main quests are suppressed' = $content.QuestComponent -match 'SuppressOutOfSequencePapayaAutoMainQuestState'
     'Client Lua scripts are installed once per client session across zone warps' = $content.ClientScript -match 'TryActivateClientScriptReady' -and $content.ClientScript -match '_readyScriptsBySession' -and $content.ClientScript -match 'SessionKey' -and $content.ClientScript -match 'ReadyAgain' -and $content.ClientScript -match 'OnPlayerReadyInternal[\s\S]*TryActivateClientScriptReady' -and $content.CustomPropertyShopClient -match 'ReadyAgain' -and $content.CustomPropertyShopClient -match 'MarkLuaReadyAndStreamShops'
     'HUD recovery does not rebuild sysmenu with native RemoveChildByType during quest/map transitions' = $content.CharacterStats -match 'SOUL_RESTORE_CORE_HUD' -and $content.CharacterStats -notmatch 'Melia\.Ui\.SysMenu\.Refresh'
+    'DX11 client does not receive native job EXP delta packets that crash ON_JOB_EXP_UPDATE' = $content.Send -match 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*Versions\.Protocol\s*>\s*500(?:(?!public static void ZC_ADDON_MSG)[\s\S])*return;' -and $content.Send -notmatch 'public static void ZC_JOB_EXP_UP(?:(?!public static void ZC_ADDON_MSG)[\s\S])*packet\.PutLong'
+    'Native class advancement packet adds the requested same-tree job without forcing barracks disconnect' = $content.PacketHandler -match '\[PacketHandler\(Op\.CZ_REQ_CHANGEJOB\)\]' -and $content.PacketHandler -match 'TryResolveRequestedChangeJobId' -and $content.PacketHandler -match 'character\.Jobs\.AddSilent\(newJob\)' -and $content.PacketHandler -notmatch 'CZ_REQ_CHANGEJOB[\s\S]{0,3200}ZC_MOVE_BARRACK'
     'quest_auto SProgress tracks do not regress already-Success objective quests' = $content.QuestComponent -match 'StaticQuestAutoTrackStartStatusMatches[\s\S]*return quest\.Status == QuestStatus\.InProgress;' -and $content.QuestComponent -match 'RepairStaticQuestObjectiveSuccessStatus' -and $content.QuestComponent -match 'StaticQuestAutoTrackWouldRegressQuestStatus'
     'Gele Plateau Imminent Invasion Paladin actor is spawned' = $content.Gele572Npcs -match 'Paladin Master' -and $content.Gele572Npcs -match 'GELE572_MQ_01'
     'Gele Plateau Imminent Invasion completes server-side instead of relying on a client-native generic track' = $content.QuestComponent -match 'RepairPapayaGelePlateauImminentInvasion' -and $content.QuestComponent -match 'TryCompletePapayaGelePlateauImminentInvasion' -and $content.QuestComponent -match 'GELE572_MQ_01_TRACK' -and $content.QuestComponent -match 'client-native track is not reliable'
@@ -135,6 +141,7 @@ $criticalChecks = @{
     'Gele Plateau Grown Apart From Hope boss track requires a killable Chapparition objective' = $content.Quests -match 'GELE574_MQ_09[\s\S]*objectives:\s*\[\{[^\]]*type:\s*"Kill"[^\]]*target:\s*"boss_Chapparition"' -and $content.SessionObjects -match 'GELE574_MQ_09[\s\S]*monsterNameGroup:\s*\[\s*"boss_Chapparition"\s*\]' -and $content.PrivateEncounters -match '"questName"\s*:\s*"GELE574_MQ_09"[\s\S]*"target"\s*:\s*"boss_Chapparition"[\s\S]*"f_gele_57_4 1287 -78 1811 350"'
     'Remote objective map points route through current-map warps first' = $content.QuestComponent -match 'MapPointGroupsReferenceCurrentMap' -and $content.QuestComponent -match 'GetStaticQuestRouteFallbackMapPointGroups\(quest, currentMap\)[\s\S]*return routePoints'
     'Tenet B1 Church Underground Passage spawns a private killable Unknocker' = $content.Quests -match 'CHAPLE575_MQ_04[\s\S]*target:\s*"boss_Unknocker"[\s\S]*text:\s*"Defeat Unknocker"' -and $content.PrivateEncounters -match '"questName"\s*:\s*"CHAPLE575_MQ_04"[\s\S]*"target"\s*:\s*"boss_Unknocker"[\s\S]*"d_chapel_57_5 CHAPLE575_MQ_04 130"' -and $content.QuestAuto -match '"questName"\s*:\s*"CHAPLE575_MQ_04"[\s\S]*"track"\s*:\s*"SProgress/EProgress/CHAPLE575_MQ_04_TRACK/4000/m_boss_b"' -and $content.TenetB1Mobs -match 'MonsterId\.Boss_Unknocker[\s\S]*"MHP",\s*2000'
+    'Tenet B1 Beyond the Darkness passage uses an open gate actor and routes into Tenet Church 1F' = $content.TenetB1Npcs -match 'AddNpc\(73,\s*147381[\s\S]*"CHAPLE575_MQ_09"' -and $content.TenetB1Warps -match 'CHAPEL575_CHAPEL576[\s\S]*To\("d_chapel_57_6",\s*746,\s*-251\)'
 }
 
 foreach ($check in $criticalChecks.GetEnumerator()) {
