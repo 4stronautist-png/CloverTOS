@@ -17,19 +17,19 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 				return;
 
 			ApplyBuff(skill, caster);
-			caster.SetAttackState(false);
+			EskrimerSkillHelper.KeepAttackPosture(caster);
 		}
 
 		public void StartDynamicCast(Skill skill, ICombatEntity caster, float maxCastTime)
 		{
 			ApplyBuff(skill, caster);
-			caster.SetAttackState(false);
+			EskrimerSkillHelper.KeepAttackPosture(caster);
 		}
 
 		public void EndDynamicCast(Skill skill, ICombatEntity caster, float maxCastTime)
 		{
 			ApplyBuff(skill, caster);
-			caster.SetAttackState(false);
+			EskrimerSkillHelper.KeepAttackPosture(caster);
 		}
 
 		private static void ApplyBuff(Skill skill, ICombatEntity caster)

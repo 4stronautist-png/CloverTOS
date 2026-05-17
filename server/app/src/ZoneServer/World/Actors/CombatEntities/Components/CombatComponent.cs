@@ -66,7 +66,7 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 		/// Sets the entity's attack state.
 		/// </summary>
 		/// <param name="state"></param>
-		public void SetAttackState(bool state)
+		public void SetAttackState(bool state, bool autoRelease = true)
 		{
 			var prevState = this.AttackState;
 
@@ -79,7 +79,7 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 			if (prevState != state)
 				CombatStateChanged?.Invoke(this.Entity, state);
 
-			if (state)
+			if (state && autoRelease)
 				this.QueueAttackStateAutoRelease(version);
 		}
 

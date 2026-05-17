@@ -1292,6 +1292,15 @@ namespace Melia.Zone.World.Actors
 			=> entity.Components.Get<CombatComponent>()?.SetAttackState(inAttackState);
 
 		/// <summary>
+		/// Sets the entity's attack state.
+		/// </summary>
+		/// <param name="entity"></param>
+		/// <param name="inAttackState"></param>
+		/// <param name="autoRelease"></param>
+		public static void SetAttackState(this ICombatEntity entity, bool inAttackState, bool autoRelease)
+			=> entity.Components.Get<CombatComponent>()?.SetAttackState(inAttackState, autoRelease);
+
+		/// <summary>
 		/// Sets the entity's casting state for a specific skill.
 		/// </summary>
 		/// <param name="entity"></param>

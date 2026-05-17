@@ -14,6 +14,7 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 	{
 		public void StartDynamicCast(Skill skill, ICombatEntity caster, float maxCastTime)
 		{
+			EskrimerSkillHelper.KeepAttackPosture(caster);
 			caster.StartBuff(BuffId.Invitation_Buff, skill.Level, 0f, TimeSpan.FromSeconds(2), caster, skill.Id);
 		}
 
@@ -21,7 +22,7 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 		{
 			caster.StopBuff(BuffId.Invitation_Buff);
 			caster.StartBuff(BuffId.Pret_Buff, skill.Level, EskrimerSkillHelper.PretPasataFinalDamageCap, TimeSpan.FromSeconds(10), caster, skill.Id);
-			caster.SetAttackState(false);
+			EskrimerSkillHelper.KeepAttackPosture(caster);
 		}
 
 		public void Handle(Skill skill, ICombatEntity caster, Position originPos, Direction dir)
@@ -48,7 +49,7 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 			}
 			finally
 			{
-				caster.SetAttackState(false);
+				EskrimerSkillHelper.KeepAttackPosture(caster);
 			}
 		}
 	}

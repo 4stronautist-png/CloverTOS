@@ -61,13 +61,12 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 			}
 
 			skill.IncreaseOverheat();
-			caster.SetAttackState(true);
+			KeepAttackPosture(caster);
 
 			var targetHandle = target?.Handle ?? 0;
 			Send.ZC_SKILL_READY(caster, skill, 1, originPos, farPos);
 			Send.ZC_NORMAL.UpdateSkillEffect(caster, targetHandle, originPos, originPos.GetDirection(farPos), Position.Zero);
 			QueueSkillMeleeGround(caster, skill, farPos);
-			QueueAttackStateRelease(caster, skill);
 			return true;
 		}
 
@@ -80,12 +79,11 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 			}
 
 			skill.IncreaseOverheat();
-			caster.SetAttackState(true);
+			KeepAttackPosture(caster);
 
 			Send.ZC_SKILL_READY(caster, skill, 1, originPos, Position.Zero);
 			Send.ZC_NORMAL.UpdateSkillEffect(caster, 0, originPos, caster.Direction, Position.Zero);
 			QueueSkillMeleeTarget(caster, skill);
-			QueueAttackStateRelease(caster, skill);
 			return true;
 		}
 
@@ -135,7 +133,7 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 			}
 			finally
 			{
-				caster.SetAttackState(false);
+				KeepAttackPosture(caster);
 			}
 		}
 
@@ -315,21 +313,10 @@ namespace Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer
 				caster.StartBuff(BuffId.Ouvert_Buff, skill.Level, OuvertDamageBonus, TimeSpan.FromSeconds(2), caster, skill.Id);
 		}
 
-		private static void QueueAttackStateRelease(ICombatEntity caster, Skill skill)
+		public static void KeepAttackPosture(ICombatEntity caster)
 		{
-			var releaseDelay = skill.Properties.ShootTime + TimeSpan.FromMilliseconds(150);
-			if (releaseDelay < TimeSpan.FromMilliseconds(250))
-				releaseDelay = TimeSpan.FromMilliseconds(250);
-			if (releaseDelay > TimeSpan.FromMilliseconds(1500))
-				releaseDelay = TimeSpan.FromMilliseconds(1500);
-
-			_ = Task.Run(async () =>
-			{
-				await Task.Delay(releaseDelay);
-
-				if (!caster.IsDead)
-					caster.SetAttackState(false);
-			});
+			if (!caster.IsDead)
+				caster.SetAttackState(true, false);
 		}
 
 		private static void QueueSkillMeleeGround(ICombatEntity caster, Skill skill, Position farPos)
