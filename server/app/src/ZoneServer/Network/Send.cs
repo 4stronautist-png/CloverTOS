@@ -3223,17 +3223,14 @@ namespace Melia.Zone.Network
 		/// <param name="exp"></param>
 		public static void ZC_JOB_EXP_UP(Character character, long exp)
 		{
+			// The DX11 client crashes in ON_JOB_EXP_UPDATE during quest reward/class UI flows.
+			// Full job state is synced through ZC_PC, object properties, skill lists, and JOB_UPDATE.
+			if (Versions.Protocol > 500)
+				return;
+
 			using var packet = Packet.Rent(Op.ZC_JOB_EXP_UP);
 
-			if (Versions.Protocol > 500)
-			{
-				packet.PutLong(character.ObjectId);
-				packet.PutLong(exp);
-			}
-			else
-			{
-				packet.PutInt((int)exp);
-			}
+			packet.PutInt((int)exp);
 
 			character.Connection.Send(packet);
 		}
