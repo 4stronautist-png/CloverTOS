@@ -604,7 +604,9 @@ namespace Melia.Zone.Network
 				character.Skills.AddSilent(new Skill(character, skill.Id));
 			}
 
-			var skills = character.Skills.GetList();
+			var skills = character.Skills.GetList()
+				.Where(skill => !Character.IsClassChangeUnsafeSkillStateSkill(skill.Id))
+				.ToList();
 			var skillIds = new HashSet<SkillId>(skills.Select(skill => skill.Id));
 			var packetSkills = new List<Skill>(skills);
 
@@ -613,6 +615,9 @@ namespace Melia.Zone.Network
 				var skillTree = ZoneServer.Instance.Data.SkillTreeDb.FindSkills(job.Id, job.Level);
 				foreach (var skillTreeData in skillTree)
 				{
+					if (Character.IsClassChangeUnsafeSkillStateSkill(skillTreeData.SkillId))
+						continue;
+
 					if (!skillIds.Add(skillTreeData.SkillId))
 						continue;
 

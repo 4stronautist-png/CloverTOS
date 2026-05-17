@@ -150,6 +150,12 @@ namespace Melia.Zone.Database
 							continue;
 						}
 						var level = reader.GetInt32("level");
+						if (Character.IsClassChangeUnsafeSkillStateSkill(skillId))
+						{
+							Log.Info("ZoneDb.LoadSkills: Skipping unsafe skill-state skill '{0}' for character '{1}' ({2}).", skillId, character.Name, character.DbId);
+							continue;
+						}
+
 						var skill = new Skill(character, skillId, level);
 						character.Skills.AddSilent(skill);
 					}

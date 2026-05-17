@@ -916,12 +916,18 @@ if ($packetHandlerSource -notmatch '\[PacketHandler\(Op\.CZ_REQ_CHANGEJOB\)\]' -
 
 if ($packetHandlerSource -notmatch 'ClearClassChangeUnsafeSkillStateBuffs' -or
     $characterJobSkillsSource -notmatch 'IsClassChangeUnsafeSkillStateBuff' -or
+    $characterJobSkillsSource -notmatch 'IsClassChangeUnsafeSkillStateSkill' -or
     $characterJobSkillsSource -notmatch 'DoubleAttack_Buff' -or
     $characterJobSkillsSource -notmatch 'FreeStep_Buff' -or
+    $characterJobSkillsSource -notmatch 'Scout_DoubleAttack' -or
+    $characterJobSkillsSource -notmatch 'Scout_FreeStep' -or
     $zoneDbCharacterSource -notmatch 'LoadBuffs[\s\S]*IsClassChangeUnsafeSkillStateBuff' -or
+    $zoneDbCharacterSource -notmatch 'LoadSkills[\s\S]*IsClassChangeUnsafeSkillStateSkill' -or
     $zoneDbInternalSource -notmatch 'savableBuffs[\s\S]*!Character\.IsClassChangeUnsafeSkillStateBuff\(buff\.Id\)' -or
+    $zoneDbInternalSource -notmatch 'skillsToSave[\s\S]*!Character\.IsClassChangeUnsafeSkillStateSkill\(skill\.Id\)' -or
+    $sendSource -notmatch 'ZC_SKILL_LIST[\s\S]*IsClassChangeUnsafeSkillStateSkill' -or
     $buffComponentSource -notmatch 'Remove\(BuffId buffId,\s*bool silently = false\)') {
-    Add-Error "Class advancement/login does not clear or filter unsafe Scout skill-state buffs that crash IsSkillStateByBuff on load."
+    Add-Error "Class advancement/login does not clear or filter unsafe Scout skill-state buffs/skills that crash IsSkillStateByBuff on load."
 }
 
 foreach ($buffSource in @($buffsSource, $packageBuffsSource, $version390044BuffsSource)) {

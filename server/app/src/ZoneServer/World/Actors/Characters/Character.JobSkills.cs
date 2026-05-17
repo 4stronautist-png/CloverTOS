@@ -24,8 +24,17 @@ namespace Melia.Zone.World.Actors.Characters
 			BuffId.FreeStep_Buff,
 		];
 
+		private static readonly SkillId[] ClassChangeUnsafeSkillStateSkills =
+		[
+			SkillId.Scout_DoubleAttack,
+			SkillId.Scout_FreeStep,
+		];
+
 		public static bool IsClassChangeUnsafeSkillStateBuff(BuffId buffId)
 			=> ClassChangeUnsafeSkillStateBuffs.Contains(buffId);
+
+		public static bool IsClassChangeUnsafeSkillStateSkill(SkillId skillId)
+			=> ClassChangeUnsafeSkillStateSkills.Contains(skillId);
 
 		public int ClearClassChangeUnsafeSkillStateBuffs(bool silently = false)
 		{

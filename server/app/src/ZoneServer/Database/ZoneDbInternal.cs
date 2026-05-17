@@ -762,7 +762,9 @@ namespace Melia.Zone.Database
 		/// </summary>
 		internal void InternalSaveSkills(Character character, MySqlConnection conn, MySqlTransaction trans)
 		{
-			var skillsToSave = character.Skills.GetList().Where(skill => skill.LevelByDB > 0).ToList();
+			var skillsToSave = character.Skills.GetList()
+				.Where(skill => skill.LevelByDB > 0 && !Character.IsClassChangeUnsafeSkillStateSkill(skill.Id))
+				.ToList();
 
 			if (!skillsToSave.Any())
 			{
