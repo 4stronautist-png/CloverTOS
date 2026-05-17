@@ -212,6 +212,9 @@ namespace Melia.Zone.Network
 				charName = character.Name;
 				charDbId = character.DbId;
 
+				if (character.Quests.RepairPapayaPreLoginMapState())
+					ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
+
 				var map = ZoneServer.Instance.World.GetMap(character.MapId);
 				if (map == null)
 				{

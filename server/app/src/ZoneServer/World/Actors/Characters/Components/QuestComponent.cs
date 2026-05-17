@@ -510,6 +510,48 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			return changed;
 		}
 
+		public bool RepairPapayaPreLoginMapState()
+		{
+			if (this.Character == null)
+				return false;
+
+			const int tenetB1MapId = 2085;
+			const int tenet1FMapId = 2086;
+			const int beyondDarknessQuestId = 8527;
+			const int churchGateQuestId = 8510;
+
+			if (this.Character.MapId != tenetB1MapId)
+				return false;
+
+			var shouldRouteToTenet1F = false;
+			if (this.TryGetById(beyondDarknessQuestId, out var beyondDarknessQuest))
+			{
+				if (beyondDarknessQuest.Status < QuestStatus.Completed)
+				{
+					beyondDarknessQuest.CompleteObjectives();
+					beyondDarknessQuest.Status = QuestStatus.Completed;
+					beyondDarknessQuest.CompleteTime = DateTime.Now;
+					beyondDarknessQuest.Tracked = false;
+					shouldRouteToTenet1F = true;
+				}
+				else if (!this.Has(new QuestId(churchGateQuestId)))
+				{
+					shouldRouteToTenet1F = true;
+				}
+			}
+
+			if (!shouldRouteToTenet1F)
+				return false;
+
+			for (var i = 0; i < MaxClientQuestCheckProperties; i++)
+				this.SetQuestCheckSlot(i, 0);
+
+			this.Character.MapId = tenet1FMapId;
+			this.Character.Position = new Position(746, -79, -251);
+			Log.Info("Papaya main quest flow: pre-login routed '{0}' past CHAPLE575_MQ_09 to Tenet Church 1F to avoid the client-native d_chapel57_5_tp04 load crash.", this.Character.Name);
+			return true;
+		}
+
 		private bool RepairPapayaGelePlateauImminentInvasion(string mapClassName)
 		{
 			if (!string.Equals(mapClassName, "f_gele_57_2", StringComparison.OrdinalIgnoreCase))

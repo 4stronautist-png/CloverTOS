@@ -25,6 +25,6 @@ public class DChapel575NpcScript : GeneralScript
 		AddNpc(70, 147390, "Paladin Follower", "d_chapel_57_5", -1258, 1, 1095, 0, "CHAPEL_TOMAS", "", "");
 		AddNpc(71, 147353, "", "d_chapel_57_5", 300, 1, -300, 0, "CHAPLE575_MQ_04", "", "");
 		AddNpc(72, 147390, "Paladin Follower", "d_chapel_57_5", -1120, 1, 980, 0, "CHAPEL_VIDAS", "", "");
-		AddNpc(73, 147381, "", "d_chapel_57_5", 500, 1, -500, 0, "CHAPLE575_MQ_09", "", "");
+		AddNpc(73, 147353, "", "d_chapel_57_5", 500, 1, -500, 0, "CHAPLE575_MQ_09", "", "");
 	}
 }

@@ -931,9 +931,11 @@ foreach ($buffSource in @($buffsSource, $packageBuffsSource, $version390044Buffs
     }
 }
 
-if ($tenetB1NpcsSource -notmatch 'AddNpc\(73,\s*147381[\s\S]*"CHAPLE575_MQ_09"' -or
-    $tenetB1WarpsSource -notmatch 'CHAPEL575_CHAPEL576[\s\S]*To\("d_chapel_57_6",\s*746,\s*-251\)') {
-    Add-Error "Tenet B1 Beyond the Darkness passage is not open and routed to Tenet Church 1F."
+if ($tenetB1NpcsSource -notmatch 'AddNpc\(73,\s*147353[\s\S]*"CHAPLE575_MQ_09"' -or
+    $tenetB1WarpsSource -notmatch 'CHAPEL575_CHAPEL576[\s\S]*To\("d_chapel_57_6",\s*746,\s*-251\)' -or
+    $questComponentSource -notmatch 'RepairPapayaPreLoginMapState' -or
+    $questComponentSource -notmatch 'd_chapel57_5_tp04') {
+    Add-Error "Tenet B1 Beyond the Darkness passage does not avoid the client-native tp04 load crash and route to Tenet Church 1F."
 }
 
 if ($npcFunctionsSource -notmatch 'WARP_F_SIAULIAI_OUT[\s\S]*RepairPapayaMainQuestFlow[\s\S]*RestoreCoreHudState') {
