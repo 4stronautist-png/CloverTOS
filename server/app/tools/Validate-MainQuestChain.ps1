@@ -59,6 +59,7 @@ $itemPath = Join-Path $AppRoot "system\db\items.txt"
 $mapPath = Join-Path $AppRoot "system\db\maps.txt"
 $privateEncounterPath = Join-Path $AppRoot "system\db\private_encounters.txt"
 $questComponentPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters\Components\QuestComponent.cs"
+$characterStatsPath = Join-Path $AppRoot "src\ZoneServer\World\Actors\Characters\Character.Stats.cs"
 $npcFunctionsPath = Join-Path $AppRoot "src\ZoneServer\Scripting\Shared\NPCFunctions.cs"
 $westSiauliaiWarpPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\warps\fields\f_siauliai_west.cs"
 $scoutTrackPath = Join-Path $AppRoot "packages\laima\scripts\zone\content\laima\tracks\fields\siaul_west_drasius1_track.cs"
@@ -200,6 +201,11 @@ foreach ($entry in $questAutoEntries) {
 $questComponent = ""
 if (Test-Path -LiteralPath $questComponentPath) {
     $questComponent = Get-Content -LiteralPath $questComponentPath -Raw
+}
+
+$characterStatsSource = ""
+if (Test-Path -LiteralPath $characterStatsPath) {
+    $characterStatsSource = Get-Content -LiteralPath $characterStatsPath -Raw
 }
 
 $npcFunctionsSource = ""
@@ -356,6 +362,7 @@ $runtimeChecks = @{
 	"client quest add/update removes hidden quests instead of showing them temporarily" = $questComponent -match 'UpdateClient_AddQuest[\s\S]*HideQuestFromClientList' -and $questComponent -match 'UpdateClient_UpdateQuest[\s\S]*HideQuestFromClientList'
 	"disabled static quests cannot emit native Mission Objectives updates" = $questComponent -match 'StaticQuestShouldNotifyNativeQuestState[\s\S]*StaticQuestDisabledForCloverFlow\(questData\)[\s\S]*return false;'
 	"Papaya bridge quests stay server-only and auto-complete on success" = $questComponent -match 'StaticQuestIsClientHiddenPapayaBridge' -and $questComponent -match 'CompleteSucceededClientHiddenPapayaBridgeQuests' -and $questComponent -match 'TryAutoCompleteStaticQuestOnSuccess[\s\S]*StaticQuestIsClientHiddenPapayaBridge'
+	"HUD recovery does not rebuild sysmenu with native RemoveChildByType during quest/map transitions" = $characterStatsSource -match 'SOUL_RESTORE_CORE_HUD' -and $characterStatsSource -notmatch 'Melia\.Ui\.SysMenu\.Refresh'
 	"unavailable static quest NPCs are hidden until the active chain reaches them" = $questComponent -match 'ShouldSuppressStaticQuestNpcState\(npc\.DialogName,\s*mapClassName\)'
 	"static objective fallback waits for active tracks to finish" = $questComponent -match 'Tracks\.ActiveTrack\s*!=\s*null[\s\S]*return;'
 	"static objective actors wait until map warp is finished before entering client" = $questComponent -match 'CanSendStaticQuestObjectiveActors' -and $questComponent -match '!this\.Character\.IsWarping' -and $questComponent -match 'EnsureStaticQuestObjectiveMonsters[\s\S]*CanSendStaticQuestObjectiveActors' -and $questComponent -match 'SyncStaticQuestObjectiveMonsterMarkers[\s\S]*CanSendStaticQuestObjectiveActors'

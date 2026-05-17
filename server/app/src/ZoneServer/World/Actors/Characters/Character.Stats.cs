@@ -322,12 +322,6 @@ function SOUL_RESTORE_CORE_HUD()
 		end
 	end
 
-	pcall(function()
-		if Melia ~= nil and Melia.Ui ~= nil and Melia.Ui.SysMenu ~= nil and Melia.Ui.SysMenu.Refresh ~= nil then
-			Melia.Ui.SysMenu.Refresh();
-		end
-	end);
-
 	return 1;
 end
 
