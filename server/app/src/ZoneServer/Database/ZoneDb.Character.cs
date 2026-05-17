@@ -272,6 +272,12 @@ namespace Melia.Zone.Database
 						{
 							var dbId = reader.GetInt64("buffId");
 							var classId = (BuffId)reader.GetInt32("classId");
+							if (Character.IsClassChangeUnsafeSkillStateBuff(classId))
+							{
+								Log.Info("LoadBuffs: Skipping unsafe saved skill-state buff '{0}' for character '{1}' ({2}).", classId, character.Name, character.DbId);
+								continue;
+							}
+
 							var numArg1 = reader.GetInt32("numArg1");
 							var numArg2 = reader.GetInt32("numArg2");
 							var numArg3 = reader.GetInt32("numArg3");

@@ -930,7 +930,9 @@ namespace Melia.Zone.Database
 				cmdDel.ExecuteNonQuery();
 			}
 
-			var savableBuffs = character.Buffs.GetList().Where(buff => buff.Data.Save).ToList();
+			var savableBuffs = character.Buffs.GetList()
+				.Where(buff => buff.Data.Save && !Character.IsClassChangeUnsafeSkillStateBuff(buff.Id))
+				.ToList();
 			if (!savableBuffs.Any()) return;
 
 			// Insert new buffs and save their variables

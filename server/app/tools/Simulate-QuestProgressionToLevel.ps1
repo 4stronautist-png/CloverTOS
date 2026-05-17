@@ -764,12 +764,19 @@ $characterStatsPath = Join-Path $Root 'src/ZoneServer/World/Actors/Characters/Ch
 $trackComponentPath = Join-Path $Root 'src/ZoneServer/World/Actors/Characters/Components/TrackComponent.cs'
 $sendPath = Join-Path $Root 'src/ZoneServer/Network/Send.cs'
 $packetHandlerPath = Join-Path $Root 'src/ZoneServer/Network/PacketHandler.cs'
+$characterJobSkillsPath = Join-Path $Root 'src/ZoneServer/World/Actors/Characters/Character.JobSkills.cs'
+$zoneDbCharacterPath = Join-Path $Root 'src/ZoneServer/Database/ZoneDb.Character.cs'
+$zoneDbInternalPath = Join-Path $Root 'src/ZoneServer/Database/ZoneDbInternal.cs'
+$buffComponentPath = Join-Path $Root 'src/ZoneServer/World/Actors/CombatEntities/Components/BuffComponent.cs'
+$buffsPath = Join-Path $Root 'system/db/buffs.txt'
+$packageBuffsPath = Join-Path $Root 'packages/laima/db/buffs.txt'
+$version390044BuffsPath = Join-Path $Root 'system/versions/390044/db/buffs.txt'
 $tenetB1NpcsPath = Join-Path $Root 'packages/laima/scripts/zone/content/laima/npcs/dungeons/d_chapel_57_5.cs'
 $tenetB1WarpsPath = Join-Path $Root 'packages/laima/scripts/zone/content/laima/warps/dungeons/d_chapel_57_5.cs'
 $packageExpConfPath = Join-Path $Root 'packages/laima/conf/world/exp.conf'
 $userExpConfPath = Join-Path $Root 'user/conf/world/exp.conf'
 
-foreach ($requiredPath in @($questPath, $questAutoPath, $expPath, $mapPath, $monsterPath, $itemPath, $sessionObjectPath, $questComponentPath, $npcFunctionsPath, $characterStatsPath, $trackComponentPath, $sendPath, $packetHandlerPath, $tenetB1NpcsPath, $tenetB1WarpsPath, $packageExpConfPath)) {
+foreach ($requiredPath in @($questPath, $questAutoPath, $expPath, $mapPath, $monsterPath, $itemPath, $sessionObjectPath, $questComponentPath, $npcFunctionsPath, $characterStatsPath, $trackComponentPath, $sendPath, $packetHandlerPath, $characterJobSkillsPath, $zoneDbCharacterPath, $zoneDbInternalPath, $buffComponentPath, $buffsPath, $packageBuffsPath, $version390044BuffsPath, $tenetB1NpcsPath, $tenetB1WarpsPath, $packageExpConfPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Missing required simulator input: $requiredPath"
     }
@@ -870,6 +877,13 @@ $characterStatsSource = Get-Content -LiteralPath $characterStatsPath -Raw
 $trackComponentSource = Get-Content -LiteralPath $trackComponentPath -Raw
 $sendSource = Get-Content -LiteralPath $sendPath -Raw
 $packetHandlerSource = Get-Content -LiteralPath $packetHandlerPath -Raw
+$characterJobSkillsSource = Get-Content -LiteralPath $characterJobSkillsPath -Raw
+$zoneDbCharacterSource = Get-Content -LiteralPath $zoneDbCharacterPath -Raw
+$zoneDbInternalSource = Get-Content -LiteralPath $zoneDbInternalPath -Raw
+$buffComponentSource = Get-Content -LiteralPath $buffComponentPath -Raw
+$buffsSource = Get-Content -LiteralPath $buffsPath -Raw
+$packageBuffsSource = Get-Content -LiteralPath $packageBuffsPath -Raw
+$version390044BuffsSource = Get-Content -LiteralPath $version390044BuffsPath -Raw
 $tenetB1NpcsSource = Get-Content -LiteralPath $tenetB1NpcsPath -Raw
 $tenetB1WarpsSource = Get-Content -LiteralPath $tenetB1WarpsPath -Raw
 
@@ -898,6 +912,23 @@ if ($packetHandlerSource -notmatch '\[PacketHandler\(Op\.CZ_REQ_CHANGEJOB\)\]' -
     $packetHandlerSource -notmatch 'character\.Jobs\.AddSilent\(newJob\)' -or
     $packetHandlerSource -match 'CZ_REQ_CHANGEJOB[\s\S]{0,3200}ZC_MOVE_BARRACK') {
     Add-Error "Native class advancement is not handled as an in-zone same-tree job add."
+}
+
+if ($packetHandlerSource -notmatch 'ClearClassChangeUnsafeSkillStateBuffs' -or
+    $characterJobSkillsSource -notmatch 'IsClassChangeUnsafeSkillStateBuff' -or
+    $characterJobSkillsSource -notmatch 'DoubleAttack_Buff' -or
+    $characterJobSkillsSource -notmatch 'FreeStep_Buff' -or
+    $zoneDbCharacterSource -notmatch 'LoadBuffs[\s\S]*IsClassChangeUnsafeSkillStateBuff' -or
+    $zoneDbInternalSource -notmatch 'savableBuffs[\s\S]*!Character\.IsClassChangeUnsafeSkillStateBuff\(buff\.Id\)' -or
+    $buffComponentSource -notmatch 'Remove\(BuffId buffId,\s*bool silently = false\)') {
+    Add-Error "Class advancement/login does not clear or filter unsafe Scout skill-state buffs that crash IsSkillStateByBuff on load."
+}
+
+foreach ($buffSource in @($buffsSource, $packageBuffsSource, $version390044BuffsSource)) {
+    if ($buffSource -notmatch 'DoubleAttack_Buff[^\r\n]*save:\s*false' -or
+        $buffSource -notmatch 'FreeStep_Buff[^\r\n]*save:\s*false') {
+        Add-Error "Scout skill-state buffs DoubleAttack_Buff/FreeStep_Buff are still saveable in one of the active buff databases."
+    }
 }
 
 if ($tenetB1NpcsSource -notmatch 'AddNpc\(73,\s*147381[\s\S]*"CHAPLE575_MQ_09"' -or
