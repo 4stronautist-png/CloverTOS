@@ -1915,6 +1915,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (string.IsNullOrWhiteSpace(npcDialogName))
 				return false;
 
+			this.RepairStaticQuestObjectiveSuccessStatus("NPC dialog");
+
 			var quests = this.GetList()
 				.OrderByDescending(quest => quest.Tracked)
 				.ThenByDescending(quest => string.Equals(quest.QuestStaticData?.QuestMode, "MAIN", StringComparison.OrdinalIgnoreCase))
@@ -2115,6 +2117,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (this.Character?.Connection == null || this.Character.Tracks.ActiveTrack != null || string.IsNullOrWhiteSpace(mapClassName))
 				return false;
 
+			this.RepairStaticQuestObjectiveSuccessStatus("quest_auto scan");
+
 			var quests = this.GetList()
 				.Where(quest => quest.QuestStaticData != null && quest.Status != QuestStatus.Completed && quest.Status != QuestStatus.Abandoned)
 				.OrderByDescending(quest => quest.Tracked)
@@ -2129,6 +2133,42 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			return false;
+		}
+
+		private bool RepairStaticQuestObjectiveSuccessStatus(string reason)
+		{
+			var changed = false;
+
+			foreach (var quest in this.GetList().ToList())
+			{
+				var questData = quest.QuestStaticData;
+				if (questData == null ||
+					quest.Status != QuestStatus.InProgress ||
+					quest.Progresses.Count == 0 ||
+					questData.Objectives == null ||
+					questData.Objectives.Count == 0 ||
+					!quest.ObjectivesCompleted)
+					continue;
+
+				quest.Status = QuestStatus.Success;
+				this.SetStaticQuestProperty(questData, QuestStatus.Success);
+				this.SyncStaticQuestSessionObject(quest);
+				this.UpdateClient_UpdateQuest(quest);
+				this.TryAutoCompleteStaticQuestOnSuccess(quest);
+				changed = true;
+
+				Log.Info(
+					"Static quest chain: restored quest '{0}' from InProgress to Success after completed objectives during {1} for '{2}'.",
+					questData.ClassName,
+					reason,
+					this.Character.Name
+				);
+			}
+
+			if (changed)
+				this.SyncTrackedQuestSlots();
+
+			return changed;
 		}
 
 		private bool TryStartStaticQuestAutoTrack(Quest quest, string mapClassName)
@@ -2160,16 +2200,24 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 			this.Character.Variables.Temp.SetBool(tempKey, true);
 			var delay = TimeSpan.FromMilliseconds(Math.Max(0, track.DelayMilliseconds));
-			var questIdForTrackStatus = this.StaticQuestAutoTrackShouldApplyQuestStatus(quest)
-				? questData.Id
-				: 0;
 			var onStartStatus = this.ParseStaticQuestAutoStatus(track.StartStatus, quest.Status);
 			var onCompleteStatus = this.ParseStaticQuestAutoStatus(track.EndStatus, quest.Status);
+			var shouldApplyQuestStatus = this.StaticQuestAutoTrackShouldApplyQuestStatus(quest) &&
+				!this.StaticQuestAutoTrackWouldRegressQuestStatus(quest, onStartStatus, onCompleteStatus);
+			var questIdForTrackStatus = shouldApplyQuestStatus ? questData.Id : 0;
 
 			Log.Info("Papaya quest_auto: starting track '{0}' for quest '{1}' ({2}) on map '{3}' at status {4}.", track.TrackName, questData.ClassName, questData.Id, mapClassName, quest.Status);
 			_ = this.Character.Tracks.Start(track.TrackName, delay, questIdForTrackStatus, onStartStatus, onCompleteStatus, track.PropertyName, questData.Id);
 			this.QueueDelayedNativeQuestTrackerRefresh(quest.Data.Id, Math.Max(650, track.DelayMilliseconds + 3500));
 			return true;
+		}
+
+		private bool StaticQuestAutoTrackWouldRegressQuestStatus(Quest quest, QuestStatus onStartStatus, QuestStatus onCompleteStatus)
+		{
+			if (quest == null || quest.Status < QuestStatus.Success)
+				return false;
+
+			return onStartStatus < quest.Status || onCompleteStatus < quest.Status;
 		}
 
 		public IActor[] CreateGenericQuestAutoTrackActors(Track track)
@@ -2433,7 +2481,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			if (string.Equals(status, "Possible", StringComparison.OrdinalIgnoreCase))
 				return quest.Status == QuestStatus.Possible;
 			if (string.Equals(status, "Progress", StringComparison.OrdinalIgnoreCase) || string.Equals(status, "InProgress", StringComparison.OrdinalIgnoreCase))
-				return quest.InProgress;
+				return quest.Status == QuestStatus.InProgress;
 			if (string.Equals(status, "Success", StringComparison.OrdinalIgnoreCase))
 				return quest.Status == QuestStatus.Success;
 			if (string.Equals(status, "Complete", StringComparison.OrdinalIgnoreCase) || string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase))
