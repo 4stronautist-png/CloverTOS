@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Melia.Shared.Game.Const;
 using Melia.Zone.Buffs.Base;
@@ -21,11 +22,13 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 	public class CombatComponent : CombatEntityComponent, IUpdateable
 	{
 		private static readonly TimeSpan AttackStateDuration = TimeSpan.FromSeconds(10);
+		private static readonly TimeSpan AttackStateAutoReleaseDelay = TimeSpan.FromMilliseconds(1500);
 
 		private readonly object _hitLock = new();
 		private readonly Dictionary<int, float> _damageTaken = new();
 		private readonly Dictionary<int, int> _hitsTaken = new();
 		private readonly List<int> _targets = new();
+		private int _attackStateVersion;
 
 		private Skill _castingSkill;
 		private bool _isCasting;
@@ -69,11 +72,31 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 
 			this.AttackState = state;
 			this.LastCombatTime = DateTime.UtcNow;
+			var version = Interlocked.Increment(ref _attackStateVersion);
 
 			Send.ZC_PC_ATKSTATE(this.Entity, state);
 
 			if (prevState != state)
 				CombatStateChanged?.Invoke(this.Entity, state);
+
+			if (state)
+				this.QueueAttackStateAutoRelease(version);
+		}
+
+		private void QueueAttackStateAutoRelease(int version)
+		{
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(AttackStateAutoReleaseDelay);
+
+				if (this.Entity.IsDead || !this.AttackState)
+					return;
+
+				if (Interlocked.CompareExchange(ref _attackStateVersion, version, version) != version)
+					return;
+
+				this.SetAttackState(false);
+			});
 		}
 
 		/// <summary>

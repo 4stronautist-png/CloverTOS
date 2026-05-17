@@ -18,6 +18,7 @@ using Melia.Zone.Events;
 using Melia.Zone.Network.Helpers;
 using Melia.Zone.Skills;
 using Melia.Zone.Skills.Combat;
+using Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer;
 using Melia.Zone.Skills.SplashAreas;
 using Melia.Zone.World;
 using Melia.Zone.World.Actors;
@@ -603,6 +604,8 @@ namespace Melia.Zone.Network
 			{
 				character.Skills.AddSilent(new Skill(character, skill.Id));
 			}
+
+			EskrimerSkillHelper.SuppressPasataSotoIfUnavailable(character);
 
 			var skills = character.Skills.GetList();
 			var skillIds = new HashSet<SkillId>(skills.Select(skill => skill.Id));

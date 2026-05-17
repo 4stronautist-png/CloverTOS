@@ -8,6 +8,8 @@ using Melia.Shared.Game.Const;
 using Melia.Shared.ObjectProperties;
 using Melia.Zone.Scripting;
 using Melia.Zone.Skills.Handlers.Archers.Wugushi;
+using Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer;
+using Melia.Zone.World.Actors;
 using Newtonsoft.Json.Linq;
 using Yggdrasil.Logging;
 
@@ -133,6 +135,8 @@ namespace Melia.Zone.Skills
 			this.Create(new RFloatProperty(PropertyName.DelayTime, () => (int)this.Skill.Data.DelayTime.TotalMilliseconds));
 			this.Create(PropertyName.Skill_Delay, "SCR_GET_DELAY_TIME");
 			this.Create(new RFloatProperty(PropertyName.ReinforceAtk, () => 0f));
+			this.Create(new RStringProperty(PropertyName.ReqBuff, () => string.Empty));
+			this.Create(new RStringProperty(PropertyName.UseScript, () => string.Empty));
 
 			this.Create(new RFloatProperty(PropertyName.SklSpdRateValue, () => this.Skill.Data.SpeedRate));
 			this.Create(PropertyName.SklSpdRate, "SCR_GET_SklSpdRate");
@@ -169,6 +173,8 @@ namespace Melia.Zone.Skills
 				SkillId.Assassin_Hasisas or SkillId.Common_Assassin_Hasisas => 175f + (20f * (this.Skill.Level - 1)),
 				SkillId.Assassin_HallucinationSmoke or SkillId.Assassin_HallucinationSmoke_2 => 20f,
 				SkillId.Wugushi_WideMiasma => WugushiSkillHelper.HemotoxicMiasmaHealingReductionPercent,
+				SkillId.Escrimeur_Invitation => EskrimerSkillHelper.PretPasataFinalDamageCap * 100f,
+				SkillId.Escrimeur_AvantGarde => EskrimerSkillHelper.GetAvantGardeFinalDamageBonus(this.Skill) * 100f,
 				_ => 0f,
 			};
 		}
@@ -178,6 +184,7 @@ namespace Melia.Zone.Skills
 			return this.Skill.Id switch
 			{
 				SkillId.Wugushi_WideMiasma => WugushiSkillHelper.GetWideMiasmaMoveSpeedCaption(this.Skill.Owner),
+				SkillId.Escrimeur_GrandFente => 2.5f * Math.Max(1, this.Skill.Level),
 				_ => 0f,
 			};
 		}

@@ -598,6 +598,56 @@ namespace Melia.Zone
 
 			this.IesMods.Add("Skill", 30509, "Caption", "{#339999}{ol}[Stealth]{/}{/} Duration and movement speed scale with Poison Mastery.{nl}Any damage you deal or any skill use removes Stealth.{nl}{#339999}{ol}[Hemotoxic Miasma]{/}{/} Buff Duration: 5 seconds{nl}Wugushi skills that hit bleeding enemies inflict 60% healing reduction for 8 seconds.");
 
+			var eskrimerSkillCaptions = new (int Id, string Caption)[]
+			{
+				(12353, "Pierce enemies in front. Grants [Toucher] buff to self upon use."),
+				(12354, "Stabs enemies repeatedly to deal damage. Partially ignores enemy Defense. Grants the [Toucher] buff to self upon use."),
+				(12355, "Dashes forward to attack. Grants the [Toucher] buff to self upon use."),
+				(12356, "Spins the tip of the sword to deflect incoming attacks, blocking 100% of damage while channeling. Upon completion, grants a [Pret] buff that increases the Final Damage of [Pasata Soto]. The Final Damage bonus cannot exceed 20%."),
+				(12357, "Adopt a stance for delivering lethal strikes. Increases Final Damage when an Eskrimer skill deals a Critical Hit."),
+				(12358, "Delivers a rapid series of thrusts. This attack has a higher Critical Rate. Grants the [Toucher] buff to self upon use."),
+				(12359, "Performs a surprise lunge to deliver a rapid series of thrusts. If the [Pret] buff is active, this skill deals increased Final Damage."),
+			};
+
+			foreach (var eskrimerSkillCaption in eskrimerSkillCaptions)
+				this.IesMods.Add("Skill", eskrimerSkillCaption.Id, "Caption", eskrimerSkillCaption.Caption);
+
+			var eskrimerAbilityTrees = new (int ClassId, int AbilityId, string ClassName, int MaxLevel, string PriceTimeScript, string UnlockScript, string UnlockArgStr, int UnlockArgNum)[]
+			{
+				(100, 125018, "Escrimeur100", 1, "ABIL_COMMON_PRICE_1LV", "UNLOCK_BASE_LEVEL", "", 1),
+				(101, 125019, "Escrimeur1", 100, "ABIL_REINFORCE_PRICE", "UNLOCK_ABIL_SKILL", "Escrimeur_AttaqueEnchainee", 1),
+				(102, 125020, "Escrimeur2", 100, "ABIL_REINFORCE_PRICE", "UNLOCK_ABIL_SKILL", "Escrimeur_SeptEclairs", 1),
+				(103, 125021, "Escrimeur3", 100, "ABIL_REINFORCE_PRICE", "UNLOCK_ABIL_SKILL", "Escrimeur_GrandFente", 1),
+				(104, 125022, "Escrimeur4", 100, "ABIL_REINFORCE_PRICE", "UNLOCK_ABIL_SKILL", "Escrimeur_AvantGarde", 1),
+				(105, 125023, "Escrimeur5", 100, "ABIL_REINFORCE_PRICE", "UNLOCK_ABIL_SKILL", "Escrimeur_Rafale", 1),
+				(106, 125024, "Escrimeur6", 100, "ABIL_REINFORCE_PRICE", "UNLOCK_ABIL_SKILL", "Escrimeur_PassataSotto", 1),
+				(1001, 125025, "Escrimeur101", 30, "HIDDENABIL_PRICE_COND_REINFORCE", "UNLOCK_ABIL_OTHERABILITY", "Escrimeur1", 65),
+				(1002, 125026, "Escrimeur102", 30, "HIDDENABIL_PRICE_COND_REINFORCE", "UNLOCK_ABIL_OTHERABILITY", "Escrimeur2", 65),
+				(1003, 125027, "Escrimeur103", 30, "HIDDENABIL_PRICE_COND_REINFORCE", "UNLOCK_ABIL_OTHERABILITY", "Escrimeur3", 65),
+				(1004, 125028, "Escrimeur104", 30, "HIDDENABIL_PRICE_COND_REINFORCE", "UNLOCK_ABIL_OTHERABILITY", "Escrimeur5", 65),
+				(1005, 125029, "Escrimeur105", 30, "HIDDENABIL_PRICE_COND_REINFORCE", "UNLOCK_ABIL_OTHERABILITY", "Escrimeur6", 65),
+				(201, 125030, "Escrimeur106", 1, "HIDDENABIL_PRICE_COND_JOBLEVEL", "UNLOCK_ABIL_SKILL", "Escrimeur_AttaqueEnchainee", 1),
+				(202, 125031, "Escrimeur107", 1, "HIDDENABIL_PRICE_COND_JOBLEVEL", "UNLOCK_ABIL_SKILL", "Escrimeur_PassataSotto", 1),
+			};
+
+			foreach (var abilityTree in eskrimerAbilityTrees)
+			{
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "Category", "Escrimeur");
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "ClassName", abilityTree.ClassName);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "AbilityID", abilityTree.AbilityId);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "AbilityId", abilityTree.AbilityId);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "Ability", abilityTree.AbilityId);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "Job", 1030);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "JobID", 1030);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "JobId", 1030);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "MaxLevel", abilityTree.MaxLevel);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "UnlockScript", abilityTree.UnlockScript);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "UnlockScriptName", abilityTree.UnlockScript);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "UnlockArgStr", abilityTree.UnlockArgStr);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "UnlockArgNum", abilityTree.UnlockArgNum);
+				this.IesMods.Add("AbilityTree", abilityTree.ClassId, "PriceTimeScript", abilityTree.PriceTimeScript);
+			}
+
 			this.IesMods.Add("Buff", 1065, "ApplyTime", 100000);
 			this.IesMods.Add("Buff", 1065, "UpdateTime", 1000);
 			this.IesMods.Add("Buff", 1065, "CT_OverBuff", 1);
@@ -623,6 +673,42 @@ namespace Melia.Zone
 			this.IesMods.Add("Buff", 1126, "CT_RemoveBySkill", "YES");
 			this.IesMods.Add("Buff", 1126, "DeadRemove", "YES");
 			this.IesMods.Add("Buff", 1126, "Save", "NO");
+
+			var eskrimerBuffTooltips = new (int Id, string ClassName, string Name, string Caption, string Icon, int ApplyTime, int OverBuff)[]
+			{
+				((int)BuffId.Touche_Buff, "Touche_Buff", "Toucher", "Minimum Critical Rate +1% and Accuracy +2% per stack. Stacks up to 15 times. At maximum stacks, Pasata Soto becomes available for 10 seconds.", "warri_Touche", 60000, 15),
+				((int)BuffId.Touche_max_Buff, "Touche_max_Buff", "Toucher", "Maximum Toucher state. Pasata Soto is available.", "warri_Touche_max", 10000, 1),
+				((int)BuffId.Invitation_Buff, "Invitation_Buff", "Invitation", "Blocks 100% of incoming damage while channeling.", "warri_Invitation", 2000, 1),
+				((int)BuffId.Pret_Buff, "Pret_Buff", "Pret", "Pasata Soto Final Damage is increased by up to 20%.", "warri_Pret", 10000, 1),
+				((int)BuffId.AdvantGarde_Buff, "AdvantGarde_Buff", "Avant Garde", "Critical Hits with Eskrimer skills increase Final Damage.", "warri_AvantGarde", 1800000, 1),
+				((int)BuffId.Ouvert_Buff, "Ouvert_Buff", "Ouvert", "Eskrimer skill damage +20%.", "warri_Ouvert", 2000, 1),
+			};
+
+			foreach (var buffTooltip in eskrimerBuffTooltips)
+			{
+				this.IesMods.Add("Buff", buffTooltip.Id, "ClassName", buffTooltip.ClassName);
+				this.IesMods.Add("Buff", buffTooltip.Id, "Name", buffTooltip.Name);
+				this.IesMods.Add("Buff", buffTooltip.Id, "Caption", buffTooltip.Caption);
+				this.IesMods.Add("Buff", buffTooltip.Id, "Desc", buffTooltip.Caption);
+				this.IesMods.Add("Buff", buffTooltip.Id, "Description", buffTooltip.Caption);
+				this.IesMods.Add("Buff", buffTooltip.Id, "ToolTip", buffTooltip.Caption);
+				this.IesMods.Add("Buff", buffTooltip.Id, "Tooltip", buffTooltip.Caption);
+				this.IesMods.Add("Buff", buffTooltip.Id, "Icon", buffTooltip.Icon);
+				this.IesMods.Add("Buff", buffTooltip.Id, "ShowIcon", "YES");
+				this.IesMods.Add("Buff", buffTooltip.Id, "Group1", "Buff");
+				this.IesMods.Add("Buff", buffTooltip.Id, "Group2", "Normal");
+				this.IesMods.Add("Buff", buffTooltip.Id, "Group3", "None");
+				this.IesMods.Add("Buff", buffTooltip.Id, "ApplyTime", buffTooltip.ApplyTime);
+				this.IesMods.Add("Buff", buffTooltip.Id, "UpdateTime", 0);
+				this.IesMods.Add("Buff", buffTooltip.Id, "CT_SlotType", "slot_buff");
+				this.IesMods.Add("Buff", buffTooltip.Id, "OverBuff", buffTooltip.OverBuff);
+				this.IesMods.Add("Buff", buffTooltip.Id, "CT_OverBuff", buffTooltip.OverBuff);
+				this.IesMods.Add("Buff", buffTooltip.Id, "ApplyLimitCountBuff", "YES");
+				this.IesMods.Add("Buff", buffTooltip.Id, "CT_RemoveBySkill", "YES");
+				this.IesMods.Add("Buff", buffTooltip.Id, "Removable", "YES");
+				this.IesMods.Add("Buff", buffTooltip.Id, "DeadRemove", "YES");
+				this.IesMods.Add("Buff", buffTooltip.Id, "Save", "NO");
+			}
 
 			this.IesMods.Add("Buff", 1127, "ClassName", "GoldenFrog_Slow_Debuff");
 			this.IesMods.Add("Buff", 1127, "Type", "Debuff");

@@ -23,6 +23,7 @@ using Melia.Zone.Scripting;
 using Melia.Zone.Scripting.Dialogues;
 using Melia.Zone.Services;
 using Melia.Zone.Skills;
+using Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer;
 using Melia.Zone.Skills.Handlers.Base;
 using Melia.Zone.Util;
 using Melia.Zone.World;
@@ -1862,6 +1863,24 @@ namespace Melia.Zone.Network
 
 			var character = conn.SelectedCharacter;
 
+			if (EskrimerSkillHelper.IsPasataSotoTriggerSkill(skillId) && EskrimerSkillHelper.HasMaximumToucher(character))
+			{
+				ICombatEntity pasataTarget = null;
+				foreach (var handle in targetHandles)
+				{
+					if (character.Map.TryGetCombatEntity(handle, out var foundTarget) && !foundTarget.IsDead && character.CanDamage(foundTarget))
+					{
+						pasataTarget = foundTarget;
+						break;
+					}
+				}
+
+				Log.Info("CZ_CLIENT_HIT_LIST: Executing Pasata Soto for '{0}' from trigger skill {1} while Maximum Toucher is active.", conn.Account.Name, skillId);
+				RemoveWideMiasmaStealthOnSkillUse(character, SkillId.Escrimeur_PassataSotto);
+				if (EskrimerSkillHelper.TryUseAvailablePasataSoto(character, originPos, pasataTarget?.Position ?? farPos, pasataTarget))
+					return;
+			}
+
 			// Check skill
 			if (!character.Skills.TryGet(skillId, out var skill))
 			{
@@ -1966,6 +1985,18 @@ namespace Melia.Zone.Network
 
 			var character = conn.SelectedCharacter;
 
+			if (EskrimerSkillHelper.IsPasataSotoTriggerSkill(skillId) && EskrimerSkillHelper.HasMaximumToucher(character))
+			{
+				ICombatEntity pasataTarget = null;
+				if (targetHandle != 0 && character.Map.TryGetCombatEntity(targetHandle, out var foundTarget) && !foundTarget.IsDead)
+					pasataTarget = foundTarget;
+
+				Log.Info("CZ_SKILL_TARGET: Executing Pasata Soto for '{0}' from trigger skill {1} while Maximum Toucher is active.", conn.Account.Name, skillId);
+				RemoveWideMiasmaStealthOnSkillUse(character, SkillId.Escrimeur_PassataSotto);
+				if (EskrimerSkillHelper.TryUseAvailablePasataSoto(character, character.Position, pasataTarget?.Position ?? character.Position.GetRelative2D(character.Direction, 100), pasataTarget))
+					return;
+			}
+
 			// Check skill
 			if (!character.Skills.TryGet(skillId, out var skill))
 			{
@@ -2066,6 +2097,14 @@ namespace Melia.Zone.Network
 				return;
 			}
 
+			if (EskrimerSkillHelper.IsPasataSotoTriggerSkill(skillId) && EskrimerSkillHelper.HasMaximumToucher(character))
+			{
+				Log.Info("CZ_SKILL_TARGET_ANI: Executing Pasata Soto for '{0}' from trigger skill {1} while Maximum Toucher is active.", conn.Account.Name, skillId);
+				RemoveWideMiasmaStealthOnSkillUse(character, SkillId.Escrimeur_PassataSotto);
+				if (EskrimerSkillHelper.TryUseAvailablePasataSoto(character, character.Position, direction, null))
+					return;
+			}
+
 			// Check skill
 			if (!character.Skills.TryGet(skillId, out var skill))
 			{
@@ -2156,11 +2195,31 @@ namespace Melia.Zone.Network
 			{
 				skillId = (SkillId)id;
 
+				if (EskrimerSkillHelper.IsPasataSotoTriggerSkill(skillId) && EskrimerSkillHelper.HasMaximumToucher(character))
+				{
+					ICombatEntity pasataTarget = null;
+					if (targetHandle != 0 && character.Map.TryGetActor(targetHandle, out var pasataActor))
+					{
+						if (pasataActor is ICombatEntity ce && character.CanDamage(ce))
+							pasataTarget = ce;
+					}
+
+					Log.Info("CZ_SKILL_GROUND: Executing Pasata Soto for '{0}' from trigger skill {1} while Maximum Toucher is active.", conn.Account.Name, skillId);
+					RemoveWideMiasmaStealthOnSkillUse(character, SkillId.Escrimeur_PassataSotto);
+					if (EskrimerSkillHelper.TryUseAvailablePasataSoto(character, originPos, farPos, pasataTarget))
+						return;
+				}
+
 				// Check skill
 				if (!character.Skills.TryGet(skillId, out skill))
 				{
-					Log.Warning("CZ_SKILL_GROUND: User '{0}' tried to use a skill they don't have ({1}).", conn.Account.Name, skillId);
-					return;
+					if (skillId != SkillId.Escrimeur_PassataSotto
+						|| !EskrimerSkillHelper.HasMaximumToucher(character)
+						|| !EskrimerSkillHelper.TryEnsurePasataSotoSkill(character, out skill))
+					{
+						Log.Warning("CZ_SKILL_GROUND: User '{0}' tried to use a skill they don't have ({1}).", conn.Account.Name, skillId);
+						return;
+					}
 				}
 			}
 
@@ -2269,6 +2328,14 @@ namespace Melia.Zone.Network
 			var b2 = packet.GetByte();
 
 			var character = conn.SelectedCharacter;
+
+			if (EskrimerSkillHelper.IsPasataSotoTriggerSkill(skillId) && EskrimerSkillHelper.HasMaximumToucher(character))
+			{
+				Log.Info("CZ_SKILL_SELF: Executing Pasata Soto for '{0}' from trigger skill {1} while Maximum Toucher is active.", conn.Account.Name, skillId);
+				RemoveWideMiasmaStealthOnSkillUse(character, SkillId.Escrimeur_PassataSotto);
+				if (EskrimerSkillHelper.TryUseAvailablePasataSoto(character, originPos, direction, null))
+					return;
+			}
 
 			// Check skill
 			if (!character.Skills.TryGet(skillId, out var skill))
@@ -4862,7 +4929,8 @@ namespace Melia.Zone.Network
 			var abilityLevelAdds = new Dictionary<int, int>();
 
 			var size = packet.GetShort();
-			var category = packet.GetString(32);
+			var rawCategory = packet.GetString(32);
+			var category = AbilityTreeDb.NormalizeCategory(rawCategory);
 			var count = packet.GetInt();
 
 			for (var i = 0; i < count; i++)
@@ -4875,10 +4943,10 @@ namespace Melia.Zone.Network
 
 			var character = conn.SelectedCharacter;
 
-			var abilityTreeEntries = ZoneServer.Instance.Data.AbilityTreeDb.Find(category);
-			if (!abilityTreeEntries.Any())
+			var abilityTreeEntries = ZoneServer.Instance.Data.AbilityTreeDb.Find(category).ToList();
+			if (abilityTreeEntries.Count == 0)
 			{
-				Log.Warning("CZ_REQ_LEARN_ABILITY: User '{0}' tried to learn abilities from an unknown category ({1}).", character.Username, category);
+				Log.Warning("CZ_REQ_LEARN_ABILITY: User '{0}' tried to learn abilities from an unknown category ({1} -> {2}).", character.Username, rawCategory, category);
 				return;
 			}
 

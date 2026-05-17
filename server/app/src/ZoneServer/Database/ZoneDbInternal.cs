@@ -8,6 +8,8 @@ using Melia.Shared.Game.Const;
 using Yggdrasil.Db.MySql.SimpleCommands;
 using Melia.Shared.ObjectProperties;
 using Melia.Zone.Buffs.Base;
+using Melia.Zone.Skills;
+using Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer;
 using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.CombatEntities.Components;
 using Melia.Zone.World.Items;
@@ -763,6 +765,13 @@ namespace Melia.Zone.Database
 		internal void InternalSaveSkills(Character character, MySqlConnection conn, MySqlTransaction trans)
 		{
 			var skillsToSave = character.Skills.GetList().Where(skill => skill.LevelByDB > 0).ToList();
+
+			if (!skillsToSave.Any(skill => skill.Id == SkillId.Escrimeur_PassataSotto)
+				&& character.Variables.Temp.TryGetInt(EskrimerSkillHelper.StoredPasataSotoLevelVar, out var pasataSotoLevel)
+				&& pasataSotoLevel > 0)
+			{
+				skillsToSave.Add(new Skill(character, SkillId.Escrimeur_PassataSotto, pasataSotoLevel));
+			}
 
 			if (!skillsToSave.Any())
 			{

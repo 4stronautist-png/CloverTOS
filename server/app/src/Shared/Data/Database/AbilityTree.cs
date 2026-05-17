@@ -61,10 +61,22 @@ namespace Melia.Shared.Data.Database
 		/// <returns></returns>
 		public IEnumerable<AbilityTreeData> Find(string category)
 		{
-			if (category.StartsWith("Ability_"))
+			category = NormalizeCategory(category);
+
+			return this.Entries.Where(a => NormalizeCategory(a.Category) == category);
+		}
+
+		public static string NormalizeCategory(string category)
+		{
+			category = category?.TrimEnd('\0').Trim() ?? "";
+
+			if (category.StartsWith("Ability_", StringComparison.Ordinal))
 				category = category.Substring(8);
 
-			return this.Entries.Where(a => a.Category == category);
+			if (category == "Eskrimer")
+				category = "Escrimeur";
+
+			return category;
 		}
 
 		/// <summary>

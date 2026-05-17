@@ -16,6 +16,7 @@ using Melia.Shared.Util;
 using Melia.Zone;
 using Melia.Zone.Network;
 using Melia.Zone.Scripting;
+using Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer;
 using Melia.Zone.World.Actors;
 using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.Characters.Components;
@@ -26,6 +27,24 @@ using Yggdrasil.Logging;
 
 public class CustomCommandFunctionsScript : GeneralScript
 {
+	[ScriptableFunction]
+	public CustomCommandResult SCR_QUICKSLOT_CHANGE_SKILL_UPDATE_STATE(Character character, int numArg1, int numArg2, int numArg3)
+	{
+		if (numArg1 != (int)SkillId.Escrimeur_PassataSotto)
+			return CustomCommandResult.Okay;
+
+		if (!EskrimerSkillHelper.HasMaximumToucher(character))
+			return CustomCommandResult.Fail;
+
+		var originPos = character.Position;
+		var farPos = originPos.GetRelative2D(character.Direction, 100);
+		if (!EskrimerSkillHelper.TryUseAvailablePasataSoto(character, originPos, farPos, null))
+			return CustomCommandResult.Fail;
+
+		Log.Info("SCR_QUICKSLOT_CHANGE_SKILL_UPDATE_STATE: Executed Pasata Soto for '{0}' from Pasata quickslot command.", character.Name);
+		return CustomCommandResult.Okay;
+	}
+
 	[ScriptableFunction]
 	public CustomCommandResult SCR_MARKET_UI_OPEN(Character character, int numArg1, int numArg2, int numArg3)
 	{
