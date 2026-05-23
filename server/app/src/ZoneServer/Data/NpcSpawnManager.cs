@@ -89,6 +89,11 @@ namespace Melia.Zone.Spawning
 		public static void SpawnNpcsForMap(Map mapInstance)
 		{
 			if (mapInstance == null || mapInstance == Map.Limbo) return;
+			if (string.Equals(mapInstance.ClassName, "f_siauliai_west", StringComparison.OrdinalIgnoreCase))
+			{
+				Log.Info("Procedural NPC spawns disabled on f_siauliai_west while the initial main quest flow is main-only.");
+				return;
+			}
 
 			if (!_spawnsByMap.TryGetValue(mapInstance.ClassName, out var spawnPoints))
 			{

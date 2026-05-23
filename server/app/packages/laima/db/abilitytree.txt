@@ -1370,11 +1370,24 @@
 // Assassin
 //---------------------------------------------------------------------------
 { category: "Assassin", classId: 101, abilityId: 502001, jobId: 5002, className: "Assassin1", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "Assassin_Hasisas", argNum: 1 } },
+{ category: "Assassin", classId: 103, abilityId: 502003, jobId: 5002, className: "Assassin3", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_300LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 300 } },
 { category: "Assassin", classId: 201, abilityId: 502004, jobId: 5002, className: "Assassin4", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "Assassin_Behead", argNum: 1 } },
+{ category: "Assassin", classId: 202, abilityId: 502005, jobId: 5002, className: "Assassin5", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 100 } },
+{ category: "Assassin", classId: 203, abilityId: 502006, jobId: 5002, className: "Assassin6", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_300LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 300 } },
 { category: "Assassin", classId: 301, abilityId: 502007, jobId: 5002, className: "Assassin7", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "Assassin_InstantaneousAcceleration", argNum: 1 } },
+{ category: "Assassin", classId: 303, abilityId: 502009, jobId: 5002, className: "Assassin9", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_300LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 300 } },
 { category: "Assassin", classId: 401, abilityId: 502010, jobId: 5002, className: "Assassin10", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "Assassin_HallucinationSmoke", argNum: 1 } },
 { category: "Assassin", classId: 501, abilityId: 502012, jobId: 5002, className: "Assassin12", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "Assassin_PiercingHeart", argNum: 1 } },
+{ category: "Assassin", classId: 502, abilityId: 502013, jobId: 5002, className: "Assassin13", maxLevel: 5, priceTimeScript: 'ABIL_COMMON_PRICE_100LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 100 } },
 { category: "Assassin", classId: 601, abilityId: 502015, jobId: 5002, className: "Assassin15", maxLevel: 100, priceTimeScript: 'ABIL_REINFORCE_PRICE', unlockScript: { name: "UNLOCK_ABIL_SKILL", argStr: "Assassin_Annihilation", argNum: 1 } },
+{ category: "Assassin", classId: 602, abilityId: 502016, jobId: 5002, className: "Assassin16", maxLevel: 10, priceTimeScript: 'ABIL_COMMON_PRICE_200LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 200 } },
+{ category: "Assassin", classId: 603, abilityId: 502017, jobId: 5002, className: "Assassin17", maxLevel: 1, priceTimeScript: 'ABIL_COMMON_PRICE_300LV', unlockScript: { name: "UNLOCK_BASE_LEVEL", argStr: "", argNum: 300 } },
+{ category: "Assassin", classId: 701, abilityId: 502018, jobId: 5002, className: "Assassin18", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char5_2", argNum: 45 } },
+{ category: "Assassin", classId: 802, abilityId: 502019, jobId: 5002, className: "Assassin19", maxLevel: 30, priceTimeScript: 'HIDDENABIL_PRICE_COND_REINFORCE', unlockScript: { name: "UNLOCK_ABIL_OTHERABILITY", argStr: "Assassin4", argNum: 65 } },
+{ category: "Assassin", classId: 803, abilityId: 502020, jobId: 5002, className: "Assassin20", maxLevel: 30, priceTimeScript: 'HIDDENABIL_PRICE_COND_REINFORCE', unlockScript: { name: "UNLOCK_ABIL_OTHERABILITY", argStr: "Assassin7", argNum: 65 } },
+{ category: "Assassin", classId: 804, abilityId: 502021, jobId: 5002, className: "Assassin21", maxLevel: 30, priceTimeScript: 'HIDDENABIL_PRICE_COND_REINFORCE', unlockScript: { name: "UNLOCK_ABIL_OTHERABILITY", argStr: "Assassin12", argNum: 65 } },
+{ category: "Assassin", classId: 805, abilityId: 502022, jobId: 5002, className: "Assassin22", maxLevel: 30, priceTimeScript: 'HIDDENABIL_PRICE_COND_REINFORCE', unlockScript: { name: "UNLOCK_ABIL_OTHERABILITY", argStr: "Assassin15", argNum: 65 } },
+{ category: "Assassin", classId: 702, abilityId: 502023, jobId: 5002, className: "Assassin23", maxLevel: 1, priceTimeScript: 'HIDDENABIL_PRICE_COND_JOBLEVEL', unlockScript: { name: "UNLOCK_ABIL_JOB_LEVEL", argStr: "Char5_2", argNum: 45 } },
 
 // Outlaw
 //---------------------------------------------------------------------------

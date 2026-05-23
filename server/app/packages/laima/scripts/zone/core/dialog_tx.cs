@@ -652,7 +652,7 @@ public class DialogTxFunctionsScript : GeneralScript
 		}
 
 		if (amount > 0)
-			character.ModifyAbilityPoints(amount);
+			character.ModifyAbilityPoints(character.GetWorldScaledAbilityPointAmount(amount));
 
 
 		return DialogTxResult.Okay;

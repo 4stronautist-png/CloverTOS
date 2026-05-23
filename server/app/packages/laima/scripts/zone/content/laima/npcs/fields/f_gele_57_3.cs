@@ -19,5 +19,10 @@ public class FGele573NpcScript : GeneralScript
 		// Lv1 Treasure Chest
 		//-------------------------------------------------------------------------
 		AddNpc(40, 147392, "Lv1 Treasure Chest", "f_gele_57_3", 1150.08, 217.61, 817.83, 90, "TREASUREBOX_LV_F_GELE_57_340", "", "");
+
+		// Papaya main quest actors: Foreseen Crisis
+		//-------------------------------------------------------------------------
+		AddNpc(70, 57223, "Paladin Master", "f_gele_57_3", 871, -68, -514, 0, "GELE573_MASTER", "", "");
+		AddNpc(71, 147390, "Paladin Follower", "f_gele_57_3", 805, -68, -450, 0, "GELE573_MQ_07_F", "", "");
 	}
 }

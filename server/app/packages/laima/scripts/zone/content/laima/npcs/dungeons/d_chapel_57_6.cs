@@ -19,5 +19,12 @@ public class DChapel576NpcScript : GeneralScript
 		// Lv1 Treasure Chest
 		//-------------------------------------------------------------------------
 		AddNpc(30, 147392, "Lv1 Treasure Chest", "d_chapel_57_6", -660.85, 0.59, 117.06, 90, "TREASUREBOX_LV_D_CHAPEL_57_630", "", "");
+
+		// Papaya main quest actors: Church Gate
+		//-------------------------------------------------------------------------
+		AddNpc(70, 147390, "Paladin Follower", "d_chapel_57_6", 746, 0, -251, 0, "CHAPEL_VIRGINIJA", "", "");
+		AddNpc(71, 147353, "", "d_chapel_57_6", 298, -78, -110, 0, "CHAPLE576_MQ_04", "", "");
+		AddNpc(72, 147390, "Paladin Follower", "d_chapel_57_6", -536, 0, 1563, 0, "CHAPEL576_DONATAS", "", "");
+		AddNpc(73, 147353, "", "d_chapel_57_6", 259, 0, 427, 0, "CHAPLE576_MQ_09", "", "");
 	}
 }

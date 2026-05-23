@@ -50,11 +50,11 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 			if (pad.Trigger.AtCapacity)
 				return;
 
-			if (!creator.IsAlly(target))
+			if (!creator.CanDamage(target))
 				return;
 
 			pad.Trigger.ActivateCount++;
-			target.StartBuff(BuffId.HallucinationSmoke_Buff, skill.Level, 0, TimeSpan.FromSeconds(4), creator, skill.Id);
+			this.ApplySmokeEffects(creator, target, skill);
 		}
 
 		public void Updated(object sender, PadTriggerArgs args)
@@ -63,9 +63,7 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 			var creator = args.Creator;
 			var skill = args.Skill;
 
-			var targets = pad.Trigger.GetAlliedEntities(creator);
-			if (pad.Trigger.Area.IsInside(creator.Position))
-				targets.Add(creator);
+			var targets = pad.Trigger.GetAttackableEntities(creator);
 
 			foreach (var target in targets)
 			{
@@ -76,7 +74,7 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 					continue;
 
 				pad.Trigger.ActivateCount++;
-				target.StartBuff(BuffId.HallucinationSmoke_Buff, skill.Level, 0, TimeSpan.FromSeconds(4), creator, skill.Id);
+				this.ApplySmokeEffects(creator, target, skill);
 			}
 		}
 
@@ -89,5 +87,22 @@ namespace Melia.Zone.Pads.Handlers.Scouts.Assassin
 		{
 			Send.ZC_NORMAL.PadUpdate(args.Creator, args.Trigger, PadName.Assassin_HallucinationSmoke, 0, 145.8735f, 30, false);
 		}
+
+		private void ApplySmokeEffects(ICombatEntity creator, ICombatEntity target, Skill skill)
+		{
+			target.StartBuff(BuffId.HallucinationSmoke_Debuff, skill.Level, 0, TimeSpan.FromSeconds(20), creator, skill.Id);
+
+			if (!this.HasAbility(creator, AbilityId.Assassin18))
+				return;
+
+			if (creator is not Character character || character.Variables.Temp.Has("Melia.AssassinationTarget"))
+				return;
+
+			character.Variables.Temp.SetInt("Melia.AssassinationTarget", target.Handle);
+			target.StartBuff(BuffId.Assassin_Target_Debuff, skill.Level, 0, TimeSpan.FromSeconds(15), creator, skill.Id);
+		}
+
+		private bool HasAbility(ICombatEntity caster, AbilityId abilityId)
+			=> caster.IsAbilityActive(abilityId) || caster.GetAbilityLevel(abilityId) > 0;
 	}
 }

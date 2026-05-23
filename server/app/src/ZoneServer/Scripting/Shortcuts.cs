@@ -288,7 +288,8 @@ namespace Melia.Zone.Scripting
 					spawnMob.Components.Add(new AiComponent(spawnMob, "BasicMonster"));
 
 				// Make monster aggressive and target character
-				spawnMob.InsertHate(character);
+				spawnMob.SetTarget(character);
+				spawnMob.InsertHate(character, 5000);
 				spawnMob.Tendency = TendencyType.Aggressive;
 				spawnMob.FromGround = fromGround;
 
@@ -408,6 +409,7 @@ namespace Melia.Zone.Scripting
 			{
 				if (enemy is Mob mob && monsterIdSet.Contains(mob.Id) && !mob.IsDead)
 				{
+					mob.SetTarget(character);
 					mob.InsertHate(character, threatAmount);
 					luredCount++;
 				}
@@ -437,6 +439,7 @@ namespace Melia.Zone.Scripting
 			{
 				if (enemy is Mob mob && !mob.IsDead)
 				{
+					mob.SetTarget(character);
 					mob.InsertHate(character, threatAmount);
 					luredCount++;
 				}

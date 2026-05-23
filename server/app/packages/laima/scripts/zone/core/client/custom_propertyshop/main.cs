@@ -24,7 +24,16 @@ public class CustomPropertyShopClientScript : ClientScript
 	protected override void Ready(Character character)
 	{
 		this.SendAllScripts(character);
+		this.MarkLuaReadyAndStreamShops(character);
+	}
 
+	protected override void ReadyAgain(Character character)
+	{
+		this.MarkLuaReadyAndStreamShops(character);
+	}
+
+	private void MarkLuaReadyAndStreamShops(Character character)
+	{
 		// The helper lua is now resident client-side, so the deferred
 		// PlayerEnteredMap path may safely stream shops from here on.
 		character.Variables.Temp.Set(LuaReadyFlag, true);

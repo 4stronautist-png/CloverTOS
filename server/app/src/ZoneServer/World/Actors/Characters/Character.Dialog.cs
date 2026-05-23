@@ -58,6 +58,9 @@ namespace Melia.Zone.World.Actors.Characters
 		/// </summary>
 		public void SetMapNPCState(Npc npc, NpcState state)
 		{
+			if (state == NpcState.Highlighted && this.Quests.ShouldSuppressStaticQuestNpcState(npc.DialogName, this.Map?.ClassName))
+				state = NpcState.Invisible;
+
 			this.Variables.Perm.Set($"{npc.Map.Id}:{npc.GenType}", (short)state);
 			if (state != NpcState.Invisible && state != NpcState.IgnoreState)
 				Send.ZC_ENTER_MONSTER(this.Connection, npc);
@@ -119,6 +122,10 @@ namespace Melia.Zone.World.Actors.Characters
 					{
 						SetPlayerLocalizationContext();
 						dlg.State = DialogState.Active;
+
+						if (this.TryHandleStaticQuestNpcDialogAtStart(actor, dialogName))
+							return;
+
 						await dialogFunc(dlg);
 					}
 					catch (OperationCanceledException) { /* Normal exit path */ }
@@ -168,6 +175,10 @@ namespace Melia.Zone.World.Actors.Characters
 					{
 						SetPlayerLocalizationContext();
 						dlg.State = DialogState.Active;
+
+						if (this.TryHandleStaticQuestNpcDialogAtStart(npc, npc.DialogName))
+							return;
+
 						await dialogFunc(dlg);
 					}
 					catch (OperationCanceledException) { /* Normal exit path */ }
@@ -242,6 +253,29 @@ namespace Melia.Zone.World.Actors.Characters
 				var localizer = ZoneServer.Instance.MultiLocalization.Get(language);
 				Localization.SetContextLocalizer(localizer);
 			}
+		}
+
+		private bool TryHandleStaticQuestNpcDialogAtStart(IActor actor, string dialogName)
+		{
+			if (actor is not Npc || string.IsNullOrWhiteSpace(dialogName))
+				return false;
+
+			if (string.Equals(this.Map?.ClassName, "f_siauliai_west", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (string.Equals(dialogName, "EMILIA", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(dialogName, "ALFONSO", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(dialogName, "AKALABETH", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			if (!this.Quests.HandleStaticNpcDialog(dialogName))
+				return false;
+
+			this.Quests.SyncStaticQuestNpcStates();
+			this.Quests.UpdateClient();
+			this.RestoreCoreHudState(true, true);
+			Log.Info("Static quest chain: handled Papaya NPC dialog '{0}' at dialog start for '{1}' on '{2}'.", dialogName, this.Name, this.Map?.ClassName ?? "unknown");
+			return true;
 		}
 		#endregion
 	}

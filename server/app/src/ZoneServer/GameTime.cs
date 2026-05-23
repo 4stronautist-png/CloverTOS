@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace Melia.Zone
 {
@@ -8,11 +9,40 @@ namespace Melia.Zone
 		/// Time of the game's release.
 		/// </summary>
 		public static readonly DateTime BeginOfTime = DateTime.Parse("2016-03-28");
+		private static long _timeOffsetTicks;
 
 		/// <summary>
 		/// Returns the current time in the game world.
 		/// </summary>
-		public static GameTime Now => new(DateTime.Now);
+		public static GameTime Now => new(DateTime.Now.AddTicks(Interlocked.Read(ref _timeOffsetTicks)));
+
+		/// <summary>
+		/// Sets the current game time of day, keeping the game calendar relative
+		/// to its current position.
+		/// </summary>
+		/// <param name="hour"></param>
+		/// <param name="minute"></param>
+		public static GameTime SetTimeOfDay(int hour, int minute)
+		{
+			var minutesPerHour = ZoneServer.Instance.Conf.World.MinutesPerHour;
+			var hoursPerDay = ZoneServer.Instance.Conf.World.HoursPerDay;
+
+			if (hour < 0 || hour >= hoursPerDay)
+				throw new ArgumentException("Invalid hour.");
+
+			if (minute < 0 || minute >= minutesPerHour)
+				throw new ArgumentException("Invalid minute.");
+
+			var current = GameTime.Now;
+			var currentMinuteOfDay = current.Hour * minutesPerHour + current.Minute;
+			var targetMinuteOfDay = hour * minutesPerHour + minute;
+			var minuteDelta = targetMinuteOfDay - currentMinuteOfDay;
+			var tickDelta = minuteDelta * (long)ZoneServer.Instance.Conf.World.TicksPerMinute;
+
+			Interlocked.Add(ref _timeOffsetTicks, tickDelta);
+
+			return GameTime.Now;
+		}
 
 		/// <summary>
 		/// Returns how long one hour in the game world is in real time.
@@ -71,11 +101,11 @@ namespace Melia.Zone
 		{
 			get
 			{
-				if (this.Hour >= 4 && this.Hour < 6)
+				if (this.Hour >= 5 && this.Hour < 6)
 					return TimeOfDay.Dawn;
-				else if (this.Hour >= 6 && this.Hour < 18)
+				else if (this.Hour >= 6 && this.Hour < 16)
 					return TimeOfDay.Day;
-				else if (this.Hour >= 18 && this.Hour < 20)
+				else if (this.Hour >= 16 && this.Hour < 19)
 					return TimeOfDay.Dusk;
 				else
 					return TimeOfDay.Night;

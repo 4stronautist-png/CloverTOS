@@ -320,6 +320,7 @@ namespace Melia.Zone.World.Actors.Characters
 			this.Layer = 0;
 			Send.ZC_SET_LAYER(this, this.Layer, false);
 			this.LookAround();
+			this.RestoreCoreHudState(true, true);
 		}
 
 		/// <summary>

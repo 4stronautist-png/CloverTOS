@@ -36,6 +36,8 @@ namespace Melia.Zone.World.Actors.Monsters
 	/// </summary>
 	public partial class Mob : Actor, IMonster, ICombatEntity, IUpdateable
 	{
+		private const int CloverQuestBalancedVubbeFighterHp = 1000;
+
 		private readonly object _hpLock = new();
 		private int _killed;
 		private Position _position;
@@ -206,6 +208,73 @@ namespace Melia.Zone.World.Actors.Monsters
 		/// Returns a list of fixed items the monster drops as is when it dies.
 		/// </summary>
 		public ConcurrentBag<Item> StaticDrops { get; } = new ConcurrentBag<Item>();
+
+		public static bool IsSameMonsterFamily(int monsterId, int otherMonsterId)
+		{
+			if (monsterId == otherMonsterId)
+				return true;
+
+			var monsterFamily = GetMonsterFamilyKey(monsterId);
+			var otherFamily = GetMonsterFamilyKey(otherMonsterId);
+			return !string.IsNullOrWhiteSpace(monsterFamily) &&
+				string.Equals(monsterFamily, otherFamily, StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static string GetMonsterFamilyKey(int monsterId)
+		{
+			if (!ZoneServer.Instance.Data.MonsterDb.TryFind(monsterId, out var monsterData) || monsterData == null)
+				return null;
+
+			var className = !string.IsNullOrWhiteSpace(monsterData.ClassName)
+				? monsterData.ClassName
+				: monsterData.Name;
+
+			return NormalizeMonsterFamilyKey(className);
+		}
+
+		private static string NormalizeMonsterFamilyKey(string className)
+		{
+			if (string.IsNullOrWhiteSpace(className))
+				return null;
+
+			var normalized = className.Trim()
+				.ToLowerInvariant()
+				.Replace("-", "_")
+				.Replace(" ", "_");
+
+			var prefixes = new[] { "item_summon_", "m_random_", "solo_", "re_", "et_" };
+			var suffixes = new[] { "_q1", "_q2", "_q3", "_j1", "_j2", "_j3" };
+
+			var changed = true;
+			while (changed)
+			{
+				changed = false;
+				foreach (var prefix in prefixes)
+				{
+					if (!normalized.StartsWith(prefix, StringComparison.Ordinal))
+						continue;
+
+					normalized = normalized.Substring(prefix.Length);
+					changed = true;
+				}
+			}
+
+			changed = true;
+			while (changed)
+			{
+				changed = false;
+				foreach (var suffix in suffixes)
+				{
+					if (!normalized.EndsWith(suffix, StringComparison.Ordinal))
+						continue;
+
+					normalized = normalized.Substring(0, normalized.Length - suffix.Length);
+					changed = true;
+				}
+			}
+
+			return normalized.Replace("_", string.Empty);
+		}
 
 		/// <summary>
 		/// Returns whether the monster is dead.
@@ -492,6 +561,7 @@ namespace Melia.Zone.World.Actors.Monsters
 
 			this.Properties.AddDefaultProperties();
 			this.Properties.InitAutoUpdates();
+			this.ApplyCloverQuestBalancedVubbeFighterHpOverride();
 			this.Properties.InvalidateAll();
 
 			this.Properties.SetFloat(PropertyName.HP, this.Properties.GetFloat(PropertyName.MHP));
@@ -1662,8 +1732,13 @@ namespace Melia.Zone.World.Actors.Monsters
 		/// Overrides the monster's properties with the given values.
 		/// </summary>
 		/// <param name="overrides"></param>
-		public void ApplyOverrides(PropertyOverrides overrides)
+		public void ApplyOverrides(PropertyOverrides overrides, bool syncClient = false)
 		{
+			var oldHp = this.Properties.GetFloat(PropertyName.HP);
+			var oldMhp = this.Properties.GetFloat(PropertyName.MHP);
+			var oldSp = this.Properties.GetFloat(PropertyName.SP);
+			var oldMsp = this.Properties.GetFloat(PropertyName.MSP);
+
 			foreach (var propertyOverride in overrides)
 			{
 				var propertyName = propertyOverride.Key;
@@ -1697,6 +1772,62 @@ namespace Melia.Zone.World.Actors.Monsters
 
 			this.Properties.SetFloat(PropertyName.HP, this.Properties.GetFloat(PropertyName.MHP));
 			this.Properties.SetFloat(PropertyName.SP, this.Properties.GetFloat(PropertyName.MSP));
+
+			if (syncClient)
+				this.SyncOverriddenCombatStatus(oldHp, oldMhp, oldSp, oldMsp);
+		}
+
+		private void ApplyCloverQuestBalancedVubbeFighterHpOverride()
+		{
+			if (!IsCloverQuestBalancedVubbeFighterType(this.Data?.ClassName))
+				return;
+
+			this.Properties.Overrides.SetFloat(PropertyName.MHP, CloverQuestBalancedVubbeFighterHp);
+		}
+
+		private static bool IsCloverQuestBalancedVubbeFighterType(string className)
+		{
+			var normalized = NormalizeCloverMonsterTypeName(className);
+			return normalized.Contains("goblinwarrior", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static string NormalizeCloverMonsterTypeName(string className)
+		{
+			if (string.IsNullOrWhiteSpace(className))
+				return string.Empty;
+
+			var result = new char[className.Length];
+			var count = 0;
+			foreach (var ch in className)
+			{
+				if (char.IsLetterOrDigit(ch))
+					result[count++] = char.ToLowerInvariant(ch);
+			}
+
+			return new string(result, 0, count);
+		}
+
+		private void SyncOverriddenCombatStatus(float oldHp, float oldMhp, float oldSp, float oldMsp)
+		{
+			if (this.Map == null)
+				return;
+
+			var hp = this.Properties.GetFloat(PropertyName.HP);
+			var mhp = this.Properties.GetFloat(PropertyName.MHP);
+			var sp = this.Properties.GetFloat(PropertyName.SP);
+			var msp = this.Properties.GetFloat(PropertyName.MSP);
+
+			if (Math.Abs(oldMhp - mhp) > 0.001f)
+				Send.ZC_UPDATE_MHP(this, (int)mhp);
+
+			if (Math.Abs(oldHp - hp) <= 0.001f &&
+				Math.Abs(oldMhp - mhp) <= 0.001f &&
+				Math.Abs(oldSp - sp) <= 0.001f &&
+				Math.Abs(oldMsp - msp) <= 0.001f)
+				return;
+
+			this.HpChangeCounter += 1;
+			Send.ZC_UPDATE_ALL_STATUS(this, this.HpChangeCounter);
 		}
 
 		/// <summary>

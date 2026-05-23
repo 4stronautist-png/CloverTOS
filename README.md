@@ -10,6 +10,7 @@ Este repositorio empacota:
 - `server/scripts/up.sh`, `down.sh`, `logs.sh`: controle do servidor no WSL.
 - `server/scripts/Manage-CloverTOS.ps1`: wrapper opcional para controlar o WSL pelo PowerShell.
 - `client/tools/Install-CloverTOS-Local.ps1`: copia o cliente da Steam para `C:\CloverTOS-Local` e aplica a config CloverTOS.
+- `client/patches/loading-screen/`: overlay do client aplicado automaticamente para abrir o jogo com a loadscreen CloverTOS.
 
 O repositorio nao inclui os arquivos proprietarios do cliente Tree of Savior. O cliente e sempre copiado da instalacao Steam local.
 

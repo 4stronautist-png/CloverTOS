@@ -706,9 +706,9 @@ namespace Melia.Zone.Database
 					foreach (var job in jobsToSave)
 					{
 						var totalExp = job.TotalExp;
-						if (totalExp <= 0 && job.SkillPoints > 0)
+						if (totalExp <= 0 && job.SkillPoints > 1)
 						{
-							var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints + 1);
+							var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints);
 							if (restoredLevel > 1)
 								totalExp = ZoneServer.Instance.Data.ExpDb.GetNextTotalJobExp(character.Jobs.GetJobRank(job.Id), restoredLevel - 1);
 						}
@@ -762,7 +762,9 @@ namespace Melia.Zone.Database
 		/// </summary>
 		internal void InternalSaveSkills(Character character, MySqlConnection conn, MySqlTransaction trans)
 		{
-			var skillsToSave = character.Skills.GetList().Where(skill => skill.LevelByDB > 0).ToList();
+			var skillsToSave = character.Skills.GetList()
+				.Where(skill => skill.LevelByDB > 0 && !Character.IsClassChangeUnsafeSkillStateSkill(skill.Id))
+				.ToList();
 
 			if (!skillsToSave.Any())
 			{
@@ -930,7 +932,9 @@ namespace Melia.Zone.Database
 				cmdDel.ExecuteNonQuery();
 			}
 
-			var savableBuffs = character.Buffs.GetList().Where(buff => buff.Data.Save).ToList();
+			var savableBuffs = character.Buffs.GetList()
+				.Where(buff => buff.Data.Save && !Character.IsClassChangeUnsafeSkillStateBuff(buff.Id))
+				.ToList();
 			if (!savableBuffs.Any()) return;
 
 			// Insert new buffs and save their variables

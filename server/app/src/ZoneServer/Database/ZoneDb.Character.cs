@@ -150,6 +150,12 @@ namespace Melia.Zone.Database
 							continue;
 						}
 						var level = reader.GetInt32("level");
+						if (Character.IsClassChangeUnsafeSkillStateSkill(skillId))
+						{
+							Log.Info("ZoneDb.LoadSkills: Skipping unsafe skill-state skill '{0}' for character '{1}' ({2}).", skillId, character.Name, character.DbId);
+							continue;
+						}
+
 						var skill = new Skill(character, skillId, level);
 						character.Skills.AddSilent(skill);
 					}
@@ -220,7 +226,17 @@ namespace Melia.Zone.Database
 				}
 			}
 			if (character.Jobs.Count == 0 || character.Jobs.Get(character.JobId) == null)
-				character.Jobs.AddSilent(new Job(character, character.JobId));
+				character.Jobs.AddSilent(new Job(character, character.JobId, JobCircle.First, 1));
+
+			foreach (var job in character.Jobs.GetList())
+			{
+				if (job.TotalExp > 0 || job.SkillPoints <= 0)
+					continue;
+
+				var restoredLevel = Math.Min(job.MaxLevel, job.SkillPoints + 1);
+				if (restoredLevel > 1)
+					job.TotalExp = ZoneServer.Instance.Data.ExpDb.GetNextTotalJobExp(character.Jobs.GetJobRank(job.Id), restoredLevel - 1);
+			}
 		}
 
 		private void LoadSessionObjects(Character character)
@@ -272,6 +288,12 @@ namespace Melia.Zone.Database
 						{
 							var dbId = reader.GetInt64("buffId");
 							var classId = (BuffId)reader.GetInt32("classId");
+							if (Character.IsClassChangeUnsafeSkillStateBuff(classId))
+							{
+								Log.Info("LoadBuffs: Skipping unsafe saved skill-state buff '{0}' for character '{1}' ({2}).", classId, character.Name, character.DbId);
+								continue;
+							}
+
 							var numArg1 = reader.GetInt32("numArg1");
 							var numArg2 = reader.GetInt32("numArg2");
 							var numArg3 = reader.GetInt32("numArg3");
@@ -349,6 +371,12 @@ namespace Melia.Zone.Database
 							};
 							if (!QuestScript.Exists(questId))
 							{
+								if (character.Quests.TryRestoreStaticQuest(questClassId, status, startTime, completeTime, tracked, out var staticQuest))
+								{
+									loadedQuests.Add(questDbId, staticQuest);
+									continue;
+								}
+
 								character.Quests.AddDisabledQuest(questDbId);
 								continue;
 							}

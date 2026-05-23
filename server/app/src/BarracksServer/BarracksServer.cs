@@ -117,6 +117,7 @@ namespace Melia.Barracks
 				this.IesMods.Add("SkinTone", data.ClassId, "Green", ((data.Color & 0x0000FF00) >> 08).ToString());
 				this.IesMods.Add("SkinTone", data.ClassId, "Blue", ((data.Color & 0x000000FF) >> 00).ToString());
 			}
+
 		}
 
 		/// <summary>

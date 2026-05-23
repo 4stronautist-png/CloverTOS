@@ -7,6 +7,7 @@
 using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
 using Melia.Zone.Scripting;
+using Melia.Zone.Scripting.Shared;
 using Melia.Zone.World;
 using Yggdrasil.Util;
 using static Melia.Zone.Scripting.Shortcuts;
@@ -49,12 +50,28 @@ public class CKlaipeNpcScript : GeneralScript
 
 		});
 
+		AddNpc(20169, L("[Market Manager] Lydia"), "Lydia", "c_Klaipe", 250.21234, 225.45662, 90.0, async dialog =>
+		{
+			dialog.SetTitle(L("Lydia"));
+
+			var response = await dialog.Select(L("Would you like to use the market?"),
+				Option(L("Open Market"), "market"),
+				Option(L("Cancel"), "cancel")
+			);
+
+			if (response == "market")
+				await dialog.OpenCustomDialog(CustomDialog.MARKET);
+		});
+
 		// [Item Merchant] Mirina
 		//-------------------------------------------------------------------------
 		var itemMerchant = AddNpc(20115, L("[Item Merchant] Mirina"), "Mirina", "c_Klaipe", 510.7029, -349.3194, 90.0, async dialog =>
 		{
 			dialog.SetTitle(L("Mirina"));
 			dialog.SetPortrait("Dlg_port_TOOL_DEALER");
+
+			if (await NPCFunctions.COMMON_QUEST_HANDLER(dialog))
+				return;
 
 			if (RandomProvider.Get().NextDouble() >= 0.5)
 				await dialog.Msg(L("Care for some potions or helpful consumables?{nl}Buy at Mirina's shop today!"));
@@ -64,6 +81,7 @@ public class CKlaipeNpcScript : GeneralScript
 			await dialog.OpenShop("KlaipedaMiscItems");
 		});
 
+		itemMerchant.DialogName = "EMILIA";
 		itemMerchant.AssociatedShopName = "KlaipedaMiscItems"; // Set the shop name for the NPC
 		itemMerchant.ShopType = ShopType.Potion; // Set the shop type for the NPC
 
@@ -74,6 +92,9 @@ public class CKlaipeNpcScript : GeneralScript
 		{
 			dialog.SetTitle(L("Dunkel"));
 			dialog.SetPortrait("Dlg_port_vickers");
+
+			if (await NPCFunctions.COMMON_QUEST_HANDLER(dialog))
+				return;
 
 			var response = await dialog.Select(L("Take a look around at your own pace without feeling anxious."),
 				Option(L("Weapons"), "weapon"),
@@ -87,6 +108,7 @@ public class CKlaipeNpcScript : GeneralScript
 				await dialog.OpenShop("KlaipedaArmors");
 		});
 
+		equipmentMerchant.DialogName = "AKALABETH";
 		equipmentMerchant.AssociatedShopName = "KlaipedaWeapons"; // Set the shop name for the NPC
 		equipmentMerchant.ShopType = ShopType.Weapon; // Set the shop type for the NPC
 
@@ -98,6 +120,9 @@ public class CKlaipeNpcScript : GeneralScript
 			dialog.SetTitle(L("Ronesa"));
 			dialog.SetPortrait("Dlg_port_KLAPEDA_ACCESSORY");
 
+			if (await NPCFunctions.COMMON_QUEST_HANDLER(dialog))
+				return;
+
 			if (await dialog.Hooks("BeforeDialog"))
 				await dialog.Msg(L("While you're here, do you need anything?{nl}I've got some hard-to-find stuff."));
 			else
@@ -106,8 +131,13 @@ public class CKlaipeNpcScript : GeneralScript
 			await dialog.OpenShop("KlaipedaAccessories");
 		});
 
+		ronesa.DialogName = "ALFONSO";
 		ronesa.AssociatedShopName = "KlaipedaAccessories"; // Set the shop name for the NPC
 		ronesa.ShopType = ShopType.Accessory; // Set the shop type for the NPC
+
+		// Knight Commander Uska
+		//-------------------------------------------------------------------------
+		AddNpc(4, 20113, L("[Templar Master]{nl}Knight Commander Uska"), "c_Klaipe", -467.28, 148.67, 114.01, 0, "KLAPEDA_USKA", "", "");
 
 		// [Blacksmith] Zaras
 		//-------------------------------------------------------------------------

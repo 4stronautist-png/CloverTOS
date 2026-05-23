@@ -604,7 +604,9 @@ namespace Melia.Zone.Network
 				character.Skills.AddSilent(new Skill(character, skill.Id));
 			}
 
-			var skills = character.Skills.GetList();
+			var skills = character.Skills.GetList()
+				.Where(skill => !Character.IsClassChangeUnsafeSkillStateSkill(skill.Id))
+				.ToList();
 			var skillIds = new HashSet<SkillId>(skills.Select(skill => skill.Id));
 			var packetSkills = new List<Skill>(skills);
 
@@ -613,6 +615,9 @@ namespace Melia.Zone.Network
 				var skillTree = ZoneServer.Instance.Data.SkillTreeDb.FindSkills(job.Id, job.Level);
 				foreach (var skillTreeData in skillTree)
 				{
+					if (Character.IsClassChangeUnsafeSkillStateSkill(skillTreeData.SkillId))
+						continue;
+
 					if (!skillIds.Add(skillTreeData.SkillId))
 						continue;
 
@@ -1316,8 +1321,13 @@ namespace Melia.Zone.Network
 		{
 			using var packet = Packet.Rent(Op.ZC_NPC_STATE_LIST);
 
-			var npcs = character.Map.GetNpcs(a => a.State == NpcState.Highlighted);
-			var npcCount = npcs?.Count() ?? 0;
+			var npcs = character.Map
+				.GetNpcs(a => a is Npc)
+				.OfType<Npc>()
+				.Select(npc => new { Npc = npc, State = character.GetMapNPCState(npc) })
+				.Where(entry => entry.State == NpcState.Highlighted && !ShouldSuppressNpcStateForCharacter(character, entry.Npc))
+				.ToList();
+			var npcCount = npcs.Count;
 
 			packet.PutInt(npcCount);
 			if (Versions.Protocol > 500)
@@ -1327,17 +1337,33 @@ namespace Melia.Zone.Network
 			{
 				packet.Zlib(true, zpacket =>
 				{
-					foreach (var npc in npcs)
+					foreach (var entry in npcs)
 					{
 						zpacket.PutInt(character.MapId);
-						zpacket.PutInt(npc.GenType);
-						zpacket.PutShort((short)npc.State);
+						zpacket.PutInt(entry.Npc.GenType);
+						zpacket.PutShort((short)entry.State);
 						zpacket.PutShort(0);
 					}
 				});
 			}
 
 			character.Connection.Send(packet);
+		}
+
+		private static bool ShouldSuppressNpcStateForCharacter(Character character, Npc npc)
+		{
+			if (character?.Map == null || npc == null)
+				return false;
+
+			if (character.Quests.ShouldSuppressStaticQuestNpcState(npc.DialogName, character.Map.ClassName))
+				return true;
+
+			if (string.Equals(character.Map.ClassName, "f_siauliai_west", StringComparison.OrdinalIgnoreCase) &&
+				(npc.GenType == 2002 || string.Equals(npc.DialogName, "SIAUL_WEST_SOL3", StringComparison.OrdinalIgnoreCase)) &&
+				!character.Quests.IsActive(1020))
+				return true;
+
+			return false;
 		}
 
 		/// <summary>
@@ -2404,7 +2430,7 @@ namespace Melia.Zone.Network
 			packet.PutFloat(45);       // Camera Y
 			packet.PutFloat(200);      // Zoom Min
 			packet.PutFloat(2200);     // Zoom Max
-			packet.PutFloat(1000);     // Zoom Start
+			packet.PutFloat(2200);     // Zoom Start
 			packet.PutInt(26);         // Position?
 			packet.PutInt(20);         // Position?
 			packet.PutInt(59);         // Position?
@@ -3202,17 +3228,14 @@ namespace Melia.Zone.Network
 		/// <param name="exp"></param>
 		public static void ZC_JOB_EXP_UP(Character character, long exp)
 		{
+			// The DX11 client crashes in ON_JOB_EXP_UPDATE during quest reward/class UI flows.
+			// Full job state is synced through ZC_PC, object properties, skill lists, and JOB_UPDATE.
+			if (Versions.Protocol > 500)
+				return;
+
 			using var packet = Packet.Rent(Op.ZC_JOB_EXP_UP);
 
-			if (Versions.Protocol > 500)
-			{
-				packet.PutLong(character.ObjectId);
-				packet.PutLong(exp);
-			}
-			else
-			{
-				packet.PutInt((int)exp);
-			}
+			packet.PutInt((int)exp);
 
 			character.Connection.Send(packet);
 		}
@@ -3478,6 +3501,27 @@ namespace Melia.Zone.Network
 				packet.PutLong(now.ToUnixTimeSeconds() * 1000);
 
 			conn.Send(packet);
+		}
+
+		/// <summary>
+		/// Sends ZC_LOGIN_TIME using the in-game clock as the client's visible clock.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="time"></param>
+		public static void ZC_LOGIN_TIME(IZoneConnection conn, GameTime time)
+		{
+			var clientClockTime = DateTime.Now.Date.AddHours(time.Hour).AddMinutes(time.Minute);
+			ZC_LOGIN_TIME(conn, clientClockTime);
+		}
+
+		/// <summary>
+		/// Sends ZC_LOGIN_TIME to all online characters.
+		/// </summary>
+		/// <param name="time"></param>
+		public static void ZC_LOGIN_TIME(GameTime time)
+		{
+			foreach (var character in ZoneServer.Instance.World.GetCharacters())
+				ZC_LOGIN_TIME(character.Connection, time);
 		}
 
 		public static void ZC_LAYER_PC_LIST(IZoneConnection conn, int i1, List<Character> characters)
@@ -4876,6 +4920,142 @@ namespace Melia.Zone.Network
 		}
 
 		/// <summary>
+		/// Synchronizes the client's daylight clock with the server's game time.
+		/// </summary>
+		/// <param name="character"></param>
+		/// <param name="time"></param>
+		public static void ZC_DAYLIGHT_SYNCHRONIZE_TIME(Character character, GameTime time)
+		{
+			using var packet = Packet.Rent(Op.ZC_DAYLIGHT_SYNCHRONIZE_TIME);
+			packet.PutInt(time.Hour * 60 + time.Minute);
+
+			character.Connection.Send(packet);
+		}
+
+		/// <summary>
+		/// Synchronizes all clients' daylight clocks with the server's game time.
+		/// </summary>
+		/// <param name="time"></param>
+		public static void ZC_DAYLIGHT_SYNCHRONIZE_TIME(GameTime time)
+		{
+			using var packet = Packet.Rent(Op.ZC_DAYLIGHT_SYNCHRONIZE_TIME);
+			packet.PutInt(time.Hour * 60 + time.Minute);
+
+			ZoneServer.Instance.World.Broadcast(packet);
+		}
+
+		/// <summary>
+		/// Synchronizes the minimap clock text with the server's game time.
+		/// </summary>
+		/// <param name="character"></param>
+		/// <param name="time"></param>
+		public static void ZC_SYNC_MINIMAP_GAME_TIME(Character character, GameTime time)
+		{
+			// The Papaya DX11 client can crash if this cosmetic minimap text Lua
+			// runs while loading frames are still active. Daylight time is still
+			// synchronized through the native packets.
+			return;
+
+			var hour = time.Hour % 12;
+			if (hour == 0)
+				hour = 12;
+
+			var period = time.Hour < 12 ? "am" : "pm";
+			var clockText = $"{period} {hour:D2}:{time.Minute:D2}";
+			var scriptText = clockText.Replace("\\", "\\\\").Replace("'", "\\'");
+
+			ZC_EXEC_CLIENT_SCP(character.Connection, @"
+SOUL_GAMETIME_MINIMAP_TEXT = '" + scriptText + @"';
+SOUL_GAMETIME_MINIMAP_RETRY = 0;
+
+function SOUL_GAMETIME_APPLY_MINIMAP()
+	local text = SOUL_GAMETIME_MINIMAP_TEXT;
+	if text == nil then
+		return 0;
+	end
+
+	local function apply(ctrl)
+		if ctrl == nil then
+			return false;
+		end
+
+		local matched = false;
+		local okName, name = pcall(function() return ctrl:GetName(); end);
+		if okName == true and name ~= nil then
+			local lowerName = string.lower(name);
+			if string.find(lowerName, 'time') ~= nil or string.find(lowerName, 'clock') ~= nil then
+				matched = true;
+			end
+		end
+
+		local okText, currentText = pcall(function() return ctrl:GetText(); end);
+		if okText == true and currentText ~= nil then
+			local lowerText = string.lower(currentText);
+			if string.find(lowerText, '[ap]m%s*%d+:%d+') ~= nil then
+				matched = true;
+			end
+		end
+
+		local changed = false;
+		if matched == true then
+			pcall(function() ctrl:SetText(text); end);
+			changed = true;
+		end
+
+		local okCount, count = pcall(function() return ctrl:GetChildCount(); end);
+		if okCount == true and count ~= nil then
+			for i = 0, count - 1 do
+				local okChild, child = pcall(function() return ctrl:GetChildByIndex(i); end);
+				if okChild == true and child ~= nil then
+					if apply(child) == true then
+						changed = true;
+					end
+				end
+			end
+		end
+
+		return changed;
+	end
+
+	local changed = false;
+	local frameNames = {'minimap', 'minimap2', 'map', 'sysmenu'};
+	for i = 1, #frameNames do
+		local frame = ui.GetFrame(frameNames[i]);
+		if frame ~= nil then
+			if apply(frame) == true then
+				changed = true;
+			end
+			pcall(function() frame:Invalidate(); end);
+			pcall(function() frame:StopUpdateScript('SOUL_GAMETIME_APPLY_MINIMAP'); end);
+			pcall(function() frame:RunUpdateScript('SOUL_GAMETIME_APPLY_MINIMAP', 0, 0.25, 0, 1); end);
+		end
+	end
+
+	if changed == false then
+		SOUL_GAMETIME_MINIMAP_RETRY = SOUL_GAMETIME_MINIMAP_RETRY + 1;
+		if SOUL_GAMETIME_MINIMAP_RETRY < 40 then
+			pcall(function() ReserveScript('SOUL_GAMETIME_APPLY_MINIMAP()', 0.5); end);
+		end
+	end
+
+	return 1;
+end
+
+SOUL_GAMETIME_APPLY_MINIMAP();
+");
+		}
+
+		/// <summary>
+		/// Synchronizes all online characters' minimap clock text with the server's game time.
+		/// </summary>
+		/// <param name="time"></param>
+		public static void ZC_SYNC_MINIMAP_GAME_TIME(GameTime time)
+		{
+			foreach (var character in ZoneServer.Instance.World.GetCharacters())
+				ZC_SYNC_MINIMAP_GAME_TIME(character, time);
+		}
+
+		/// <summary>
 		/// Updates the daylight settings for the given character.
 		/// </summary>
 		/// <param name="character"></param>
@@ -6050,6 +6230,8 @@ namespace Melia.Zone.Network
 		/// <param name="conn"></param>
 		public static void ZC_CUSTOM_CAMERA_ZOOM(IZoneConnection conn, float distance, float time, float easing)
 		{
+			return;
+
 			using var packet = Packet.Rent(Op.ZC_CUSTOM_CAMERA_ZOOM);
 
 			packet.PutFloat(distance);
@@ -6106,6 +6288,8 @@ namespace Melia.Zone.Network
 		/// <param name="delay"></param>
 		public static void ZC_CHANGE_CAMERA_ZOOM(IActor actor, int i1, float range, float shakePower, float duration, float shakeAmount, float shakeDirection, float delay = 0.08460541f)
 		{
+			return;
+
 			using var packet = Packet.Rent(Op.ZC_CHANGE_CAMERA_ZOOM);
 
 			packet.PutInt(1);
@@ -6655,6 +6839,9 @@ if ok~=true then ui.SysMsg('SSMIV '..tostring(err)) end;");
 					packet.PutShort(0); // gemCount
 				}
 			}
+
+			if (Versions.Client >= 402363)
+				packet.PutEmptyBin(8);
 
 			packet.PutShort(jobs.Length);
 			foreach (var job in jobs)

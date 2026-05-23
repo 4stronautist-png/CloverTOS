@@ -14,7 +14,23 @@ public class FSiauliai2MobScript : GeneralScript
 {
 	protected override void Load()
 	{
-		/*
+		// Property Overrides -------------------------------
+
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Goblin_Spear_Q1, Properties("MHP", 1577, "MINPATK", 154, "MAXPATK", 166, "MINMATK", 154, "MAXMATK", 166, "DEF", 14, "MDEF", 14));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Chupacabra_Blue, Properties("MHP", 1786, "MINPATK", 164, "MAXPATK", 176, "MINMATK", 164, "MAXMATK", 176, "DEF", 15, "MDEF", 15));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Popolion_Blue, Properties("MHP", 2013, "MINPATK", 174, "MAXPATK", 187, "MINMATK", 174, "MAXMATK", 187, "DEF", 16, "MDEF", 16));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Pokubu, Properties("MHP", 2256, "MINPATK", 185, "MAXPATK", 199, "MINMATK", 185, "MAXMATK", 199, "DEF", 18, "MDEF", 18));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Weaver, Properties("MHP", 2515, "MINPATK", 197, "MAXPATK", 212, "MINMATK", 197, "MAXMATK", 212, "DEF", 19, "MDEF", 19));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior_Blue, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior_Red, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior_Q1, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior_J1, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior_Red_J1, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.Boss_Goblin_Warrior_J2, Properties("MHP", 1000, "MINPATK", 377, "MAXPATK", 406, "MINMATK", 377, "MAXMATK", 406, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.GoblinWarrior, Properties("MHP", 1000, "MINPATK", 234, "MAXPATK", 351, "MINMATK", 159, "MAXMATK", 239, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.GoblinWarrior_Blue, Properties("MHP", 1000, "MINPATK", 234, "MAXPATK", 351, "MINMATK", 159, "MAXMATK", 239, "DEF", 36, "MDEF", 36));
+		AddPropertyOverrides("f_siauliai_2", MonsterId.GoblinWarrior_Red, Properties("MHP", 1000, "MINPATK", 234, "MAXPATK", 351, "MINMATK", 159, "MAXMATK", 239, "DEF", 36, "MDEF", 36));
 
 		// Monster Spawners ---------------------------------
 
@@ -261,6 +277,5 @@ public class FSiauliai2MobScript : GeneralScript
 		AddSpawnPoint("f_siauliai_2.Id10", "f_siauliai_2", Rectangle(-772, 1040, 300));
 
 		// Boss Spawners ---------------------------------
-		*/
 	}
 }

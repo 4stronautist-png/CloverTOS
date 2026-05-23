@@ -16,6 +16,8 @@ public class DChapel575MobScript : GeneralScript
 	{
 		// Property Overrides -------------------------------
 
+		AddPropertyOverrides("d_chapel_57_5", MonsterId.Boss_Unknocker, Properties("MHP", 2000, "MINPATK", 120, "MAXPATK", 180, "MINMATK", 120, "MAXMATK", 180, "DEF", 60, "MDEF", 60));
+		AddPropertyOverrides("d_chapel_57_5", MonsterId.Boss_Unknocker_Q1, Properties("MHP", 2000, "MINPATK", 120, "MAXPATK", 180, "MINMATK", 120, "MAXMATK", 180, "DEF", 60, "MDEF", 60));
 
 		// Monster Spawners ---------------------------------
 

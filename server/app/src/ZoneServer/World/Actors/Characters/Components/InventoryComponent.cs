@@ -320,6 +320,18 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 		}
 
+		public bool HasEquippedPistol()
+		{
+			return this.GetEquip(EquipSlot.LeftHand).Data.EquipType1 == EquipType.Pistol
+				|| this.GetEquip(EquipSlot.RightHand).Data.EquipType1 == EquipType.Pistol;
+		}
+
+		public void RemoveDoubleGunStanceIfPistolMissing()
+		{
+			if (!this.HasEquippedPistol())
+				this.Character.RemoveBuff(BuffId.DoubleGunStance_Buff);
+		}
+
 		/// <summary>
 		/// Returns if an item is equipped.
 		/// </summary>

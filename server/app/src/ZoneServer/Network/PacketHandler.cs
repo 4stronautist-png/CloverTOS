@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -211,6 +212,9 @@ namespace Melia.Zone.Network
 				charName = character.Name;
 				charDbId = character.DbId;
 
+				if (character.Quests.RepairPapayaPreLoginMapState())
+					ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
+
 				var map = ZoneServer.Instance.World.GetMap(character.MapId);
 				if (map == null)
 				{
@@ -310,6 +314,7 @@ namespace Melia.Zone.Network
 			character.ItemSets?.RecalculateAllSetBonuses();
 
 			conn.GameReady = true;
+			character.Quests.RepairWestSiauliaiMainQuestState();
 
 			if (Versions.Protocol >= 500)
 			{
@@ -336,7 +341,7 @@ namespace Melia.Zone.Network
 				Send.ZC_GUESTPAGE_MAP(conn);
 				foreach (var job in character.Jobs.GetList().OrderBy(j => j.SelectionDate).ThenBy(j => j.Rank))
 				{
-					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.SkillPoints);
+					Send.ZC_PC(character, PcUpdateType.Job, (int)job.Id, job.Level);
 					Send.ZC_JOB_PTS(character, job);
 				}
 				Send.ZC_SESSION_OBJECTS(character);
@@ -348,7 +353,7 @@ namespace Melia.Zone.Network
 				Send.ZC_ITEM_EQUIP_LIST(character);
 				Send.ZC_NORMAL.SetSkillsProperties(conn);
 				
-				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 0);
+				Send.ZC_PC(character, PcUpdateType.Job, (int)character.JobId, character.Job?.Level ?? 1);
 				character.Properties.SetFloat(PropertyName.Job, (int)character.JobId);
 				Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 				Send.ZC_SKILL_LIST(character);
@@ -371,7 +376,7 @@ namespace Melia.Zone.Network
 				Send.ZC_UPDATE_SP(character, character.Sp, false);
 				Send.ZC_RES_DAMAGEFONT_SKIN(conn, character);
 				Send.ZC_RES_DAMAGEEFFECT_SKIN(conn, character);
-				Send.ZC_LOGIN_TIME(conn, DateTime.Now);
+				Send.ZC_LOGIN_TIME(conn, Melia.Zone.GameTime.Now);
 				Send.ZC_MYPC_ENTER(character);
 
 				character.ActivateCompanions();
@@ -411,6 +416,7 @@ namespace Melia.Zone.Network
 				}
 				Send.ZC_ADDITIONAL_SKILL_POINT(character);
 				Send.ZC_SET_DAYLIGHT_INFO(character);
+				Send.ZC_SYNC_MINIMAP_GAME_TIME(character, Melia.Zone.GameTime.Now);
 				//Send.ZC_DAYLIGHT_FIXED(character);
 				Send.ZC_SEND_APPLY_HUD_SKIN_MYSELF(conn, character);
 
@@ -534,8 +540,9 @@ namespace Melia.Zone.Network
 				}
 				Send.ZC_START_GAME(conn);
 				Send.ZC_OBJECT_PROPERTY(character);
-				Send.ZC_LOGIN_TIME(conn, DateTime.Now);
+				Send.ZC_LOGIN_TIME(conn, Melia.Zone.GameTime.Now);
 				Send.ZC_MYPC_ENTER(character);
+				Send.ZC_SYNC_MINIMAP_GAME_TIME(character, Melia.Zone.GameTime.Now);
 				// ZC_NORMAL...
 				// ZC_OBJECT_PROPERTY...
 				// ZC_SKILL_ADD...
@@ -561,6 +568,7 @@ namespace Melia.Zone.Network
 
 			character.IsWarping = false;
 			character.OpenEyes();
+			Send.ZC_MEMBERINFO_VISIBILITY_UI(character);
 
 			ZoneServer.Instance.ServerEvents.PlayerReady.Raise(new PlayerEventArgs(character));
 		}
@@ -934,6 +942,8 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_ITEM_EQUIP: User '{0}' tried to equip item he doesn't have ({1}).", conn.Account.Name, worldId);
 			else if (result == InventoryResult.InvalidSlot)
 				Log.Warning("CZ_ITEM_EQUIP: User '{0}' tried to equip item in invalid slot ({1}).", conn.Account.Name, worldId);
+			else
+				character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -953,6 +963,8 @@ namespace Melia.Zone.Network
 				Log.Warning("CZ_ITEM_UNEQUIP: User '{0}' tried to unequip non-existent item from {1}.", conn.Account.Name, slot);
 			else if (result == InventoryResult.InvalidSlot)
 				Log.Warning("CZ_ITEM_UNEQUIP: User '{0}' tried to unequip item from invalid slot ({1}).", conn.Account.Name, slot);
+			else
+				character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -965,6 +977,7 @@ namespace Melia.Zone.Network
 		{
 			var character = conn.SelectedCharacter;
 			character.Inventory.UnequipAll();
+			character.Inventory.RemoveDoubleGunStanceIfPistolMissing();
 		}
 
 		/// <summary>
@@ -1087,18 +1100,13 @@ namespace Melia.Zone.Network
 			}
 
 			// Validate item is headgear
-			if (item.Data.EquipType1 != EquipType.Hat)
+			if (!item.IsHairAccessory())
 			{
 				character.ServerMessage("Enchant scrolls can only be used on headgear.");
 				return;
 			}
 
-			// Check potential
-			if (Feature.IsEnabled("HeadgearEnchantsConsumePotential") && item.Potential <= 0)
-			{
-				character.SystemMessage("NoMorePotential");
-				return;
-			}
+			item.EnsureHairAccessoryEnchantRank();
 
 			// Item Lock
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.REINFORCE_131014_ITEM_LOCK, itemId, "YES"));
@@ -1108,11 +1116,10 @@ namespace Melia.Zone.Network
 			var maxOptions = (int)enchantItem.Data.Script.NumArg2;
 			if (minOptions <= 0) minOptions = 1;
 			if (maxOptions <= 0) maxOptions = 2;
+			item.AddHairAccessoryEnchantRankProgress(GetHairAccessoryEnchantRankGain(enchantItem));
 			item.GenerateRandomHatOptions(minOptions, maxOptions + 1);
 
-			// Reduce potential by 1
-			if (Feature.IsEnabled("HeadgearEnchantsConsumePotential"))
-				item.Properties.Modify(PropertyName.PR, -1);
+			// Hair accessory scrolls must work on every hair accessory slot.
 
 			// Update item properties
 			Send.ZC_OBJECT_PROPERTY(character.Connection, item);
@@ -1124,6 +1131,23 @@ namespace Melia.Zone.Network
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.REINFORCE_131014_ITEM_LOCK, "None", "YES"));
 
 			Send.ZC_EXEC_CLIENT_SCP(conn, string.Format(ClientScripts.HAIRENCHANT_SUCCESS, itemId, enchantItem.DbId));
+		}
+
+		/// <summary>
+		/// Returns how much rank-up progress a hair accessory enchant scroll gives.
+		/// </summary>
+		/// <param name="enchantItem"></param>
+		/// <returns></returns>
+		private static int GetHairAccessoryEnchantRankGain(Item enchantItem)
+		{
+			return enchantItem.Id switch
+			{
+				11201102 => 1,
+				495185 => 5,
+				495186 => 5,
+				495188 => 5,
+				_ => 0,
+			};
 		}
 
 		/// <summary>
@@ -1572,18 +1596,13 @@ namespace Melia.Zone.Network
 			else if (itemUsed.Data.ClassName.Contains("Enchantchip"))
 			{
 				// Enchant scrolls can only be used on headgear (hats)
-				if (itemUsedOn.Data.EquipType1 != EquipType.Hat)
+				if (!itemUsedOn.IsHairAccessory())
 				{
 					character.ServerMessage("Enchant scrolls can only be used on headgear.");
 					return;
 				}
 
-				// Check potential
-				if (Feature.IsEnabled("HeadgearEnchantsConsumePotential") && itemUsedOn.Potential <= 0)
-				{
-					character.SystemMessage("NoMorePotential");
-					return;
-				}
+				itemUsedOn.EnsureHairAccessoryEnchantRank();
 
 				// Get min/max options from item script args
 				var minOptions = (int)itemUsed.Data.Script.NumArg1;
@@ -1591,11 +1610,10 @@ namespace Melia.Zone.Network
 				if (minOptions <= 0) minOptions = 1;
 				if (maxOptions <= 0) maxOptions = 2;
 
+				itemUsedOn.AddHairAccessoryEnchantRankProgress(GetHairAccessoryEnchantRankGain(itemUsed));
 				itemUsedOn.GenerateRandomHatOptions(minOptions, maxOptions + 1);
 
-				// Reduce potential by 1
-				if (Feature.IsEnabled("HeadgearEnchantsConsumePotential"))
-					itemUsedOn.Properties.Modify(PropertyName.PR, -1);
+				// Hair accessory scrolls must work on every hair accessory slot.
 
 				character.Inventory.Remove(item1WorldId);
 				Send.ZC_OBJECT_PROPERTY(conn, itemUsedOn);
@@ -1845,7 +1863,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_CLIENT_HIT_LIST: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -1947,7 +1964,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_TARGET: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -2135,7 +2151,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_GROUND: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -2232,7 +2247,6 @@ namespace Melia.Zone.Network
 			if (skill.IsOnCooldown)
 			{
 				Log.Warning("CZ_SKILL_SELF: User '{0}' tried to use a skill that's on cooldown ({1}).", conn.Account.Name, skillId);
-				character.ServerMessage(Localization.Get("You may not use this yet."));
 				return;
 			}
 
@@ -3677,6 +3691,119 @@ namespace Melia.Zone.Network
 		}
 
 		/// <summary>
+		/// Request to advance into a new job.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_REQ_CHANGEJOB)]
+		public void CZ_REQ_CHANGEJOB(IZoneConnection conn, Packet packet)
+		{
+			var character = conn.SelectedCharacter;
+			if (character == null)
+				return;
+
+			if (!this.TryResolveRequestedChangeJobId(character, packet, out var newJobId))
+			{
+				Log.Warning("CZ_REQ_CHANGEJOB: User '{0}' requested an invalid or unsupported job advancement.\n{1}", conn.Account.Name, packet.ToString());
+				return;
+			}
+
+			if (character.Jobs.Count >= ZoneServer.Instance.Conf.World.JobMaxRank)
+			{
+				Log.Warning("CZ_REQ_CHANGEJOB: User '{0}' tried to advance past the max job rank ({1}).", conn.Account.Name, ZoneServer.Instance.Conf.World.JobMaxRank);
+				return;
+			}
+
+			var removedSkillStateBuffs = character.ClearClassChangeUnsafeSkillStateBuffs();
+
+			var newJob = new Job(character, newJobId);
+			character.Jobs.AddSilent(newJob);
+			character.JobId = newJob.Id;
+			character.Properties.SetFloat(PropertyName.Job, (int)newJob.Id);
+
+			Send.ZC_PC(character, PcUpdateType.Job, (int)newJob.Id, newJob.Level);
+			Send.ZC_JOB_PTS(character, newJob);
+			Send.ZC_SKILL_LIST(character);
+			Send.ZC_COMMON_SKILL_LIST(character);
+			Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
+			Send.ZC_NORMAL.UpdateSkillUI(character);
+			character.AddonMessage(AddonMessage.JOB_UPDATE);
+			character.AddonMessage(AddonMessage.RESET_SKL_UP);
+			character.InvalidateProperties();
+
+			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(character));
+			if (removedSkillStateBuffs > 0)
+				Log.Info("CZ_REQ_CHANGEJOB: Removed {0} unsafe skill-state buff(s) before advancing character '{1}'.", removedSkillStateBuffs, character.Name);
+
+			Log.Info("CZ_REQ_CHANGEJOB: User '{0}' advanced character '{1}' into '{2}'.", conn.Account.Name, character.Name, newJobId);
+		}
+
+		private bool TryResolveRequestedChangeJobId(Character character, Packet packet, out JobId jobId)
+		{
+			jobId = JobId.None;
+
+			foreach (var candidate in ReadJobChangeCandidates(packet))
+			{
+				if (candidate == JobId.None || candidate == character.JobId)
+					continue;
+
+				if (character.Jobs.TryGet(candidate, out _))
+					continue;
+
+				if (ZoneServer.Instance.Data.JobDb.Find(candidate) == null)
+					continue;
+
+				try
+				{
+					if (candidate.ToClass() != character.JobClass)
+						continue;
+				}
+				catch
+				{
+					continue;
+				}
+
+				jobId = candidate;
+				return true;
+			}
+
+			return false;
+		}
+
+		private static List<JobId> ReadJobChangeCandidates(Packet packet)
+		{
+			var result = new List<JobId>();
+			var seen = new HashSet<short>();
+			var startIndex = packet.GetCurrentIndex();
+			var remaining = Math.Max(0, packet.Length - startIndex);
+
+			void AddCandidate(short raw)
+			{
+				if (raw <= 0 || !seen.Add(raw))
+					return;
+
+				result.Add((JobId)raw);
+			}
+
+			for (var offset = 0; offset + 2 <= remaining; offset += 2)
+			{
+				packet.Seek(startIndex + offset, SeekOrigin.Begin);
+				AddCandidate(packet.GetShort());
+			}
+
+			for (var offset = 0; offset + 4 <= remaining; offset += 4)
+			{
+				packet.Seek(startIndex + offset, SeekOrigin.Begin);
+				var raw = packet.GetInt();
+				if (raw >= short.MinValue && raw <= short.MaxValue)
+					AddCandidate((short)raw);
+			}
+
+			packet.Seek(startIndex, SeekOrigin.Begin);
+			return result;
+		}
+
+		/// <summary>
 		/// Request to reset a character's job, or rather to switch
 		/// out one job for another.
 		/// </summary>
@@ -3748,6 +3875,7 @@ namespace Melia.Zone.Network
 			//Send.ZC_NORMAL.PlayEffect(character, "F_pc_class_change");
 
 			ZoneServer.Instance.ServerEvents.PlayerAdvancedJob.Raise(new PlayerEventArgs(character));
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 
 			// The intended behavior is to trigger a clean DC from the
 			// client with a move to barracks, but if we *need* the
@@ -3843,10 +3971,11 @@ namespace Melia.Zone.Network
 
 			conn.LoadComplete = true;
 
-			Send.ZC_LOAD_COMPLETE(conn);
+				Send.ZC_LOAD_COMPLETE(conn);
 
-			character.AddonMessage(AddonMessage.RECEIVE_SERVER_NATION);
-			character.RestoreCoreHudState(true, true);
+				character.AddonMessage(AddonMessage.RECEIVE_SERVER_NATION);
+				character.Tracks.AbortGenericTrackAfterMapTransition(character.Map?.ClassName);
+				character.RestoreCoreHudState(true, true);
 
 			// Removed: Personal House loading - PersonalHouse type deleted during Laima merge
 			// If character is on a housing map, warp them out since houses aren't available
@@ -3870,7 +3999,12 @@ namespace Melia.Zone.Network
 					handler.Handle(skill, skill.Owner);
 			}
 
-			ZoneServer.Instance.ServerEvents.PlayerLoadComplete.Raise(new PlayerEventArgs(character));
+				character.Quests.RepairPapayaMainQuestFlow();
+				character.Quests.SyncStaticQuestNpcStates();
+				character.Quests.UpdateClient();
+				character.RestoreCoreHudState(true, true);
+
+				ZoneServer.Instance.ServerEvents.PlayerLoadComplete.Raise(new PlayerEventArgs(character));
 
 			//character.ShowHelp("TUTO_MOVE_KB");
 			//character.ShowHelp("TUTO_MOVE_JUMP");
@@ -4526,6 +4660,13 @@ namespace Melia.Zone.Network
 			if (start != 1 && start != 3)
 				return;
 
+			if (character.Variables.Temp.GetBool("SoulSociety.Walk.Enabled", false))
+			{
+				character.StopBuff(BuffId.DashRun);
+				character.Movement.SetFixedMoveSpeed(18f);
+				return;
+			}
+
 			// For some reason this packet is sent multiple times while
 			// the character is dashing, which is a potential problem if
 			// DashRun gets stacked and started again, but the buff manager
@@ -4917,6 +5058,8 @@ namespace Melia.Zone.Network
 			var wasActive = ability.Active;
 			if (wasActive)
 				ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, character);
+			else
+				this.DeactivateMutuallyExclusiveAbility(character, ability);
 
 			ability.Active = !ability.Active;
 
@@ -4929,6 +5072,36 @@ namespace Melia.Zone.Network
 			Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", ability.Active ? 1 : 0, ability.Data.ClassName);
 
 			if (ZoneServer.Instance.AbilityHandlers.HasPropertyHandler(abilityId))
+			{
+				character.Properties.InvalidateAll();
+				Send.ZC_OBJECT_PROPERTY(character);
+			}
+		}
+
+		private void DeactivateMutuallyExclusiveAbility(Character character, Ability ability)
+		{
+			var otherAbilityId = ability.Id switch
+			{
+				AbilityId.Assassin16 => (AbilityId?)AbilityId.Assassin23,
+				AbilityId.Assassin23 => AbilityId.Assassin16,
+				_ => null,
+			};
+
+			if (otherAbilityId == null)
+				return;
+
+			var otherAbility = character.Abilities.Get(otherAbilityId.Value);
+			if (otherAbility == null || !otherAbility.Active)
+				return;
+
+			ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(otherAbility, character);
+			otherAbility.Active = false;
+			character.Abilities.RaiseToggled(otherAbility, activated: false, wasActive: true);
+
+			Send.ZC_OBJECT_PROPERTY(character.Connection, otherAbility, PropertyName.ActiveState);
+			Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", 0, otherAbility.Data.ClassName);
+
+			if (ZoneServer.Instance.AbilityHandlers.HasPropertyHandler(otherAbility.Id))
 			{
 				character.Properties.InvalidateAll();
 				Send.ZC_OBJECT_PROPERTY(character);
@@ -4981,7 +5154,18 @@ namespace Melia.Zone.Network
 			// information from the relation server, as there's a request
 			// op for it. This is not sent currently though.
 
-			Send.ZC_PROPERTY_COMPARE(conn, targetCharacter, openWindow, like);
+			var showEquipment = character.Connection?.Account?.Authority >= 99 || targetCharacter.Variables.Perm.GetBool("SoulSociety.MemberInfo.ShowEquipment", false);
+			if (!showEquipment)
+			{
+				var language = conn.SelectedLanguage ?? "";
+				var message = language.Equals("English", StringComparison.OrdinalIgnoreCase)
+					? "This character has not enabled memberinfo."
+					: "Este personagem não habilitou o memberinfo.";
+				character.MsgBox(message);
+				return;
+			}
+
+			Send.ZC_PROPERTY_COMPARE(conn, targetCharacter, openWindow, like, showEquipment);
 			if (like)
 			{
 				//TODO Send poses and rotate?
@@ -6487,7 +6671,7 @@ namespace Melia.Zone.Network
 			}
 
 			character.JobId = jobId;
-			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, 0);
+			Send.ZC_PC(character, PcUpdateType.Job, (int)jobId, character.Job?.Level ?? 1);
 			character.Properties.SetFloat(PropertyName.Job, (int)jobId);
 			Send.ZC_OBJECT_PROPERTY(character, PropertyName.JobName);
 			Send.ZC_SKILL_LIST(character);
@@ -6496,6 +6680,7 @@ namespace Melia.Zone.Network
 			character.AddonMessage(AddonMessage.JOB_UPDATE);
 			character.AddonMessage(AddonMessage.UPDATE_REPRESENTATION_CLASS_ICON, "None", (int)jobId);
 			character.InvalidateProperties();
+			ZoneServer.Instance.Database.SavePlayerData(character, conn.Account);
 		}
 
 		/// <summary>
@@ -6739,6 +6924,7 @@ namespace Melia.Zone.Network
 
 			// Set the briquetting appearance on the target item
 			targetItem.Properties.SetFloat(PropertyName.BriquettingIndex, sourceItem.Id);
+			ZoneServer.Instance.Database.SaveItemProperties(targetItem);
 
 			// Update item properties to client
 			Send.ZC_OBJECT_PROPERTY(character.Connection, targetItem);
@@ -6748,6 +6934,15 @@ namespace Melia.Zone.Network
 
 			// Broadcast appearance update so other players see the change
 			Send.ZC_UPDATED_PCAPPEARANCE(character);
+
+			foreach (var equipPair in character.Inventory.GetEquip())
+			{
+				if (equipPair.Value == targetItem)
+				{
+					Send.ZC_NORMAL.UpdateCharacterLook(character, sourceItem.Id, equipPair.Key);
+					break;
+				}
+			}
 		}
 
 		/// <summary>

@@ -50,7 +50,8 @@ namespace Melia.Zone.World.Quests.Rewards
 		/// <param name="character"></param>
 		public override void Give(Character character)
 		{
-			character.GiveExp(this.ExpAmount, this.JobExpAmount, null);
+			var (exp, jobExp) = character.GetWorldScaledExperienceAmounts(this.ExpAmount, this.JobExpAmount);
+			character.GiveExp(exp, jobExp, null);
 		}
 
 		/// <summary>

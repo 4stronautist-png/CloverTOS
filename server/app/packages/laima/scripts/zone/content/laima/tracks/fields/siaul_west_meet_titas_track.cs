@@ -112,14 +112,15 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 
 		character.RestoreCoreHudState(true, true);
 
-		var westForestQuestId = new QuestId(1002);
-		if (!character.Quests.IsActive(westForestQuestId) && !character.Quests.HasCompleted(westForestQuestId))
+		var meetTitasQuestId = new QuestId(1001);
+		if (character.Quests.IsActive(meetTitasQuestId))
 		{
-			character.Quests.Start("SIAUL_WEST_WEST_FOREST");
-			Log.Info("SIAU_WEST_START_TRACK: started SIAUL_WEST_WEST_FOREST for '{0}' after intro track.", character.Name);
+			character.Quests.Complete(meetTitasQuestId);
+			Log.Info("SIAU_WEST_START_TRACK: completed SIAUL_WEST_MEET_TITAS for '{0}' after intro track.", character.Name);
 		}
 
 		RevealOpeningTitas(character);
+		character.Quests.SyncStaticQuestNpcStates();
 		character.LookAround();
 	}
 
@@ -127,8 +128,13 @@ public class SiaulWestMeetTitasTrackScript : TrackScript
 	{
 		if (character?.Map?.TryGetMonster(m => m is Npc npc && npc.DialogName == "SIAUL_WEST_CAMP_MANAGER", out var titasMonster) == true && titasMonster is Npc titasNpc)
 		{
-			if (character.GetMapNPCState(titasNpc) != NpcState.Normal)
-				character.SetMapNPCState(titasNpc, NpcState.Normal);
+			var westForestAvailable =
+				character.Quests.HasCompleted(1001) &&
+				!character.Quests.IsActive(1002) &&
+				!character.Quests.HasCompleted(1002);
+			var desiredState = westForestAvailable || character.Quests.IsActive(1002) ? NpcState.Highlighted : NpcState.Normal;
+			if (character.GetMapNPCState(titasNpc) != desiredState)
+				character.SetMapNPCState(titasNpc, desiredState);
 		}
 	}
 }

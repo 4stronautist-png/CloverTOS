@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
+using Melia.Shared.Game.Properties;
 using Melia.Shared.ObjectProperties;
 using Melia.Shared.World;
 using Melia.Zone.Network;
@@ -17,6 +18,7 @@ using SixLabors.ImageSharp.Drawing;
 using Yggdrasil.Extensions;
 using Yggdrasil.Geometry.Shapes;
 using Yggdrasil.Util;
+using Yggdrasil.Variables;
 
 namespace Melia.Zone.World.Items
 {
@@ -29,6 +31,10 @@ namespace Melia.Zone.World.Items
 		private readonly List<Item> _gemSockets = new();
 
 		private static long ObjectIds = ObjectIdRanges.Items;
+		private const int HairAccessoryRankD = 0;
+		private const int HairAccessoryRankC = 1;
+		private const int HairAccessoryRankB = 2;
+		private const int HairAccessoryRankA = 3;
 
 		/// <summary>
 		/// Returns the item's class id.
@@ -347,6 +353,7 @@ namespace Melia.Zone.World.Items
 			if (this.Data.MinLevel != 0) this.Properties.SetFloat(PropertyName.UseLv, this.Data.MinLevel);
 			if (this.Data.Grade != 0) this.Properties.SetFloat(PropertyName.ItemGrade, (int)this.Data.Grade);
 			if (this.Data.SellPrice != 0) this.Properties.SetFloat(PropertyName.SellPrice, this.Data.SellPrice);
+			this.EnsureHairAccessoryEnchantRank();
 
 			//if (this.Data.MinAtk != 0) this.Properties.SetFloat(PropertyName.MINATK, this.Data.MinAtk);
 			//if (this.Data.MaxAtk != 0) this.Properties.SetFloat(PropertyName.MAXATK, this.Data.MaxAtk);
@@ -1512,6 +1519,233 @@ namespace Melia.Zone.World.Items
 		}
 
 		/// <summary>
+		/// Adds rank-up progress for enchantable hair accessories.
+		/// </summary>
+		/// <param name="value"></param>
+		public void AddHairAccessoryEnchantRankProgress(int value)
+		{
+			if (!this.IsHairAccessory())
+				return;
+
+			this.EnsureHairAccessoryEnchantRank();
+
+			if (value <= 0)
+				return;
+
+			var rank = (int)this.Properties.GetFloat(PropertyName.EnchantItemRank, HairAccessoryRankD);
+			var progress = (int)this.Properties.GetFloat(PropertyName.EnchantItemRankCount, 0);
+
+			if (rank >= HairAccessoryRankA)
+			{
+				this.SetHairAccessoryEnchantRank(HairAccessoryRankA, 0);
+				return;
+			}
+
+			progress += value;
+
+			while (rank < HairAccessoryRankA)
+			{
+				var threshold = this.GetHairAccessoryRankUpThreshold(rank);
+				if (threshold <= 0 || progress < threshold)
+					break;
+
+				progress -= threshold;
+				rank++;
+			}
+
+			if (rank >= HairAccessoryRankA)
+				progress = 0;
+
+			this.SetHairAccessoryEnchantRank(rank, progress);
+		}
+
+		/// <summary>
+		/// Initializes raw hair accessories as rank D.
+		/// </summary>
+		public void EnsureHairAccessoryEnchantRank()
+		{
+			if (!this.IsHairAccessory())
+				return;
+
+			this.ApplyHairAccessoryEnchantTemplate();
+			this.NormalizeHairAccessoryEnchantOptions();
+
+			if (!this.HasHairAccessoryEnchantOptions())
+			{
+				this.SetHairAccessoryEnchantRank(HairAccessoryRankD, 0);
+				return;
+			}
+
+			if (!this.Properties.TryGetFloat(PropertyName.EnchantItemRank, out _))
+				this.Properties.SetFloat(PropertyName.EnchantItemRank, HairAccessoryRankD);
+			if (!this.Properties.TryGetFloat(PropertyName.EnchantItemRankCount, out _))
+				this.Properties.SetFloat(PropertyName.EnchantItemRankCount, 0);
+			if (!this.Properties.TryGetFloat(PropertyName.UpgradeRank, out _))
+				this.Properties.SetFloat(PropertyName.UpgradeRank, GetHairAccessoryVisibleRating(HairAccessoryRankD));
+
+			var rank = (int)this.Properties.GetFloat(PropertyName.EnchantItemRank, HairAccessoryRankD);
+			this.Properties.SetFloat(PropertyName.UpgradeRank, GetHairAccessoryVisibleRating(rank));
+			this.SetHairAccessoryItemGrade(rank);
+		}
+
+		/// <summary>
+		/// Makes every hair accessory expose the same enchant identity the client expects.
+		/// </summary>
+		private void ApplyHairAccessoryEnchantTemplate()
+		{
+			this.Properties.SetString(PropertyName.EquipXpGroup, "Hat");
+
+			var equipGroup = this.Data.EquipSlot switch
+			{
+				"HAT_L" => "HAT_L",
+				"HAT_T" => "HAT_T",
+				_ => "HAT",
+			};
+
+			this.Properties.SetString(PropertyName.EquipGroup, equipGroup);
+		}
+
+		/// <summary>
+		/// Sets the rank and the current progress toward the next rank.
+		/// </summary>
+		private void SetHairAccessoryEnchantRank(int rank, int progress)
+		{
+			rank = Math2.Clamp(HairAccessoryRankD, HairAccessoryRankA, rank);
+			progress = Math.Max(0, progress);
+
+			this.Properties.SetFloat(PropertyName.EnchantItemRank, rank);
+			this.Properties.SetFloat(PropertyName.EnchantItemRankCount, progress);
+			this.Properties.SetFloat(PropertyName.UpgradeRank, GetHairAccessoryVisibleRating(rank));
+			this.SetHairAccessoryItemGrade(rank);
+		}
+
+		/// <summary>
+		/// The client expects hat ratings to be 1-4, while our ranks are D-A as 0-3.
+		/// </summary>
+		private static int GetHairAccessoryVisibleRating(int rank)
+		{
+			return Math2.Clamp(HairAccessoryRankD, HairAccessoryRankA, rank) + 1;
+		}
+
+		/// <summary>
+		/// Maps hair accessory ranks to item grades used by the client colors.
+		/// </summary>
+		private void SetHairAccessoryItemGrade(int rank)
+		{
+			var grade = rank switch
+			{
+				HairAccessoryRankC => ItemGrade.Unique,
+				HairAccessoryRankB => ItemGrade.Legend,
+				HairAccessoryRankA => ItemGrade.Goddess,
+				_ => ItemGrade.Normal,
+			};
+
+			this.Properties.SetFloat(PropertyName.ItemGrade, (int)grade);
+		}
+
+		/// <summary>
+		/// Returns true if the hair accessory already has enchant scroll options.
+		/// </summary>
+		private bool HasHairAccessoryEnchantOptions()
+		{
+			for (var i = 1; i <= 3; i++)
+			{
+				if (!string.IsNullOrWhiteSpace(this.GetHatOptionPropertyName(i)))
+					return true;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Converts numeric HatPropName_X values back into string values used by the client tooltip.
+		/// </summary>
+		private void NormalizeHairAccessoryEnchantOptions()
+		{
+			for (var i = 1; i <= 3; i++)
+			{
+				var nameProp = string.Format("HatPropName_{0}", i);
+				var optionPropertyId = (int)this.GetFloatPropertyIfPresent(nameProp);
+				if (optionPropertyId <= 0)
+					continue;
+				if (!PropertyTable.TryGetName("Item", optionPropertyId, out var optionPropertyName))
+					continue;
+
+				this.Properties.Remove(nameProp);
+				this.Properties.SetString(nameProp, optionPropertyName);
+			}
+		}
+
+		/// <summary>
+		/// Gets a hat option property name from either the string value or a numeric value left by rollback.
+		/// </summary>
+		private string GetHatOptionPropertyName(int optionIndex)
+		{
+			var nameProp = string.Format("HatPropName_{0}", optionIndex);
+			var optionName = this.GetStringPropertyIfPresent(nameProp);
+			if (!string.IsNullOrWhiteSpace(optionName) && optionName != "None")
+				return optionName;
+
+			var optionPropertyId = (int)this.GetFloatPropertyIfPresent(nameProp);
+			if (optionPropertyId > 0 && PropertyTable.TryGetName("Item", optionPropertyId, out var optionPropertyName))
+				return optionPropertyName;
+
+			return null;
+		}
+
+		/// <summary>
+		/// Reads a string property only if the stored property type is string.
+		/// </summary>
+		private string GetStringPropertyIfPresent(string propertyName)
+		{
+			try
+			{
+				return this.Properties.GetString(propertyName);
+			}
+			catch (TypeMismatchException)
+			{
+				return null;
+			}
+		}
+
+		/// <summary>
+		/// Reads a float property only if the stored property type is number.
+		/// </summary>
+		private float GetFloatPropertyIfPresent(string propertyName)
+		{
+			try
+			{
+				return this.Properties.GetFloat(propertyName);
+			}
+			catch (TypeMismatchException)
+			{
+				return 0;
+			}
+		}
+
+		/// <summary>
+		/// Returns the progress needed to move from the current rank to the next.
+		/// </summary>
+		private int GetHairAccessoryRankUpThreshold(int rank)
+		{
+			return rank switch
+			{
+				HairAccessoryRankD => 25,
+				HairAccessoryRankC => 150,
+				HairAccessoryRankB => 535,
+				_ => 0,
+			};
+		}
+
+		/// <summary>
+		/// Returns true if this item is a hair accessory/headgear.
+		/// </summary>
+		public bool IsHairAccessory()
+		{
+			return this.Data?.Type == ItemType.Equip && this.Data.EquipType1 == EquipType.Hat;
+		}
+
+		/// <summary>
 		/// Add an option to the item.
 		/// </summary>
 		/// <param name="optionPrefix"></param>
@@ -1524,7 +1758,7 @@ namespace Melia.Zone.World.Items
 			var valueProp = string.Format("{0}Value_{1}", optionPrefix, optionIndex);
 
 			// Reset previous value if it exists
-			var optionName = this.Properties.GetString(nameProp);
+			var optionName = optionPrefix == "HatProp" ? this.GetHatOptionPropertyName(optionIndex) : this.Properties.GetString(nameProp);
 			if (optionName != null && optionName != "None")
 			{
 				var prevValue = this.Properties.GetFloat(optionName);
@@ -1532,6 +1766,8 @@ namespace Melia.Zone.World.Items
 				this.Properties.Modify(optionName, -prevValue);
 			}
 
+			if (optionPrefix == "HatProp")
+				this.Properties.Remove(nameProp);
 			this.Properties.SetString(nameProp, optionPropertyName);
 			this.Properties.SetFloat(valueProp, optionValue);
 			this.Properties.SetFloat(optionPropertyName, optionValue);

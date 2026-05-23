@@ -15,6 +15,10 @@ public class DCmine01NpcScript : GeneralScript
 		// Statue of Goddess Vakarine
 		//-------------------------------------------------------------------------
 		AddNpc(529, 40120, "Statue of Goddess Vakarine", "d_cmine_01", -1222.77, 316.34, -1230.72, 60, "WARP_D_CMINE_01", "STOUP_CAMP", "STOUP_CAMP");
+
+		// Official Papaya main quest chain actor
+		//-------------------------------------------------------------------------
+		AddNpc(100, 20110, "[Alchemist Master] Vaidotas", "d_cmine_01", -1188, 317, -1799, 0, "MINE_1_ALCHEMIST", "", "");
 		
 		// Lv2 Treasure Chest
 		//-------------------------------------------------------------------------

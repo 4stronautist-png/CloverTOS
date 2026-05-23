@@ -2629,7 +2629,7 @@
 { id: 502006, className: "Assassin6", name: "Behead: Deep Wound", level: 1, passive: false, categories: ["Assassin_Behead"], modifiers: { "SP": 30 } },
 { id: 502007, className: "Assassin7", name: "Instant Acceleration: Enhance", level: 1, passive: true, categories: ["Assassin_InstantaneousAcceleration"] },
 { id: 502008, className: "Assassin8", name: "Instant Acceleration: Two-time Slash", level: 1, passive: false, categories: ["Assassin_InstantaneousAcceleration"], modifiers: { "SP": 50 } },
-{ id: 502009, className: "Assassin9", name: "Instant Acceleration: Stun", level: 1, passive: false, categories: ["Assassin_InstantaneousAcceleration"], modifiers: { "SP": 10 } },
+{ id: 502009, className: "Assassin9", name: "Instant Acceleration: Stun", level: 1, passive: false, categories: ["Assassin_InstantaneousAcceleration"], modifiers: { "SP": 35 } },
 { id: 502010, className: "Assassin10", name: "Hallucination Smoke: Enhance", level: 1, passive: true, categories: ["Assassin_HallucinationSmoke"] },
 { id: 502011, className: "Assassin11", name: "Hallucination Smoke: Reality Shock", level: 1, passive: false, categories: ["Assassin_HallucinationSmoke"], modifiers: { "SP": 30 } },
 { id: 502012, className: "Assassin12", name: "Piercing Heart: Enhance", level: 1, passive: true, categories: ["Assassin_PiercingHeart"] },

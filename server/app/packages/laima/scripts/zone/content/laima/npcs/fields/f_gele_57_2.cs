@@ -34,5 +34,8 @@ public class FGele572NpcScript : GeneralScript
 		AddPlatformNpc("f_gele_57_2", 980, 663, -1134, 0, "white");
 		AddFloatingTreasureChestSpawner("Laima.Treasures.f_gele_57_2.Chest1", "f_gele_57_2", 980, 663, -1134, 0, ItemId.EmoticonItem_Gabija_EarringRaid_1_4, monsterId: 147393);
 
+		// Papaya main quest actor: Imminent Invasion
+		//-------------------------------------------------------------------------
+		AddNpc(220, 57223, "Paladin Master", "f_gele_57_2", 13, 419, -983, 0, "GELE572_MQ_01", "", "");
 	}
 }

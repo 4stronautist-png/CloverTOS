@@ -461,7 +461,9 @@ namespace Melia.Barracks.Database
 								if (equipSlot >= InventoryDefaults.EquipSlotCount)
 									continue;
 
-								character.Equipment[equipSlot] = new EquipItem(itemId, (EquipSlot)equipSlot);
+								var equipItem = new EquipItem(itemId, (EquipSlot)equipSlot);
+								this.LoadProperties("item_properties", "itemId", reader.GetInt64("itemUniqueId"), equipItem.Properties);
+								character.Equipment[equipSlot] = equipItem;
 							}
 						}
 					}

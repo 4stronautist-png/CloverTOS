@@ -18,6 +18,37 @@ namespace Melia.Zone.World.Actors.Characters
 	public partial class Character
 	{
 		#region Job & Skill Management
+		private static readonly BuffId[] ClassChangeUnsafeSkillStateBuffs =
+		[
+			BuffId.DoubleAttack_Buff,
+			BuffId.FreeStep_Buff,
+		];
+
+		private static readonly SkillId[] ClassChangeUnsafeSkillStateSkills =
+		[
+			SkillId.Scout_DoubleAttack,
+			SkillId.Scout_FreeStep,
+		];
+
+		public static bool IsClassChangeUnsafeSkillStateBuff(BuffId buffId)
+			=> ClassChangeUnsafeSkillStateBuffs.Contains(buffId);
+
+		public static bool IsClassChangeUnsafeSkillStateSkill(SkillId skillId)
+			=> ClassChangeUnsafeSkillStateSkills.Contains(skillId);
+
+		public int ClearClassChangeUnsafeSkillStateBuffs(bool silently = false)
+		{
+			var removed = 0;
+
+			foreach (var buffId in ClassChangeUnsafeSkillStateBuffs)
+			{
+				if (this.Buffs.Remove(buffId, silently))
+					removed++;
+			}
+
+			return removed;
+		}
+
 		/// <summary>
 		/// Increases character's job level by the given amount. Returns the amount of levels actually gained.
 		/// </summary>
@@ -59,13 +90,25 @@ namespace Melia.Zone.World.Actors.Characters
 			this.Jobs.ModifySkillPoints(this.JobId, amount);
 
 			if (amount > 0)
+			{
+				this.GrantScaledAbilityPointsForLevelGain(amount, ZoneServer.Instance.Conf.World.AbilityPointsPerJobLevel, ZoneServer.Instance.Conf.World.JobExpRate);
 				this.FullHeal();
+			}
+
+			if (this.Job != null)
+			{
+				Send.ZC_PC(this, PcUpdateType.Job, (int)this.Job.Id, this.Job.Level);
+				Send.ZC_JOB_PTS(this, this.Job);
+			}
 
 			Send.ZC_OBJECT_PROPERTY(this);
 			Send.ZC_NORMAL.UpdateSkillUI(this);
+			this.AddonMessage(Melia.Shared.Game.Const.AddonMessage.JOB_UPDATE);
+			this.AddonMessage(Melia.Shared.Game.Const.AddonMessage.RESET_SKL_UP);
 			this.AddonMessage("NOTICE_Dm_levelup_skill", "!@#$Auto_KeulLeSeu_LeBeli_SangSeungHayeossSeupNiDa#@!", 3);
 			this.PlayEffect("F_pc_joblevel_up", 3);
 			Send.ZC_SKILL_LIST(this);
+			ZoneServer.Instance.Database.SavePlayerData(this, this.Connection?.Account);
 		}
 
 		/// <summary>
@@ -103,8 +146,10 @@ namespace Melia.Zone.World.Actors.Characters
 		/// </summary>
 		public int ModifyAbilityPoints(int amount)
 		{
-			var abilityPoints = int.Parse(this.Properties.GetString(PropertyName.AbilityPoint));
-			abilityPoints += amount;
+			if (!int.TryParse(this.Properties.GetString(PropertyName.AbilityPoint, "0"), out var abilityPoints))
+				abilityPoints = 0;
+
+			abilityPoints = Math.Max(0, abilityPoints + amount);
 			this.Properties.SetString(PropertyName.AbilityPoint, abilityPoints.ToString());
 
 			Send.ZC_CUSTOM_COMMANDER_INFO(this, CommanderInfoType.AbilityPoints, abilityPoints);

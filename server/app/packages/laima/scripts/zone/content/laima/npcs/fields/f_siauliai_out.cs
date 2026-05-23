@@ -19,6 +19,15 @@ public class FSiauliaiOutNpcScript : GeneralScript
 		// Statue of Goddess Zemyna
 		//-------------------------------------------------------------------------
 		AddNpc(10031, 40110, "Statue of Goddess Zemyna", "f_siauliai_out", -2194, 40, -2055, 84, "F_SIAULIAI_OUT_EV_55_001", "F_SIAULIAI_OUT_EV_55_001", "F_SIAULIAI_OUT_EV_55_001");
+
+		// Official Papaya main quest chain actors
+		//-------------------------------------------------------------------------
+		AddNpc(300, 20026, "", "f_siauliai_out", 506, 35, -1622, -90, "SIAULIAIOUT_Q01", "", "");
+		AddNpc(312, 20118, "Miner's Village Chief", "f_siauliai_out", -87.647362, 145.231903, -802.089050, 0, "SIAULIAIOUT_CHIEF_A", "", "");
+		AddNpc(313, 20110, "[Alchemist Master] Vaidotas", "f_siauliai_out", 1309.118652, 147.351593, 331.725952, -86, "SIAULIAIOUT_ALCHE", "", "");
+		AddNpc(314, 20026, "", "f_siauliai_out", 1298, 147.351593, 307, 0, "SIAULIAIOUT_PREAL", "", "");
+		AddNpc(321, 20110, "[Alchemist Master] Vaidotas", "f_siauliai_out", -38.880001, 85.269997, -1021.809998, 0, "SIAULIAIOUT_ALCHE_A", "", "");
+		AddNpc(322, 40095, "", "f_siauliai_out", -61, 157, -656, 0, "SIAULIAIOUT_BLOCK", "", "");
 		
 		// Lv1 Treasure Chest
 		//-------------------------------------------------------------------------

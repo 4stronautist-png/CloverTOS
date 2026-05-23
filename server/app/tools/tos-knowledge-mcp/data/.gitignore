@@ -1,0 +1,6 @@
+*.sqlite
+*.sqlite-*
+web_cache/
+manual/
+!manual/
+!manual/.gitkeep

@@ -41,7 +41,8 @@ C:\CloverTOS-Local\release\Start-CloverTOS-Local.bat
 - Copia os arquivos para `C:\CloverTOS-Local`.
 - Valida se o client Steam esta na revisao compativel `402595`.
 - Configura o cliente para `127.0.0.1:8080`.
-- Cria `Start-CloverTOS-Local.bat`.
+- Aplica o patch de loading screen em `release`.
+- Cria `Start-CloverTOS-Local.bat` com a loadscreen CloverTOS.
 - Desativa ReShade se encontrar DLLs conhecidas como `dxgi.dll`.
 
 Se o script informar outra revisao, como `403892`, nao continue com esse client.

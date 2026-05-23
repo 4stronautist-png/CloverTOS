@@ -16,6 +16,9 @@ public class FSiauliaiOutMobScript : GeneralScript
 	{
 		// Property Overrides -------------------------------
 
+		AddPropertyOverrides("f_siauliai_out", MonsterId.Boss_Goblin_Warrior, Properties("MHP", 1000, "MINPATK", 230, "MAXPATK", 427, "MINMATK", 110, "MAXMATK", 204, "DEF", 129, "MDEF", 86));
+		AddPropertyOverrides("f_siauliai_out", MonsterId.Boss_Goblin_Warrior_Red, Properties("MHP", 1000, "MINPATK", 230, "MAXPATK", 427, "MINMATK", 110, "MAXMATK", 204, "DEF", 129, "MDEF", 86));
+
 		// Property Overrides -------------------------------
 
 

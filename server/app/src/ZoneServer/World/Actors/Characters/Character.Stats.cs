@@ -284,6 +284,7 @@ namespace Melia.Zone.World.Actors.Characters
 				this.AddonMessage("EXP_UPDATE");
 				this.AddonMessage("RESET_SKL_UP");
 				this.AddonMessage("JOB_UPDATE");
+				this.RestoreCoreHudFrames();
 			}
 
 			if (!repeat)
@@ -299,6 +300,86 @@ namespace Melia.Zone.World.Actors.Characters
 				if (this.Connection != null)
 					this.RestoreCoreHudState(true);
 			});
+		}
+
+		private void RestoreCoreHudFrames()
+		{
+			if (this.Connection == null)
+				return;
+
+			Send.ZC_EXEC_CLIENT_SCP(this.Connection, @"
+function SOUL_RESTORE_CORE_HUD()
+	if ui == nil then
+		return 0;
+	end
+
+	local frameNames = {'mainstatus', 'buff', 'buff_separatedlist', 'minimap', 'minimap2', 'sysmenu', 'questinfoset_2', 'quickslotnexpbar'};
+	for i = 1, #frameNames do
+		local frame = ui.GetFrame(frameNames[i]);
+		if frame ~= nil then
+			pcall(function() frame:ShowWindow(1); end);
+			pcall(function() frame:Invalidate(); end);
+		end
+	end
+
+	return 1;
+end
+
+SOUL_RESTORE_CORE_HUD();
+pcall(function() ReserveScript('SOUL_RESTORE_CORE_HUD()', 0.25); end);
+pcall(function() ReserveScript('SOUL_RESTORE_CORE_HUD()', 0.85); end);
+pcall(function() ReserveScript('SOUL_RESTORE_CORE_HUD()', 1.8); end);
+pcall(function() ReserveScript('SOUL_RESTORE_CORE_HUD()', 3.0); end);
+");
+		}
+
+		/// <summary>
+		/// Applies the configured world EXP rates to raw reward/card EXP.
+		/// Monster kill EXP is already scaled before it reaches GiveExp.
+		/// </summary>
+		public (long Exp, long JobExp) GetWorldScaledExperienceAmounts(long exp, long jobExp)
+		{
+			var worldConf = ZoneServer.Instance.Conf.World;
+
+			return (
+				ScaleExperienceAmount(exp, worldConf.ExpRate),
+				ScaleExperienceAmount(jobExp, worldConf.JobExpRate)
+			);
+		}
+
+		public int GetWorldScaledAbilityPointAmount(int amount)
+		{
+			if (amount <= 0)
+				return 0;
+
+			var worldConf = ZoneServer.Instance.Conf.World;
+			var rate = Math.Max(worldConf.ExpRate, worldConf.JobExpRate);
+			return (int)Math.Min(int.MaxValue, ScaleExperienceAmount(amount, rate));
+		}
+
+		private static long ScaleExperienceAmount(long amount, float rate)
+		{
+			if (amount <= 0)
+				return 0;
+
+			var scaled = amount * (rate / 100.0);
+			if (scaled >= long.MaxValue)
+				return long.MaxValue;
+
+			return Math.Max(1, (long)Math.Round(scaled, MidpointRounding.AwayFromZero));
+		}
+
+		private void GrantScaledAbilityPointsForLevelGain(int levelCount, int pointsPerLevel, float rate)
+		{
+			if (levelCount <= 0 || pointsPerLevel <= 0)
+				return;
+
+			var baseAmount = (long)levelCount * pointsPerLevel;
+			var scaledAmount = ScaleExperienceAmount(baseAmount, rate);
+			if (scaledAmount <= 0)
+				return;
+
+			this.ModifyAbilityPoints((int)Math.Min(int.MaxValue, scaledAmount));
 		}
 
 		/// <summary>
@@ -364,6 +445,8 @@ namespace Melia.Zone.World.Actors.Characters
 
 				if (jobLevelsGained > 0)
 					this.FinishJobLevelChange(jobLevelsGained);
+				else if (jobExp > 0)
+					Send.ZC_NORMAL.UpdateSkillUI(this);
 			}
 
 			if (this.HasCompanions)
@@ -410,6 +493,8 @@ namespace Melia.Zone.World.Actors.Characters
 			}
 
 			var newLevel = this.Properties.Modify(PropertyName.Lv, amount);
+			this.GrantScaledAbilityPointsForLevelGain(amount, ZoneServer.Instance.Conf.World.AbilityPointsPerLevel, ZoneServer.Instance.Conf.World.ExpRate);
+
 			if (newLevel >= ZoneServer.Instance.Conf.World.MaxLevel && !this.Variables.Perm.Has("Melia.MaxLevel.AchievedTime"))
 			{
 				this.Variables.Perm.Set("Melia.MaxLevel.AchievedTime", DateTime.UtcNow.Ticks.ToString());

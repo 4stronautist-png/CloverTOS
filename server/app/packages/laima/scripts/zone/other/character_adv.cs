@@ -1282,8 +1282,22 @@ public class CharacterAdvancementScript : GeneralScript
 		if (character.Skills.Has(skillId))
 			return;
 
+		if (IsClassTreeSkill(skillId))
+			return;
+
 		var skill = new Skill(character, skillId, 1);
 		character.Skills.Add(skill);
+	}
+
+	private static bool IsClassTreeSkill(SkillId skillId)
+	{
+		foreach (var skillTreeData in ZoneServer.Instance.Data.SkillTreeDb.Entries)
+		{
+			if (skillTreeData.SkillId == skillId)
+				return true;
+		}
+
+		return false;
 	}
 
 	private static void LearnCommonSkill(Character character, SkillId skillId)

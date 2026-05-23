@@ -19,7 +19,7 @@ function M_CHASE_REDRAW(frame)
 	for i = 1, #quests do
 		local quest = quests[i]
 
-		if quest.Objectives ~= nil and #quest.Objectives > 0 then
+		if quest.Tracked then
 			local height = M_CHASE_CREATE_QUEST(frame, ctrl, quest, x, y)
 			y = y + height
 		end

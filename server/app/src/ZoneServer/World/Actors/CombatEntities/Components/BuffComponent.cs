@@ -226,12 +226,12 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 		/// </summary>
 		/// <param name="buffId"></param>
 		/// <returns></returns>
-		public bool Remove(BuffId buffId)
+		public bool Remove(BuffId buffId, bool silently = false)
 		{
 			if (!this.TryGet(buffId, out var buff))
 				return false;
 
-			return this.Remove(buff);
+			return this.Remove(buff, silently);
 		}
 
 		/// <summary>

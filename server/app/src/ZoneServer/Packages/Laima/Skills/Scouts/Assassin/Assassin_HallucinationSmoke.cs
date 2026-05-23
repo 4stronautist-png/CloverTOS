@@ -58,14 +58,10 @@ namespace Melia.Zone.Skills.Handlers.Scouts.Assassin
 		/// <param name="splashArea"></param>
 		private async Task SetPad(Skill skill, ICombatEntity caster)
 		{
-			var initialDelay = TimeSpan.FromMilliseconds(300);
-			var skillHitDelay = TimeSpan.Zero;
-
-			await skill.Wait(initialDelay);
-
 			var pad = new Pad(PadName.Assassin_HallucinationSmoke, caster, skill, new Circle(caster.Position, 50));
 
 			caster.Map.AddPad(pad);
+			await Task.CompletedTask;
 		}
 	}
 }

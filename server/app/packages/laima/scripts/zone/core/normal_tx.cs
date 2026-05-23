@@ -42,6 +42,8 @@ public class NormalTxFunctionsScript : GeneralScript
 	[ScriptableFunction]
 	public NormalTxResult GUIDE_QUEST_OPEN_UI(Character character, string strArg)
 	{
+		character?.Quests.SyncTrackedQuestSlots();
+
 		switch (strArg)
 		{
 			case "status":
@@ -57,9 +59,21 @@ public class NormalTxFunctionsScript : GeneralScript
 				// to open the help panel or show a tooltip or something.
 				return NormalTxResult.Okay;
 			}
+			case "market":
+			{
+				// Sent by the classic client after opening the market UI.
+				return NormalTxResult.Okay;
+			}
 		}
 
-		return NormalTxResult.Fail;
+		return NormalTxResult.Okay;
+	}
+
+	[ScriptableFunction]
+	public NormalTxResult GUIDE_QUEST_CHECK_SLOT_ADD(Character character, string strArg)
+	{
+		character?.Quests.TrackQuestInClientSlot(strArg);
+		return NormalTxResult.Okay;
 	}
 
 	[ScriptableFunction]
@@ -154,6 +168,12 @@ public class NormalTxFunctionsScript : GeneralScript
 	[ScriptableFunction]
 	public NormalTxResult SCR_TX_SKILL_UP(Character character, int[] numArgs)
 	{
+		if (numArgs.Length < 1)
+		{
+			Log.Warning("SCR_TX_SKILL_UP: User '{0}' sent no skill level changes.", character.Username);
+			return NormalTxResult.Fail;
+		}
+
 		var jobId = (JobId)numArgs[0];
 		var amounts = numArgs.Skip(1).ToArray();
 
@@ -178,13 +198,14 @@ public class NormalTxFunctionsScript : GeneralScript
 		if (amounts.Length != skillTreeData.Length)
 		{
 			Log.Warning("SCR_TX_SKILL_UP: User '{0}' sent an unexpected number of skill level changes. Got {1}, expected {2}.", character.Username, amounts.Length, skillTreeData.Length);
-			return NormalTxResult.Fail;
 		}
 
 		// Iterate over the amounts and try to apply them to the skills
 		var commonSkillChanged = false;
+		var skillChanged = false;
+		var amountCount = Math.Min(amounts.Length, skillTreeData.Length);
 
-		for (var i = 0; i < amounts.Length; ++i)
+		for (var i = 0; i < amountCount; ++i)
 		{
 			var addLevels = amounts[i];
 			if (addLevels <= 0)
@@ -199,6 +220,11 @@ public class NormalTxFunctionsScript : GeneralScript
 
 			var data = skillTreeData[i];
 			var skillId = data.SkillId;
+			if (!ZoneServer.Instance.Data.SkillDb.TryFind(skillId, out _))
+			{
+				Log.Warning("SCR_TX_SKILL_UP: User '{0}' tried to learn unknown skill '{1}'.", character.Username, skillId);
+				continue;
+			}
 
 			// Check max level
 			var maxLevel = character.Skills.GetMaxLevel(skillId);
@@ -236,6 +262,7 @@ public class NormalTxFunctionsScript : GeneralScript
 				skill.Properties.InvalidateAll();
 				Send.ZC_OBJECT_PROPERTY(character.Connection, skill);
 			}
+			skillChanged = true;
 
 			// Trigger passive handler for newly learned/leveled skills
 			// so that skills like Fletcher arrows can auto-charge their
@@ -251,11 +278,14 @@ public class NormalTxFunctionsScript : GeneralScript
 		Send.ZC_ADDON_MSG(character, AddonMessage.RESET_SKL_UP);
 		Send.ZC_JOB_PTS(character, job);
 
-		if (commonSkillChanged)
+		if (skillChanged)
 		{
 			Send.ZC_SKILL_LIST(character);
-			Send.ZC_COMMON_SKILL_LIST(character);
+			if (commonSkillChanged)
+				Send.ZC_COMMON_SKILL_LIST(character);
 			Send.ZC_NORMAL.UpdateSkillUI(character);
+			character.InvalidateProperties();
+			ZoneServer.Instance.Database.SavePlayerData(character, character.Connection?.Account);
 		}
 
 		return NormalTxResult.Okay;
