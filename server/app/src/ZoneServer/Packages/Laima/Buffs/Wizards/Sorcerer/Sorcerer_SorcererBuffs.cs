@@ -3,10 +3,16 @@ using Melia.Shared.Packages;
 using Melia.Shared.Game.Const;
 using Melia.Zone.Buffs.Base;
 using Melia.Zone.Network;
+using Melia.Zone.Scripting;
+using Melia.Zone.Scripting.ScriptableEvents;
+using Melia.Zone.Skills;
+using Melia.Zone.Skills.Combat;
+using Melia.Zone.Skills.Handlers.Wizards.Necromancer;
 using Melia.Zone.World.Actors;
 using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.CombatEntities.Components;
 using Melia.Zone.World.Actors.Monsters;
+using Yggdrasil.Util;
 
 namespace Melia.Zone.Buffs.Handlers.Wizards.Sorcerer
 {
@@ -135,6 +141,9 @@ namespace Melia.Zone.Buffs.Handlers.Wizards.Sorcerer
 	[BuffHandler(BuffId.Ability_buff_PC_Summon)]
 	public class Ability_buff_PC_SummonOverride : BuffHandler
 	{
+		private static readonly TimeSpan RustyBladePoisonDuration = TimeSpan.FromSeconds(4);
+		private static readonly TimeSpan FleshAmalgamDebuffDuration = TimeSpan.FromSeconds(5);
+
 		public override void OnActivate(Buff buff, ActivationType activationType)
 		{
 			// Mark entity as a PC summon
@@ -150,6 +159,85 @@ namespace Melia.Zone.Buffs.Handlers.Wizards.Sorcerer
 			{
 				summon.Vars.SetBool("IsPCSummon", false);
 			}
+		}
+
+		[CombatCalcModifier(CombatCalcPhase.BeforeCalc, BuffId.Ability_buff_PC_Summon)]
+		public void OnBeforeCalc(ICombatEntity attacker, ICombatEntity target, Skill skill, SkillModifier modifier, SkillHitResult result)
+		{
+			if (attacker is not Summon summon || summon.Owner is not Character owner)
+				return;
+
+			if (NecromancerSkillHelper.HasSummonControlJob(owner))
+				modifier.FinalDamageMultiplier *= NecromancerSkillHelper.GetSummonControlMultiplier(owner);
+
+			var isNecromancerSummon = NecromancerSkillHelper.IsNecromancerSummon(summon);
+			if (!isNecromancerSummon)
+				return;
+
+			var untilDeathBonus = NecromancerSkillHelper.GetUntilDeathBonus(summon);
+			if (untilDeathBonus > 0)
+				modifier.FinalDamageMultiplier *= 1f + untilDeathBonus;
+
+			var supportDamageBonus = NecromancerSkillHelper.GetSupportDamageBonus(summon);
+			if (supportDamageBonus > 0)
+				modifier.FinalDamageMultiplier *= 1f + supportDamageBonus;
+
+			if (owner.TryGetSkill(SkillId.Necromancer_FleshCannon, out var martyrSkill) && owner.Hp <= owner.MaxHp * 0.5f)
+			{
+				var martyrBonus = Math.Max(1, martyrSkill.Level) * 0.01f;
+				var reinforceRate = ScriptableFunctions.Skill.Get("SCR_Get_AbilityReinforceRate");
+				martyrBonus *= 1f + reinforceRate(martyrSkill);
+				modifier.FinalDamageMultiplier *= 1f + martyrBonus;
+			}
+		}
+
+		[CombatCalcModifier(CombatCalcPhase.AfterCalc, BuffId.Ability_buff_PC_Summon)]
+		public void OnAfterCalc(ICombatEntity attacker, ICombatEntity target, Skill skill, SkillModifier modifier, SkillHitResult result)
+		{
+			if (result.Damage <= 0 || attacker is not Summon summon || summon.Owner is not Character owner)
+				return;
+
+			if (!NecromancerSkillHelper.IsNecromancerSummon(summon))
+				return;
+
+			if ((summon.Id == MonsterId.SkeletonSoldier || summon.Id == NecromancerSkillHelper.EliteSkeletonSoldierId)
+				&& owner.IsAbilityActive(AbilityId.Necromancer22)
+				&& RandomProvider.Get().Next(100) < 20)
+			{
+				target.StartBuff(BuffId.Poison, 1, Math.Max(1, result.Damage * 0.25f), RustyBladePoisonDuration, owner, SkillId.Necromancer_RaiseDead);
+			}
+
+			if (summon.Id == NecromancerSkillHelper.FleshAmalgamId)
+			{
+				var rnd = RandomProvider.Get().Next(100);
+				if (rnd < 30)
+					target.StartBuff(BuffId.Blind, 1, 0, FleshAmalgamDebuffDuration, owner, SkillId.Necromancer_CorpseTower);
+				if (rnd < 5)
+					target.StartBuff(BuffId.Confuse, 1, 0, FleshAmalgamDebuffDuration, owner, SkillId.Necromancer_CorpseTower);
+			}
+
+			if (summon.Id == NecromancerSkillHelper.ShoggothId && target is Mob mob && !target.IsDead)
+				TryDevourShoggothTarget(summon, owner, mob);
+		}
+
+		private static void TryDevourShoggothTarget(Summon summon, Character owner, Mob target)
+		{
+			if (target.Rank == MonsterRank.Boss)
+				return;
+
+			var enlarged = summon.Vars.GetBool("Melia.Necromancer.Shoggoth.Enlarged", false);
+			var canDevourBySize = target.EffectiveSize == SizeType.S || (enlarged && target.EffectiveSize == SizeType.M);
+			if (!canDevourBySize)
+				return;
+
+			if (Math.Abs(target.Level - owner.Level) > 30)
+				return;
+
+			var chance = summon.Vars.GetFloat("Melia.Necromancer.DevourChance", 0.02f);
+			if (RandomProvider.Get().NextDouble() >= chance)
+				return;
+
+			target.TakeDamage(Math.Max(1, target.Hp), summon);
 		}
 	}
 }

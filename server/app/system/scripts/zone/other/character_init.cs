@@ -26,6 +26,11 @@ public class CharacterInitializationScript : GeneralScript
 
 	private void UpdateAccount(Character character)
 	{
+		var props = character.Connection.Account.Properties;
+		props.SetFloat("UnlockQuest_Char2_31", 1); // Incendiar
+		props.SetFloat("UnlockQuest_Char3_30", 1); // Commodore [A]
+		props.SetFloat("UnlockQuest_Char5_25", 1); // Commodore [T]
+
 		// Unlock special classes by default if the respective class feature
 		// is enabled, but vouchers are disabled.
 
@@ -33,7 +38,6 @@ public class CharacterInitializationScript : GeneralScript
 		if (!unlockByDefault)
 			return;
 
-		var props = character.Connection.Account.Properties;
 		props.SetFloat("UnlockQuest_Char1_25", 1); // Winged Hussar
 		props.SetFloat("UnlockQuest_Char1_26", 1); // Vanquisher
 		props.SetFloat("UnlockQuest_Char2_25", 1); // Illusionist

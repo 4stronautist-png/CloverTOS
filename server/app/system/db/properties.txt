@@ -10412,6 +10412,7 @@
 	{ namespace: "Account", name: "GEM_Commodore_AnnihilationBombardment_Archer_cabinet", type: "Number", id: 118699 },
 	{ namespace: "Account", name: "GEM_Commodore_ArmorPiercingShot_Archer_cabinet", type: "Number", id: 118700 },
 	{ namespace: "Account", name: "TSF04_135_1_cabinet_upgrade", type: "Number", id: 118701 },
+	{ namespace: "Account", name: "UnlockQuest_Char2_31", type: "Number", id: 118702 },
 ]},
 { namespace: "Guild", properties: [
 	{ namespace: "Guild", name: "MaxCount", type: "Number", id: 7691 },
@@ -24533,6 +24534,7 @@
 	{ namespace: "PCEtc", name: "popoboost_participate_2603", type: "Number", id: 118688 },
 	{ namespace: "PCEtc", name: "HiddenJob_Char5_25", type: "Number", id: 118689 },
 	{ namespace: "PCEtc", name: "HiddenJob_Char3_30", type: "Number", id: 118690 },
+	{ namespace: "PCEtc", name: "HiddenJob_Char2_31", type: "Number", id: 118703 },
 ]},
 { namespace: "SessionObject", properties: [
 	{ namespace: "SessionObject", name: "PosX", type: "Number", id: 142 },

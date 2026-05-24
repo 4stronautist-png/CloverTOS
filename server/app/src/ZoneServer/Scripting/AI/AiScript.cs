@@ -777,7 +777,16 @@ namespace Melia.Zone.Scripting.AI
 			if (master != null)
 			{
 				yield return this.Animation("IDLE");
-				yield return this.Follow(master);
+				if (this.Entity is Mob stationaryMob && stationaryMob.Vars.GetBool("Melia.AI.Stationary", false))
+				{
+					yield return this.Wait(1000);
+					yield break;
+				}
+
+				if (this.Entity is Summon)
+					yield return this.Follow(master, minDistance: 55, maxFollowDistance: 5000, matchSpeed: true, teleportWhenTooFar: false);
+				else
+					yield return this.Follow(master);
 				yield break;
 			}
 

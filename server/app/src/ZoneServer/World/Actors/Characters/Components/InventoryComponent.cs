@@ -52,6 +52,13 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			[644947] = new(11106015, EquipSlot.EffectCostume),
 		};
 
+		private static bool IsValidEquipSlot(EquipSlot slot)
+		{
+			return Enum.IsDefined(typeof(EquipSlot), slot)
+				&& (int)slot >= 0
+				&& (int)slot < InventoryDefaults.EquipSlotCount;
+		}
+
 		/// <summary>
 		/// Clears all internal collections to release item references
 		/// for GC after the character has been saved and removed from
@@ -1269,7 +1276,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		/// <returns></returns>
 		public InventoryResult Equip(EquipSlot slot, long worldId)
 		{
-			if (!Enum.IsDefined(typeof(EquipSlot), slot))
+			if (!IsValidEquipSlot(slot))
 				return InventoryResult.InvalidSlot;
 
 			var item = this.GetItem(worldId);
@@ -1416,7 +1423,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 		/// <returns></returns>
 		public InventoryResult Unequip(EquipSlot slot)
 		{
-			if (!Enum.IsDefined(typeof(EquipSlot), slot))
+			if (!IsValidEquipSlot(slot))
 				return InventoryResult.InvalidSlot;
 
 			var item = this.GetItem(slot);

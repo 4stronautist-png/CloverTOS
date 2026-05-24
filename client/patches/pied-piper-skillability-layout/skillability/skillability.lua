@@ -383,6 +383,14 @@ function SKILLABILITY_FILL_SKILL_CTRLSET(ctrlset, info, jobClsName)
 	else
 		upbtn:SetTextTooltip(ScpArgMsg('SkillLevelUp'));
     end
+
+    if CLOVER_IS_SUMMON_COMMAND_SKILL(sklClsName) and dbLv >= 1 then
+        lockbtn:SetImage(IMG_MAX);
+        lockbtn:SetColorTone(ENABLED_COLOR);
+        lockbtn:SetTextTooltip(ScpArgMsg('MaxSkillLevel'));
+        lockbtn:ShowWindow(1);
+        upbtn:ShowWindow(0);
+    end
     
     local remainstat = GET_REMAIN_SKILLTREE_POINT(jobClsName)
 	if remainstat <= 0 then
@@ -391,7 +399,14 @@ function SKILLABILITY_FILL_SKILL_CTRLSET(ctrlset, info, jobClsName)
 		upbtn:ShowWindow(1);
 	end
 
+    if CLOVER_IS_SUMMON_COMMAND_SKILL(sklClsName) and dbLv >= 1 then
+        upbtn:ShowWindow(0);
+    end
+
     local isEnable = obj ~= nil or jobClsName == "Common";
+    if sklClsName == "Necromancer_FleshCannon" then
+        isEnable = false;
+    end
     SKILLABILITY_ENABLE_SKILL_CTRLSET(ctrlset, isEnable)
 end
 
@@ -636,6 +651,10 @@ function SKILLABILITY_FILL_ABILITY_GB(skillability_job, ability_gb, jobClsName)
         PiedPiper25 = true,
         RemovedSymphonyAttribute = true,
     };
+    local removedNecromancerAbility = {
+        Necromancer2 = true,
+        Necromancer21 = true,
+    };
 
     local clsSortList = {};
     for i=1, #list do
@@ -644,7 +663,9 @@ function SKILLABILITY_FILL_ABILITY_GB(skillability_job, ability_gb, jobClsName)
             local abilClsName = TryGetProp(abilClass, "ClassName", "None");
             local abilName = TryGetProp(abilClass, "Name", "");
             local isPiedPiper = jobClsName == "Char3_12" or jobClsName == "PiedPiper";
-            local shouldSkip = isPiedPiper and (removedPiedPiperAbility[abilClsName] == true or abilName == "");
+            local isNecromancer = jobClsName == "Char2_9" or jobClsName == "Necromancer";
+            local shouldSkip = (isPiedPiper and (removedPiedPiperAbility[abilClsName] == true or abilName == "")) or
+                               (isNecromancer and (removedNecromancerAbility[abilClsName] == true or abilName == ""));
             if shouldSkip == false then
                 clsSortList[#clsSortList+1] = {}
                 clsSortList[#clsSortList]["cls"] = abilClass;
@@ -1428,6 +1449,31 @@ function SKILLABILITY_DEPLOY_COMMON_SKILL_CONTROLSET(skilltree_gb, jobClsName, s
     SKILLABILITY_FILL_SKILL_CTRLSET(ctrlset, info, jobClsName);
 end
 
+local function CLOVER_REMOVE_NECROMANCER_DELETED_SKILLS(unlockLvHash)
+    if unlockLvHash == nil then
+        return;
+    end
+
+    for lv, lvList in pairs(unlockLvHash) do
+        local i = 1;
+        while i <= #lvList do
+            local skillTreeClsName = lvList[i];
+            local cls = GetClass("SkillTree", skillTreeClsName);
+            if cls ~= nil and cls.SkillName == "Necromancer_Disinter" then
+                table.remove(lvList, i);
+            else
+                i = i + 1;
+            end
+        end
+    end
+end
+
+function CLOVER_IS_SUMMON_COMMAND_SKILL(skillName)
+    return skillName == "Common_ForcedAttack"
+        or skillName == "Common_ForcedAttackCancel"
+        or skillName == "Common_SummonRemove";
+end
+
 function SKILLABILITY_DEPLOY_JOB_SKILL(skilltree_gb, jobClsName, unlockLvHash, SKILL_COL_COUNT, SKILL_LINE_BREAK_COUNT, SKILL_LV_HEIGHT, SKILL_LV_MARGIN, SKILL_LV_DIST)
     local width = ui.GetControlSetAttribute("skillability_skillset", "width");
     local rowCount = 0;
@@ -1436,6 +1482,10 @@ function SKILLABILITY_DEPLOY_JOB_SKILL(skilltree_gb, jobClsName, unlockLvHash, S
 
     if jobClsName == "Common" then
         skilltree_gb:RemoveAllChild()
+    end
+
+    if jobClsName ~= "Common" then
+        CLOVER_REMOVE_NECROMANCER_DELETED_SKILLS(unlockLvHash);
     end
     
     --total loop count == skill count in job

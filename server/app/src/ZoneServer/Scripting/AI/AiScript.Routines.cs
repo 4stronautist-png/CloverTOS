@@ -173,6 +173,11 @@ namespace Melia.Zone.Scripting.AI
 			if (target == null) yield break;
 			if (!this.Entity.CanMove()) yield break;
 			if (this.Entity.IsLocked(LockType.Movement)) yield break;
+			if (this.Entity is Mob stationaryMob && stationaryMob.Vars.GetBool("Melia.AI.Stationary", false))
+			{
+				yield return this.StopMove();
+				yield break;
+			}
 
 			var rangeWithBuffer = this.RangeType == AttackerRangeType.Ranged
 				? attackRange
@@ -721,7 +726,7 @@ namespace Melia.Zone.Scripting.AI
 		/// <param name="maxFollowDistance">The maximum distance before the AI gives up or teleports.</param>
 		/// <param name="matchSpeed">If true, the entity's speed will be changed to match the target's.</param>
 		/// <returns></returns>
-		protected IEnumerable Follow(ICombatEntity followTarget, float minDistance = 80, float maxFollowDistance = 400, bool matchSpeed = false)
+		protected IEnumerable Follow(ICombatEntity followTarget, float minDistance = 80, float maxFollowDistance = 400, bool matchSpeed = false, bool teleportWhenTooFar = true)
 		{
 			if (followTarget == null)
 			{
@@ -760,11 +765,18 @@ namespace Melia.Zone.Scripting.AI
 				// Condition 1: Target is too far away (teleport or give up)
 				if (distance > maxFollowDistance)
 				{
-					// Option A: Teleport to target
 					movement?.Stop();
-					this.Entity.Position = followTarget.Position.GetRandomInRange2D((int)minDistance / 2, RandomProvider.Get()); // Teleport nearby, not directly on top
-					Send.ZC_SET_POS(this.Entity);
-					yield return this.Wait(250); // Small delay after teleport to re-orient.
+					if (teleportWhenTooFar)
+					{
+						this.Entity.Position = followTarget.Position.GetRandomInRange2D((int)minDistance / 2, RandomProvider.Get());
+						Send.ZC_SET_POS(this.Entity);
+						yield return this.Wait(250);
+					}
+					else
+					{
+						yield return this.MoveTo(followTarget.Position, wait: false);
+						yield return this.Wait(100);
+					}
 					continue; // Continue the loop from the new position
 				}
 

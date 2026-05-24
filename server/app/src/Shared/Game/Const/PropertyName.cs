@@ -10415,6 +10415,7 @@
 		public const string GEM_Commodore_AnnihilationBombardment_Archer_cabinet = "GEM_Commodore_AnnihilationBombardment_Archer_cabinet";
 		public const string GEM_Commodore_ArmorPiercingShot_Archer_cabinet = "GEM_Commodore_ArmorPiercingShot_Archer_cabinet";
 		public const string TSF04_135_1_cabinet_upgrade = "TSF04_135_1_cabinet_upgrade";
+		public const string UnlockQuest_Char2_31 = "UnlockQuest_Char2_31";
 
 		// Guild
 		public const string MaxCount = "MaxCount";
@@ -21747,6 +21748,7 @@
 		public const string popoboost_participate_2603 = "popoboost_participate_2603";
 		public const string HiddenJob_Char5_25 = "HiddenJob_Char5_25";
 		public const string HiddenJob_Char3_30 = "HiddenJob_Char3_30";
+		public const string HiddenJob_Char2_31 = "HiddenJob_Char2_31";
 
 		// SessionObject
 		public const string PosX = "PosX";

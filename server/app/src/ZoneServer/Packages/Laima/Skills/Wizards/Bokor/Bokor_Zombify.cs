@@ -139,6 +139,8 @@ namespace Melia.Zone.Skills.Handlers.Bokor
 					continue;
 
 				ApplyZombieStats(zombie, info.ClassName, skill, caster);
+				if (zombie is Summon summon)
+					summon.StartBuff(BuffId.Ability_buff_PC_Summon, TimeSpan.Zero, summon);
 				summonedCount++;
 			}
 
@@ -157,6 +159,8 @@ namespace Melia.Zone.Skills.Handlers.Bokor
 				return false;
 
 			ApplyZombieStats(zombie, info.ClassName, skill, caster);
+			if (zombie is Summon summon)
+				summon.StartBuff(BuffId.Ability_buff_PC_Summon, TimeSpan.Zero, summon);
 			return true;
 		}
 

@@ -358,20 +358,22 @@ namespace Melia.Zone.Skills.Handlers.Mon
 			var originPos = caster.Position;
 			var hitDelay = 100 + (int)(caster.Position.Get2DDistance(target.Position) * 0.7);
 			var aniTime = hitDelay + 200;
-			var leadPos = GetLeadPosition(target, hitDelay, caster);
-			caster.TurnTowards(leadPos);
-			var farPos = originPos.GetNearestPositionWithinDistance(leadPos, skill.Properties[PropertyName.MaxR]);
-			var forceId = ForceId.GetNew();
-			Send.ZC_SKILL_MELEE_GROUND(caster, skill, farPos, forceId, null);
+			caster.TurnTowards(target);
+			Send.ZC_SKILL_MELEE_TARGET(caster, skill, target);
 
-			skill.Run(this.HandleSkill(caster, target, skill, originPos, farPos, hitDelay, aniTime));
+			skill.Run(this.HandleSkill(caster, target, skill, hitDelay, aniTime));
 		}
 
-		private async Task HandleSkill(ICombatEntity caster, ICombatEntity target, Skill skill, Position originPos, Position farPos, int hitDelay, int aniTime)
+		private async Task HandleSkill(ICombatEntity caster, ICombatEntity target, Skill skill, int hitDelay, int aniTime)
 		{
-			var splashParam = skill.GetSplashParameters(caster, originPos, farPos, length: 150, width: 20, angle: 10f);
-			var splashArea = skill.GetSplashArea(SplashType.Circle, splashParam);
-			await SkillAttack(caster, skill, splashArea, hitDelay, aniTime);
+			await skill.Wait(TimeSpan.FromMilliseconds(aniTime));
+			if (caster.IsDead || target == null || target.IsDead || !caster.CanDamage(target))
+				return;
+
+			var skillHitResult = SCR_SkillHit(caster, target, skill);
+			target.TakeDamage(skillHitResult.Damage, caster);
+			var skillHit = new SkillHitInfo(caster, target, skill, skillHitResult, TimeSpan.FromMilliseconds(hitDelay), skill.Properties.HitDelay);
+			Send.ZC_SKILL_HIT_INFO(caster, skillHit);
 		}
 	}
 
@@ -858,4 +860,3 @@ namespace Melia.Zone.Skills.Handlers.Mon
 		}
 	}
 }
-

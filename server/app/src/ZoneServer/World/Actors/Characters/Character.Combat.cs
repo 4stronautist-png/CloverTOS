@@ -21,6 +21,11 @@ namespace Melia.Zone.World.Actors.Characters
 {
 	public partial class Character
 	{
+		private const string FleshAmalgamBarrierKey = "Melia.Necromancer.FleshAmalgam";
+		private const string FleshAmalgamBlocksKey = "Melia.Necromancer.FleshAmalgam.Blocks";
+		private const float FleshAmalgamInterceptRange = 140f;
+		private const float FleshAmalgamInterceptWidth = 45f;
+
 		#region Healing Methods
 		/// <summary>
 		/// Heals character's HP, SP, and Stamina fully and updates the client.
@@ -139,6 +144,9 @@ namespace Melia.Zone.World.Actors.Characters
 				BuffId.InfernalShadow_CasterNoDamage_Buff))
 				return false;
 
+			if (damage > 0 && this.TryRedirectDamageToFleshAmalgam(damage, attacker))
+				return false;
+
 			if (damage > 0 && this.IsBuffActive(BuffId.SitRest))
 				this.RemoveBuff(BuffId.SitRest);
 
@@ -177,6 +185,76 @@ namespace Melia.Zone.World.Actors.Characters
 			this.Damaged?.Invoke(this, damage, attacker);
 
 			return this.IsDead;
+		}
+
+		private bool TryRedirectDamageToFleshAmalgam(float damage, ICombatEntity attacker)
+		{
+			if (attacker == null || attacker == this || this.Map == null || attacker.Map != this.Map)
+				return false;
+
+			Summon bestAmalgam = null;
+			var bestDistance = double.MaxValue;
+			foreach (var monster in this.Map.GetMonsters(monster => monster is Summon summon
+				&& !summon.IsDead
+				&& summon.Map == this.Map
+				&& summon.Vars.GetBool(FleshAmalgamBarrierKey, false)))
+			{
+				if (monster is not Summon summon || summon.Owner is not Character owner)
+					continue;
+
+				if (!owner.IsAlly(this) || !owner.IsEnemy(attacker))
+					continue;
+
+				var remainingBlocks = summon.Vars.GetInt(FleshAmalgamBlocksKey);
+				if (remainingBlocks <= 0)
+					continue;
+
+				if (!this.IsFleshAmalgamBetweenAttackerAndTarget(attacker, summon))
+					continue;
+
+				var distance = summon.Position.Get2DDistance(this.Position);
+				if (distance < bestDistance)
+				{
+					bestDistance = distance;
+					bestAmalgam = summon;
+				}
+			}
+
+			if (bestAmalgam == null)
+				return false;
+
+			var blocks = bestAmalgam.Vars.GetInt(FleshAmalgamBlocksKey);
+			bestAmalgam.Vars.SetInt(FleshAmalgamBlocksKey, Math.Max(0, blocks - 1));
+			bestAmalgam.TakeDamage(damage, attacker);
+			return true;
+		}
+
+		private bool IsFleshAmalgamBetweenAttackerAndTarget(ICombatEntity attacker, Summon amalgam)
+		{
+			if (!amalgam.Position.InRange2D(this.Position, FleshAmalgamInterceptRange + amalgam.AgentRadius))
+				return false;
+
+			var attackerPos = attacker.Position;
+			var targetPos = this.Position;
+			var barrierPos = amalgam.Position;
+			var segmentX = targetPos.X - attackerPos.X;
+			var segmentZ = targetPos.Z - attackerPos.Z;
+			var segmentLengthSquared = (segmentX * segmentX) + (segmentZ * segmentZ);
+			if (segmentLengthSquared <= float.Epsilon)
+				return false;
+
+			var barrierX = barrierPos.X - attackerPos.X;
+			var barrierZ = barrierPos.Z - attackerPos.Z;
+			var projection = ((barrierX * segmentX) + (barrierZ * segmentZ)) / segmentLengthSquared;
+			if (projection <= 0f || projection >= 1f)
+				return false;
+
+			var closestX = attackerPos.X + (segmentX * projection);
+			var closestZ = attackerPos.Z + (segmentZ * projection);
+			var distanceX = barrierPos.X - closestX;
+			var distanceZ = barrierPos.Z - closestZ;
+			var interceptWidth = FleshAmalgamInterceptWidth + amalgam.AgentRadius;
+			return ((distanceX * distanceX) + (distanceZ * distanceZ)) <= (interceptWidth * interceptWidth);
 		}
 
 		/// <summary>

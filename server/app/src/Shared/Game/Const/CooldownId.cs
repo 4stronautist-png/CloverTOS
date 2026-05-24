@@ -1663,6 +1663,18 @@ namespace Melia.Shared.Game.Const
 		Kneller_RestingGround = 13004,
 		Kneller_ResonantPulse = 13005,
 		Kneller_DeathKnell = 13006,
+		Commodore_TargetingSight = 14001,
+		Commodore_ArtillerySupport = 14002,
+		Commodore_AnchorStrike = 14003,
+		Commodore_AntiBoarding = 14004,
+		Commodore_ArmorPiercingShot = 14005,
+		Commodore_AnnihilationBombardment = 14006,
+		Incendiar_FlareBlast = 15001,
+		Incendiar_BlazingEruption = 15002,
+		Incendiar_Gehenna = 15003,
+		Incendiar_VolcanicGeyser = 15004,
+		Incendiar_Inferno = 15005,
+		Incendiar_DiesIrae = 15006,
 
 		// Custom to Laima - All missing skills OHs
 		GungHo_OH = 50000,

@@ -36,6 +36,15 @@ public class SysMenuVarIconsScript : ClientScript
 
 			RefreshGrimoireGuids(character);
 		}
+
+		if (character.Jobs.Has(JobId.Necromancer))
+		{
+			this.SendRawLuaScript(character, @"
+				Melia.Ui.SysMenu.AddButton(""BtnNecronomicon"", ""sysmenu_neacro"", ""Necronomicon"", ""ui.ToggleFrame('necronomicon')"")
+			");
+
+			RefreshNecronomiconGuids(character);
+		}
 	}
 
 	private static void RefreshGrimoireGuids(Character character)
@@ -46,6 +55,41 @@ public class SysMenuVarIconsScript : ClientScript
 		{
 			var cardProperty = slot == 1 ? PropertyName.Sorcerer_bosscard1 : PropertyName.Sorcerer_bosscard2;
 			var guidProperty = slot == 1 ? PropertyName.Sorcerer_bosscardGUID1 : PropertyName.Sorcerer_bosscardGUID2;
+
+			var cardClassId = (int)etc.GetFloat(cardProperty);
+			if (cardClassId <= 0)
+				continue;
+
+			var card = character.Inventory.FindItem(a => a.Id == cardClassId && a.Data.Group == ItemGroup.Card);
+			if (card == null)
+				continue;
+
+			character.SetEtcProperty(guidProperty, card.ObjectId.ToString());
+		}
+	}
+
+	private static void RefreshNecronomiconGuids(Character character)
+	{
+		var etc = character.Etc.Properties;
+
+		for (var slot = 1; slot <= 4; slot++)
+		{
+			var cardProperty = slot switch
+			{
+				1 => PropertyName.Necro_bosscard1,
+				2 => PropertyName.Necro_bosscard2,
+				3 => PropertyName.Necro_bosscard3,
+				4 => PropertyName.Necro_bosscard4,
+				_ => PropertyName.Necro_bosscard1,
+			};
+			var guidProperty = slot switch
+			{
+				1 => PropertyName.Necro_bosscardGUID1,
+				2 => PropertyName.Necro_bosscardGUID2,
+				3 => PropertyName.Necro_bosscardGUID3,
+				4 => PropertyName.Necro_bosscardGUID4,
+				_ => PropertyName.Necro_bosscardGUID1,
+			};
 
 			var cardClassId = (int)etc.GetFloat(cardProperty);
 			if (cardClassId <= 0)

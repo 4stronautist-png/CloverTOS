@@ -18,6 +18,7 @@ using Melia.Zone.Network;
 using Melia.Zone.Scripting;
 using Melia.Zone.Scripting.AI;
 using Melia.Zone.Skills;
+using Melia.Zone.Skills.Handlers.Wizards.Necromancer;
 using Melia.Zone.World.Actors.Characters;
 using Melia.Zone.World.Actors.Characters.Components;
 using Melia.Zone.World.Actors.CombatEntities.Components;
@@ -58,7 +59,16 @@ namespace Melia.Zone.World.Actors.Monsters
 		/// <summary>
 		/// Returns the monster's race.
 		/// </summary>
-		public RaceType Race => this.Data.Race;
+		public RaceType Race
+		{
+			get
+			{
+				if (this.Vars.TryGetInt("Melia.OverrideRace", out var raceValue) && Enum.IsDefined(typeof(RaceType), raceValue))
+					return (RaceType)raceValue;
+
+				return this.Data.Race;
+			}
+		}
 
 		/// <summary>
 		/// Returns the monster's element/attribute.
@@ -603,6 +613,8 @@ namespace Melia.Zone.World.Actors.Monsters
 				Send.ZC_NORMAL.ClearEffects(this);
 
 			var beneficiary = this.GetKillBeneficiary(killer);
+			if (killer is Summon summon)
+				NecromancerSkillHelper.GrantCorpsePartFromSkeletonKill(summon, this);
 
 			if (beneficiary != null && beneficiary.IsOnline && beneficiary.Connection != null)
 			{

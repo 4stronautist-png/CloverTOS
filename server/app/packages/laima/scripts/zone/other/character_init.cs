@@ -69,6 +69,17 @@ public class CharacterInitializationScript : GeneralScript
 
 	private void UpdateAccount(Character character)
 	{
+		var etcProps = character.Etc.Properties;
+		var props = character.Connection.Account.Properties;
+
+		// Keep recently added local classes available in the class-change UI.
+		etcProps.SetFloat(PropertyName.HiddenJob_Char2_31, 300); // Incendiar
+		etcProps.SetFloat(PropertyName.HiddenJob_Char3_30, 300); // Commodore [A]
+		etcProps.SetFloat(PropertyName.HiddenJob_Char5_25, 300); // Commodore [T]
+		props.SetFloat(PropertyName.UnlockQuest_Char2_31, 1); // Incendiar
+		props.SetFloat(PropertyName.UnlockQuest_Char3_30, 1); // Commodore [A]
+		props.SetFloat(PropertyName.UnlockQuest_Char5_25, 1); // Commodore [T]
+
 		// Unlock special classes by default if the respective class feature
 		// is enabled, but vouchers are disabled.
 
@@ -76,7 +87,6 @@ public class CharacterInitializationScript : GeneralScript
 		if (!unlockByDefault)
 			return;
 
-		var etcProps = character.Etc.Properties;
 		etcProps.SetFloat(PropertyName.HiddenJob_Char1_13, 300);
 		etcProps.SetFloat(PropertyName.HiddenJob_Char1_20, 300); // Nak Muay
 		etcProps.SetFloat(PropertyName.HiddenJob_Char2_17, 300); // Runecaster
@@ -84,7 +94,6 @@ public class CharacterInitializationScript : GeneralScript
 		etcProps.SetFloat(PropertyName.HiddenJob_Char4_18, 300); // Miko
 		etcProps.SetFloat(PropertyName.HiddenJob_Char5_6, 300); // Shinobi
 
-		var props = character.Connection.Account.Properties;
 		props.SetFloat(PropertyName.UnlockQuest_Char1_23, 1); // Luchador
 		props.SetFloat(PropertyName.UnlockQuest_Char1_24, 1); // Shenji
 		props.SetFloat(PropertyName.UnlockQuest_Char1_25, 1); // Winged Hussar

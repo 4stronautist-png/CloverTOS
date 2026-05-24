@@ -2505,6 +2505,32 @@ namespace Melia.Shared.Game.Const
 		Hermit11 = 221120,
 		/// <summary>[Arts] Eclipse: Total Eclipse</summary>
 		Hermit12 = 221121,
+		/// <summary>Flare Blast: Enhance</summary>
+		Incendiar1 = 221122,
+		/// <summary>Blazing Eruption: Enhance</summary>
+		Incendiar2 = 221123,
+		/// <summary>Gehenna: Enhance</summary>
+		Incendiar3 = 221124,
+		/// <summary>Volcanic Geyser: Enhance</summary>
+		Incendiar4 = 221125,
+		/// <summary>Inferno: Enhance</summary>
+		Incendiar5 = 221126,
+		/// <summary>Dies Irae: Enhance</summary>
+		Incendiar6 = 221127,
+		/// <summary>[Arts] Flare Blast: Enhanced Upgrade</summary>
+		Incendiar101 = 221128,
+		/// <summary>[Arts] Blazing Eruption: Enhanced Upgrade</summary>
+		Incendiar102 = 221129,
+		/// <summary>[Arts] Gehenna: Enhanced Upgrade</summary>
+		Incendiar103 = 221130,
+		/// <summary>[Arts] Volcanic Geyser: Enhanced Upgrade</summary>
+		Incendiar104 = 221131,
+		/// <summary>[Arts] Inferno: Enhanced Upgrade</summary>
+		Incendiar105 = 221132,
+		/// <summary>Gehenna: Meltdown</summary>
+		Incendiar7 = 221133,
+		/// <summary>[Arts] Volcanic Geyser: Pyroclastic Flow</summary>
+		Incendiar8 = 221134,
 		/// <summary>Multi Shot: Enhance</summary>
 		Archer11 = 301001,
 		/// <summary>Multi Shot: Enhance 2</summary>
@@ -3951,6 +3977,42 @@ namespace Melia.Shared.Game.Const
 		BlitzHunter9 = 321309,
 		/// <summary>Volt Chain: Boss Hunter</summary>
 		BlitzHunter10 = 321310,
+		/// <summary>Artillery Support: Enhance</summary>
+		Commodore1 = 321311,
+		/// <summary>Anchor Strike: Enhance</summary>
+		Commodore2 = 321312,
+		/// <summary>Keelbreak: Enhance</summary>
+		Commodore3 = 321315,
+		/// <summary>Ironpiercer: Enhance</summary>
+		Commodore4 = 321313,
+		/// <summary>Doom Barrage: Enhance</summary>
+		Commodore5 = 321316,
+		/// <summary>Deadeye Mark: Enhance</summary>
+		Commodore8 = 321317,
+		/// <summary>[Arts] Artillery Support: Enhanced Upgrade</summary>
+		Commodore101 = 321318,
+		/// <summary>[Arts] Anchor Strike: Enhanced Upgrade</summary>
+		Commodore102 = 321319,
+		/// <summary>[Arts] Keelbreak: Enhanced Upgrade</summary>
+		Commodore103 = 321322,
+		/// <summary>[Arts] Doom Barrage: Enhanced Upgrade</summary>
+		Commodore104 = 321321,
+		/// <summary>[Arts] Ironpiercer: Enhanced Upgrade</summary>
+		Commodore105 = 321320,
+		/// <summary>Command of Admiral</summary>
+		Commodore9 = 321323,
+		/// <summary>Bullseye: Enhance</summary>
+		Commodore10 = 321314,
+		/// <summary>[Arts] Keelbreak: Zero-In</summary>
+		Commodore6 = 321325,
+		/// <summary>[Arts] Ironpiercer: Shrapnel Burst</summary>
+		Commodore7 = 321324,
+		/// <summary>[Arts] Ironpiercer: Shrapnel Burst</summary>
+		Commodore106 = 321324,
+		/// <summary>[Arts] Keelbreak: Zero-In</summary>
+		Commodore107 = 321325,
+		/// <summary>Deadeye Mark: Lock On</summary>
+		Commodore108 = 321326,
 		/// <summary>Cure: Enhance</summary>
 		Cleric11 = 401001,
 		/// <summary>Cure: Enhance 2</summary>

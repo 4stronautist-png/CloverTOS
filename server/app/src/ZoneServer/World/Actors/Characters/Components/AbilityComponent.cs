@@ -73,8 +73,9 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			lock (_abilities)
 				_abilities[ability.Id] = ability;
 
-			// Activate property handler for passive abilities or active toggleable ones
-			if (ability.Data.Passive || ability.Active)
+			// Level 0 abilities are sent as learnable placeholders for the
+			// client attribute UI and must not activate passives.
+			if (ability.Level > 0 && (ability.Data.Passive || ability.Active))
 			{
 				ZoneServer.Instance.AbilityHandlers.ActivatePropertyHandler(ability, this.Character);
 				this.AbilityActivated?.Invoke(this.Character, ability);
@@ -109,7 +110,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			}
 
 			// Deactivate property handler
-			if (ability.Data.Passive || ability.Active)
+			if (ability.Level > 0 && (ability.Data.Passive || ability.Active))
 			{
 				ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, this.Character);
 				this.AbilityDeactivated?.Invoke(this.Character, ability);
@@ -295,7 +296,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 				if (_abilities.TryGetValue(abilityId, out var ability))
 				{
 					// Deactivate with old level, then reactivate with new level
-					if (ability.Data.Passive || ability.Active)
+					if (ability.Level > 0 && (ability.Data.Passive || ability.Active))
 					{
 						ZoneServer.Instance.AbilityHandlers.DeactivatePropertyHandler(ability, this.Character);
 						this.AbilityDeactivated?.Invoke(this.Character, ability);
@@ -303,7 +304,7 @@ namespace Melia.Zone.World.Actors.Characters.Components
 
 					ability.Level = level;
 
-					if (ability.Data.Passive || ability.Active)
+					if (ability.Level > 0 && (ability.Data.Passive || ability.Active))
 					{
 						ZoneServer.Instance.AbilityHandlers.ActivatePropertyHandler(ability, this.Character);
 						this.AbilityActivated?.Invoke(this.Character, ability);
@@ -316,8 +317,8 @@ namespace Melia.Zone.World.Actors.Characters.Components
 					var newAbility = new Ability(abilityId, level);
 					_abilities[abilityId] = newAbility;
 
-					// Activate property handler for new passive abilities
-					if (newAbility.Data.Passive || newAbility.Active)
+					// Activate property handler for new passive abilities.
+					if (newAbility.Level > 0 && (newAbility.Data.Passive || newAbility.Active))
 					{
 						ZoneServer.Instance.AbilityHandlers.ActivatePropertyHandler(newAbility, this.Character);
 						this.AbilityActivated?.Invoke(this.Character, newAbility);
@@ -396,6 +397,14 @@ namespace Melia.Zone.World.Actors.Characters.Components
 			{
 				AbilityId.Assassin16 => (AbilityId?)AbilityId.Assassin23,
 				AbilityId.Assassin23 => AbilityId.Assassin16,
+				AbilityId.Illusionist21 => AbilityId.Illusionist31,
+				AbilityId.Illusionist31 => AbilityId.Illusionist21,
+				AbilityId.Illusionist22 => AbilityId.Illusionist23,
+				AbilityId.Illusionist23 => AbilityId.Illusionist22,
+				AbilityId.Illusionist27 => AbilityId.Illusionist28,
+				AbilityId.Illusionist28 => AbilityId.Illusionist27,
+				AbilityId.Illusionist29 => AbilityId.Illusionist30,
+				AbilityId.Illusionist30 => AbilityId.Illusionist29,
 				_ => null,
 			};
 

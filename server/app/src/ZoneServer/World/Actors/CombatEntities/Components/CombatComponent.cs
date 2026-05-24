@@ -21,8 +21,8 @@ namespace Melia.Zone.World.Actors.CombatEntities.Components
 	/// </summary>
 	public class CombatComponent : CombatEntityComponent, IUpdateable
 	{
-		private static readonly TimeSpan AttackStateDuration = TimeSpan.FromSeconds(10);
-		private static readonly TimeSpan AttackStateAutoReleaseDelay = TimeSpan.FromMilliseconds(1500);
+		private static readonly TimeSpan AttackStateDuration = TimeSpan.FromSeconds(7);
+		private static readonly TimeSpan AttackStateAutoReleaseDelay = TimeSpan.FromSeconds(7);
 
 		private readonly object _hitLock = new();
 		private readonly Dictionary<int, float> _damageTaken = new();

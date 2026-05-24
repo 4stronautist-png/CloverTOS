@@ -4,6 +4,7 @@
 // Handles "Normal TX" requests from the client.
 //---------------------------------------------------------------------------
 
+using System;
 using System.Linq;
 using Melia.Shared.Data.Database;
 using Melia.Shared.Game.Const;
