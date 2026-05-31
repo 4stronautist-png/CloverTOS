@@ -19,6 +19,7 @@ using Melia.Zone.World.Actors.Monsters;
 using Melia.Zone.World.Items;
 using Melia.Zone.World.Maps;
 using Melia.Zone.World.Quests;
+using Melia.Zone.World;
 using Yggdrasil.Logging;
 using Yggdrasil.Util.Commands;
 using static Melia.Zone.Scripting.Shortcuts;
@@ -744,12 +745,47 @@ namespace Melia.Zone.Scripting.Shared
 		{
 			var player = dialog.Player;
 
-			switch (await dialog.Select("ID_ENDTER_DIALOG", "!@#$IndunSelectDialog$*$ID_NAME$*$@dicID_^*$ETC_20200129_044061$*^$*$ID_LV$*$400$*$ID_LIMIT_LV$*${img infinity_text 20 10}#@!", "!@#$IndunSelectDialog$*$ID_NAME$*$@dicID_^*$ETC_20151224_017833$*^$*$ID_LV$*$50$*$ID_LIMIT_LV$*$299#@!", "!@#$IndunSelectDialog$*$ID_NAME$*$@dicID_^*$ETC_20180827_035054$*^$*$ID_LV$*$300$*$ID_LIMIT_LV$*$399#@!", "!@#$Auto_JongLyo#@!"))
+			switch (await dialog.Select(L("Select the dungeon or raid you want to enter."),
+				L("First Refuge: Unique"),
+				L("Crystal Mine"),
+				L("Lanko Lake Dungeon"),
+				L("Cancel")))
 			{
+				case 1:
+					OpenInstanceDungeonMatchmaking(player, 42);
+					dialog.Close();
+					return;
 				case 2:
-					Send.ZC_NORMAL.InstanceDungeonMatchMaking(player, 16, 0, 1, 1, 1);
-					break;
+					OpenInstanceDungeonMatchmaking(player, 16);
+					dialog.Close();
+					return;
+				case 3:
+					OpenInstanceDungeonMatchmaking(player, 45);
+					dialog.Close();
+					return;
 			}
+		}
+
+		private static void OpenInstanceDungeonMatchmaking(Character player, int dungeonId)
+		{
+			player.Variables.Perm.SetInt(AutoMatchZoneManager.DungeonIdVarName, dungeonId);
+
+			Task.Delay(150).ContinueWith(_ =>
+			{
+				if (player.Connection == null)
+					return;
+
+				var options = new DungeonOptions
+				{
+					AllowAutoMatchReenter = false,
+					AllowAutoMatch = true,
+					AllowEnterNow = true,
+					AllowPartyMatch = true,
+					IsGrowthSupportGuildParty = false,
+				};
+
+				Send.ZC_NORMAL.InstanceDungeonMatchMaking(player, dungeonId, options);
+			});
 		}
 
 		[DialogFunction]
@@ -837,12 +873,20 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task KLAPEDA_FISHING_BOARD(Dialog dialog)
 		{
-			await dialog.ExecuteScript(ClientScripts.FISHING_RANK_OPEN);
+			switch (await dialog.Select("KLAPEDA_FISHING_BOARD",
+				ScpArgMsg("FishingRank"),
+				ScpArgMsg("Close")))
+			{
+				case 1:
+					await dialog.ExecuteScript(ClientScripts.FISHING_RANK_OPEN);
+					break;
+			}
 		}
 
 		[DialogFunction]
 		public static async Task FISHING_SUB_NPC(Dialog dialog)
 		{
+			await KLAPEDA_FISHING_MANAGER(dialog);
 		}
 
 		[DialogFunction]
@@ -1186,10 +1230,10 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task KLAPEDA_BLACKSMITH(Dialog dialog)
 		{
-			dialog.SetTitle(L("Zaras"));
+			dialog.SetTitle(L("Hewg"));
 			dialog.SetPortrait("Dlg_port_vettel");
 
-			await BLACKSMITH_OPTIONS(L("Zaras, best Blacksmith in town! How may I help you?"), dialog);
+			await BLACKSMITH_OPTIONS(L("How may I help you?"), dialog);
 		}
 
 		[DialogFunction]
@@ -1265,7 +1309,13 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task KLAPEDA_MARKET(Dialog dialog)
 		{
-			switch (await dialog.Select("KLAPEDA_MARKET_SEL", "!@#$KLAPEDA_MARKET_OPEN#@!", "!@#$Auto_DaeHwa_JongLyo#@!"))
+			dialog.SetTitle("Jura");
+			dialog.SetPortrait("Dlg_port_Julla");
+
+			switch (await dialog.Select(
+				"Welcome! You can buy great items for a cheap price if you browse carefully. Of course, it's also possible to spend a great sum on something that's supposed to be cheap...",
+				"!@#$KLAPEDA_MARKET_OPEN#@!",
+				"!@#$Auto_DaeHwa_JongLyo#@!"))
 			{
 				case 1:
 					await dialog.OpenCustomDialog(CustomDialog.MARKET);
@@ -1400,7 +1450,15 @@ namespace Melia.Zone.Scripting.Shared
 		{
 			var character = dialog.Player;
 
-			switch (await dialog.Select("RENA_BASIC01", "@dicID_^*$ETC_20150317_002514$*^", "@dicID_^*$ETC_20160310_021033$*^", "@dicID_^*$ETC_20211217_065424$*^", "@dicID_^*$ETC_20190802_042398$*^", "@dicID_^*$ETC_20180418_032113$*^", "@dicID_^*$ETC_20190104_037030$*^", "@dicID_^*$ETC_20190223_040846$*^", "!@#$Auto_JongLyo#@!"))
+			switch (await dialog.Select(L("How can I help you?"),
+				L("Adventure Journal"),
+				L("Receive Warp Stones"),
+				L("Receive Kedora Support Box"),
+				L("Daily Reward Shop"),
+				L("Integrated Warp"),
+				L("Wings of Vaivora Shop"),
+				L("Content Point Shop"),
+				L("Cancel")))
 			{
 				case 1:
 					await dialog.ExecuteScript(ClientScripts.OPEN_DO_JOURNAL);
@@ -1443,15 +1501,40 @@ namespace Melia.Zone.Scripting.Shared
 					}
 				}
 				break;
+				case 4:
+					await dialog.ExecuteScript(ClientScripts.REQ_DAILY_REWARD_SHOP_1_OPEN);
+					break;
+				case 5:
+					await dialog.ExecuteScript(ClientScripts.INTE_WARP_OPEN_BY_NPC);
+					break;
+				case 6:
+					await dialog.OpenShop("Magic_Society");
+					break;
+				case 7:
+					await dialog.ExecuteScript(ClientScripts.CONTENTS_TOTAL_SHOP_OPEN);
+					break;
 			}
 		}
 
 		[DialogFunction]
 		public static async Task COLLECTION_SHOP(Dialog dialog)
 		{
-			await dialog.Msg("HENRIKA_BASIC01");
-			switch (await dialog.Select("HENRIKA_BASIC01", "@dicID_^*$ETC_20190104_037034$*^", "@dicID_^*$ETC_20190104_037035$*^", "@dicID_^*$ETC_20180320_031806$*^", "@dicID_^*$ETC_20200129_044673$*^", "@dicID_^*$ETC_20210115_054932$*^", "@dicID_^*$ETC_20210809_061344$*^", "@dicID_^*$ETC_20200129_044674$*^", "!@#$Auto_JongLyo#@!"))
+			switch (await dialog.Select(L("What do you need?"),
+				L("Achievements"),
+				L("Receive Skill Point Potion"),
+				L("Wings of Vaivora Shop"),
+				L("Content Point Shop"),
+				L("Off-season Content Point Shop"),
+				L("Class Costume Shop"),
+				L("Level Rewards"),
+				L("Cancel")))
 			{
+				case 1:
+					Send.ZC_ACHIEVE_POINT_LIST(dialog.Player);
+					Send.ZC_SPLIT_ACHIEVE_POINT_LIST(dialog.Player);
+					Send.ZC_SPLIT_ACHIEVE_SET(dialog.Player);
+					dialog.OpenAddon(AddonMessage.COLLECTION_UI_OPEN);
+					break;
 				case 2:
 					switch (await dialog.Select("COLLECT_REWARD_ITEM_FLOANA", "!@#$Yes#@!", "!@#$No#@!"))
 					{
@@ -2391,18 +2474,21 @@ namespace Melia.Zone.Scripting.Shared
 		[DialogFunction]
 		public static async Task BEAUTY_HAIRSHOP_MOVE(Dialog dialog)
 		{
+			dialog.Player.Warp("c_barber_dress", 39.45613, 54.38683, 109.495);
 			await Task.Yield();
 		}
 
 		[DialogFunction]
 		public static async Task BEAUTY_BOUTIQUE_MOVE(Dialog dialog)
 		{
+			dialog.Player.Warp("c_barber_dress", 72.97089, 6.97539, 1189.793);
 			await Task.Yield();
 		}
 
 		[DialogFunction]
 		public static async Task BEAUTY_OUT_MOVE(Dialog dialog)
 		{
+			dialog.Player.Warp("c_Klaipe", -1011, 148, 588);
 			await Task.Yield();
 		}
 

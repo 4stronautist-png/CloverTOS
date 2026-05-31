@@ -150,7 +150,7 @@ namespace Melia.Zone.Database
 							continue;
 						}
 						var level = reader.GetInt32("level");
-						var skill = new Skill(character, skillId, level);
+						var skill = new Skill(character, skillId, level, isCommon: skillId == SkillId.RidePet_Summon);
 						character.Skills.AddSilent(skill);
 					}
 				}

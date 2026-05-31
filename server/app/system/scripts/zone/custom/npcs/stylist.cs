@@ -25,7 +25,7 @@ public class CustomNpcStylist : GeneralScript
 {
 	protected override void Load()
 	{
-		AddNpc(57223, L("[Stylist] Jeremy"), "c_Klaipe", -66, -547, 180, NpcDialog);
+		AddNpc(161004, L("[Hair Stylist] Anabell Swyn"), "c_Klaipe", -66, -547, 180, NpcDialog);
 	}
 
 	private async Task NpcDialog(Dialog dialog)
@@ -33,7 +33,8 @@ public class CustomNpcStylist : GeneralScript
 		var pc = dialog.Player;
 		var hairType = GetHairType(pc.Gender, pc.Hair);
 
-		dialog.SetTitle(L("Jeremy"));
+		dialog.SetTitle(L("Anabell Swyn"));
+		dialog.SetPortrait("anabellswyn");
 
 		var selection = await dialog.Select(L("What can I do for you today?"),
 			Option(L("Change Hair Style"), "hair"),

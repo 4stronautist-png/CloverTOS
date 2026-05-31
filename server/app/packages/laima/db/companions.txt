@@ -70,4 +70,5 @@
 { id: 62, className: "pet_Armadillo_wingedhussar", name: "Armadillo", rideMSPD: 4, isPremium: true, canPet: false, canRide: true, endRideOnHit: true, foodGroup: 0, feedAnimation: 54, feedSleep: 1500 },
 { id: 63, className: "pet_ep13dessert_pink", name: "Strawberry Pudding Penguin", rideMSPD: 4, isPremium: true, canPet: false, canRide: true, endRideOnHit: true, foodGroup: 11, buff: "pet_ep13dessert_pink_buff" },
 { id: 64, className: "pet_mermaidpopo", name: "Mermaid Popo", rideMSPD: 4, isPremium: true, canPet: false, canRide: true, endRideOnHit: true, foodGroup: 11, buff: "pet_mermaidpopo_buff", feedAnimation: 56, feedSleep: 1500 },
+{ id: 65, className: "RidePet_ep14rider_1", name: "TOS Davidson", rideMSPD: 6, premium: true, pet: false, ride: true, endRideOnHit: false, rideOnly: true, feedAnimation: 1, feedSleep: 3000 },
 ]

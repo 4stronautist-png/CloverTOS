@@ -68,7 +68,7 @@
 { mapId: 1002, className: "c_highlander", name: "Highlander Master's Training Hall", type: "City", level: 0, nearbyCity: "c_Klaipe", defaultPosition: { x: 4, y: 45, z: 173 } },
 { mapId: 1003, className: "c_voodoo", name: "Bokor Master's Home", type: "City", level: 0, nearbyCity: "c_Klaipe", defaultPosition: { x: 24, y: 0, z: -80 } },
 { mapId: 1004, className: "c_firemage", name: "Pyromancer Master's Lab", type: "City", level: 0, nearbyCity: "c_Klaipe", defaultPosition: { x: 195, y: 3, z: 5 } },
-{ mapId: 1005, className: "c_request_1", name: "Fedimian Public House", type: "City", level: 0, nearbyCity: "c_fedimian", defaultPosition: { x: 122, y: 0, z: -127 } },
+{ mapId: 1005, className: "c_request_1", name: "Klaipeda Tavern", type: "City", level: 0, nearbyCity: "c_Klaipe", defaultPosition: { x: 152.6733, y: 0.34982, z: -133.8388 } },
 { mapId: 1006, className: "c_orsha", name: "Orsha", type: "City", level: 0, nearbyCity: "c_orsha", defaultPosition: { x: -1214, y: 495, z: 329 } },
 { mapId: 1007, className: "c_nunnery", name: "Saalus Convent", type: "City", level: 0, nearbyCity: "c_fedimian", defaultPosition: { x: 490, y: -75, z: 151 } },
 { mapId: 1008, className: "c_barber_dress", name: "Beauty Shop", type: "City", level: 0, nearbyCity: "c_Klaipe", defaultPosition: { x: 0, y: 0, z: 0 } },

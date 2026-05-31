@@ -14,8 +14,8 @@ public class c_KlaipeWarpsScript : GeneralScript
 		// Klaipeda to West Siauliai Woods
 		AddWarp(10004, "WS_KLAPEDA_SIAULST1", 0, From("c_Klaipe", -194.36829, -1172.699), To("f_siauliai_west", 1630, -733));
 
-		// Klaipeda to Miner's Village
-		AddWarp(10003, "WS_KLAPEDA_SIAULST3", 135, From("c_Klaipe", 799, 331), To("f_siauliai_out", 526, -2169));
+		// Klaipeda to East Siauliai Woods
+		AddWarp(10003, "WS_KLAPEDA_SIAULST3", 135, From("c_Klaipe", 799, 331), To("f_siauliai_2", -2463, -1168));
 
 		// Klaipeda to Bokor Master's Home
 		AddWarp(102, "WS_KLAPEDA_BOCORS", 225, From("c_Klaipe", -976, -502), To("c_voodoo", 24, -80));
@@ -29,7 +29,6 @@ public class c_KlaipeWarpsScript : GeneralScript
 		// Klaipeda to Gytis Settlement Area
 		AddWarp(10015, "KLAPEDA_TO_SIAUL50_1", 154, From("c_Klaipe", 240.6537, 895.663), To("f_siauliai_50_1", 1565, -1468));
 
-		// Klaipeda to Beauty Shop
-		AddWarp(10063, "KLAPEDA_TO_BEAUTYSHOP", 180, From("c_Klaipe", -1055.639, 635.0443), To("c_barber_dress", -14, -58));
+		// Klaipeda to Beauty Shop is scheduled by KlaipedaBeautyShopAccessScript.
 	}
 }

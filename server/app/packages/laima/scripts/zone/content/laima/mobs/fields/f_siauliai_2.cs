@@ -14,8 +14,6 @@ public class FSiauliai2MobScript : GeneralScript
 {
 	protected override void Load()
 	{
-		/*
-
 		// Monster Spawners ---------------------------------
 
 		AddSpawner("f_siauliai_2.Id1", MonsterId.Pokubu, min: 6, max: 8);
@@ -261,6 +259,5 @@ public class FSiauliai2MobScript : GeneralScript
 		AddSpawnPoint("f_siauliai_2.Id10", "f_siauliai_2", Rectangle(-772, 1040, 300));
 
 		// Boss Spawners ---------------------------------
-		*/
 	}
 }

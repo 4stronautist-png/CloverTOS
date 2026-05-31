@@ -17,9 +17,6 @@ public class c_fedimianWarpsScript : GeneralScript
 		// Fedimian to Zachariel Crossroads
 		AddWarp(116, "FEDMIAN_ROKAS31", -77, From("c_fedimian", -1000.59, 31.61), To("f_rokas_31", 885, -1059));
 
-		// Fedimian to Fedimian Public House
-		AddWarp(111, "FEDIMIAN_REQUEST1", 180, From("c_fedimian", -844, -100), To("c_request_1", 122, -127));
-
 		// Fedimian to Tiltas Valley
 		AddWarp(133, "FEDIMIAN_TO_ROKAS28", 180, From("c_fedimian", 831, 1133), To("f_rokas_28", 786, -457));
 	}

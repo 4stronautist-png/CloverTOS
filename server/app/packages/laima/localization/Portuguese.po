@@ -11,6 +11,34 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
+#: custom/npcs/klaipeda_tavern.cs
+msgid "Brannock, the Tavernkeeper"
+msgstr "Brannock, o Taverneiro"
+
+#: custom/npcs/klaipeda_tavern.cs
+msgid "Welcome to my humble tavern."
+msgstr "Bem-vindo a minha humilde taverna."
+
+#: custom/npcs/klaipeda_tavern.cs
+msgid "What can I do for you?"
+msgstr "O que posso fazer por voce?"
+
+#: custom/npcs/klaipeda_tavern.cs
+msgid "Buy"
+msgstr "Comprar"
+
+#: custom/npcs/klaipeda_tavern.cs
+msgid "Leave"
+msgstr "Sair"
+
+#: custom/npcs/stylist.cs
+msgid "[Hair Stylist] Anabell Swyn"
+msgstr "[Cabeleireira] Anabell Swyn"
+
+#: custom/npcs/stylist.cs
+msgid "Anabell Swyn"
+msgstr "Anabell Swyn"
+
 # ============================================================================
 # Klaipeda NPCs (c_klaipe.cs)
 # ============================================================================
@@ -13962,4 +13990,3 @@ msgstr "Buff aplicado!"
 #: custom/npcs/adventurer_guild.cs
 msgid "Here's your {0}!"
 msgstr "Aqui está seu {0}!"
-

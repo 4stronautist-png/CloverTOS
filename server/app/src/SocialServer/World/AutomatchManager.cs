@@ -28,7 +28,7 @@ namespace Melia.Social.World
 			=> Interlocked.Increment(ref AutoMatchId);
 
 		private Dictionary<int, List<AutoMatchInfo>> _queues = new Dictionary<int, List<AutoMatchInfo>>();
-		private const int DefaultMaxPlayersPerInstance = 5;
+		private const int DefaultMaxPlayersPerInstance = 4;
 		private const int MinPartiesWithReadyState = 2;
 
 		private readonly Timer _memberUpdateTimer;
@@ -246,7 +246,10 @@ namespace Melia.Social.World
 		private int GetMaxPlayersForDungeon(int dungeonId)
 		{
 			if (SocialServer.Instance.Data.InstanceDungeonDb.Entries.TryGetValue(dungeonId, out var dungeonData))
-				return dungeonData.MaxPlayers > 0 ? dungeonData.MaxPlayers : DefaultMaxPlayersPerInstance;
+			{
+				var configuredMax = dungeonData.MaxPlayers > 0 ? dungeonData.MaxPlayers : DefaultMaxPlayersPerInstance;
+				return Math.Min(configuredMax, DefaultMaxPlayersPerInstance);
+			}
 
 			return DefaultMaxPlayersPerInstance;
 		}

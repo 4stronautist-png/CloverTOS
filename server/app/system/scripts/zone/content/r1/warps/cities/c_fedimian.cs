@@ -17,7 +17,7 @@ public class c_fedimianWarpsScript : GeneralScript
 		// Fedimian to Starving Demon's Way
 		AddWarp("FEDMIAN_PILGRIM46", 166, From("c_fedimian", 846.02, 1136.69), To("f_pilgrimroad_46", -1980, -2354));
 
-		// Fedimian to Fedimian Public House
-		AddWarp("FEDIMIAN_REQUEST1", 180, From("c_fedimian", -844, -100), To("c_request_1", 122, -127));
+		// Fedimian tavern arrow to Klaipeda Tavern entrance
+		AddWarp("FEDIMIAN_REQUEST1", 180, From("c_fedimian", -844, -100), To("c_Klaipe", -1118.001, 240.8842, 286.1519));
 	}
 }

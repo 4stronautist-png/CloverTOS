@@ -130,6 +130,18 @@ namespace Melia.Barracks
 			this.IesMods.Add("Skill", 30504, "CancelTime", 0);
 			this.IesMods.Add("Skill", 30504, "HoldTime", "0");
 			this.IesMods.Add("Skill", 30509, "Caption", "{#339999}{ol}[Stealth]{/}{/} Duration and movement speed scale with Poison Mastery.{nl}Any damage you deal or any skill use removes Stealth.{nl}{#339999}{ol}[Hemotoxic Miasma]{/}{/} Buff Duration: 5 seconds{nl}Wugushi skills that hit bleeding enemies inflict 60% healing reduction for 8 seconds.");
+			this.IesMods.Add("Skill", 32218, "Caption", "Focus your mind and shoot an arrow at the target in front of you. Automatically fires upon completion of casting. Movement Speed decreases by 30% during casting.{nl}{nl}{#339999}{ol}[Arts] Concentrated Shot: Piercing Shot{/}{/}{nl}Skill Factor is halved but obtains penetration effect.");
+			this.IesMods.Add("Skill", 32219, "Caption", "Move quickly in the direction you specify to attack the target. If the target is not in range, or if there is no target, move backward. Becomes invincible while moving. However, you can't evade targeting-specific attacks.{nl}{nl}{#339999}{ol}Dodging Shot: Speedy{/}{/}{nl}Does not fire arrows but movement range drastically increased.");
+			this.IesMods.Add("Skill", 32220, "Caption", "Shoots an arrow that rains down from the sky over a designated area, with a chance to Stun over time.");
+			this.IesMods.Add("Skill", 32221, "Caption", "Consume all of your Charge Arrow, firing shots that scatter over a short distance equal to the number of buffs consumed. Buff removal effect applied per scattered hit.{nl}{nl}{#339999}{ol}[Arts] Scatter Shot: Explosive{/}{/}{nl}Attach an Explosive that lasts for 20 seconds on the target hit. The Explosive is triggered when Angelic Arrow accurately hits. Scatter Shot Skill Factor x 9.");
+			this.IesMods.Add("Skill", 32222, "Caption", "Consume all of your Charge Arrow to fire a shot that makes an explosion in a close range. The range expands in proportion to the consumed Charge Arrow stacks.{nl}{nl}{#339999}{ol}Blasting Shot: Control Recoil{/}{/}{nl}No longer knocked back after casting Blasting Shot.");
+			this.IesMods.Add("Skill", 32223, "Caption", "Consume all of your Charge Arrow to fire a powerful, penetrating arrow.{nl}{nl}{#339999}{ol}[Arts] Angelic Arrow: Swift{/}{/}{nl}Casting Time is fixed to 1.2 seconds and Skill Factor decreases by 25%. Can only be changed in towns.");
+			this.IesMods.Add("Ability", 321242, "Caption", "All Godeye skill cooldown is drastically reduced but SP Consumption increases by 100%.");
+			this.IesMods.Add("Ability", 321249, "Caption", "Skill Factor is halved but obtains penetration effect.");
+			this.IesMods.Add("Ability", 321250, "Caption", "Does not fire arrows but movement range drastically increased.");
+			this.IesMods.Add("Ability", 321251, "Caption", "Attach an Explosive that lasts for 20 seconds on the target hit. The Explosive is triggered when Angelic Arrow accurately hits. Scatter Shot Skill Factor x 9.");
+			this.IesMods.Add("Ability", 321252, "Caption", "No longer knocked back after casting Blasting Shot.");
+			this.IesMods.Add("Ability", 321253, "Caption", "Casting Time is fixed to 1.2 seconds and Skill Factor decreases by 25%. Can only be changed in towns.");
 
 			this.IesMods.Add("Buff", 3323, "Name", "Embarrassed");
 			this.IesMods.Add("Buff", 3323, "Caption", "Attributes are reduced.");
@@ -148,6 +160,26 @@ namespace Melia.Barracks
 			this.IesMods.Add("Buff", 1126, "OverBuff", 1);
 			this.IesMods.Add("Buff", 1126, "CT_OverBuff", 1);
 			this.IesMods.Add("Buff", 1126, "CT_SlotType", "slot_buff");
+
+			void AddJobText(int id, string name, string description, string icon, string costume)
+			{
+				this.IesMods.Add("Job", id, "Name", name);
+				this.IesMods.Add("Job", id, "EngName", name);
+				this.IesMods.Add("Job", id, "JobName", name);
+				this.IesMods.Add("Job", id, "Caption", description);
+				this.IesMods.Add("Job", id, "Desc", description);
+				this.IesMods.Add("Job", id, "Description", description);
+				this.IesMods.Add("Job", id, "ToolTip", description);
+				this.IesMods.Add("Job", id, "Tooltip", description);
+				this.IesMods.Add("Job", id, "ClassIcon", icon);
+				this.IesMods.Add("Job", id, "IconName", icon);
+				this.IesMods.Add("Job", id, "Costume", costume);
+				this.IesMods.Add("Job", id, "CostumeClassName", icon);
+			}
+
+			AddJobText(2031, "Incendiar", "An explosive Wizard class that overwhelms enemies with destructive fire magic.", "c_wizard_incendiar", "costume_Char2_31");
+			AddJobText(3113, "Commodore[A]", "A tactical ranged class that marks targets and supports the frontline with artillery fire.", "c_archer_Commodore", "costume_Char3_30");
+			AddJobText(5025, "Commodore[T]", "A tactical ranged class that marks targets and supports the frontline with artillery fire.", "c_archer_Commodore", "costume_Char5_25");
 
 		}
 

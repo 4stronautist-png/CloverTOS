@@ -1470,6 +1470,8 @@ namespace Melia.Zone.Network
 				}
 			}
 
+			AddLearnableJobAbilityPlaceholders(character);
+
 			var abilities = character.Abilities.GetList();
 
 			using var packet = Packet.Rent(Op.ZC_ABILITY_LIST);
@@ -1560,6 +1562,39 @@ namespace Melia.Zone.Network
 			}
 
 			character.Connection.Send(packet);
+		}
+
+		/// <summary>
+		/// Adds level 0 ability placeholders for the character's current jobs so
+		/// the client can render the full attribute list as Unlearned entries.
+		/// </summary>
+		/// <param name="character"></param>
+		private static void AddLearnableJobAbilityPlaceholders(Character character)
+		{
+			foreach (var job in character.Jobs.GetList())
+			{
+				foreach (var abilityTreeData in ZoneServer.Instance.Data.AbilityTreeDb.Find(job.Id))
+				{
+					if (character.Abilities.Has(abilityTreeData.AbilityId))
+						continue;
+
+					var ability = new Ability(abilityTreeData.AbilityId, GetLearnableJobAbilityPlaceholderLevel(abilityTreeData));
+					if (!ability.Data.Passive)
+						ability.Active = false;
+					character.Abilities.AddSilent(ability);
+				}
+			}
+		}
+
+		private static int GetLearnableJobAbilityPlaceholderLevel(AbilityTreeData abilityTreeData)
+		{
+			// The newer Commodore client UI does not render level 0 ability
+			// placeholders reliably. Send them at level 1 so the class
+			// attribute list and related attributes are populated.
+			if (abilityTreeData.JobId is JobId.Illusionist or JobId.Incendiar or JobId.CommodoreA or JobId.CommodoreT)
+				return 1;
+
+			return 0;
 		}
 
 		/// <summary>
@@ -1797,9 +1832,10 @@ namespace Melia.Zone.Network
 					for (var j = minIndex; j < maxIndex && j < InventoryDefaults.EquipSlotCount; ++j)
 					{
 						var equipSlot = (EquipSlot)j;
-						var equipItem = equip[equipSlot];
+						if (!equip.TryGetValue(equipSlot, out var equipItem) || equipItem == null)
+							equipItem = new DummyEquipItem(equipSlot);
 
-						var propertyList = equipItem.Properties.GetAll();
+						var propertyList = GetClientSafeItemProperties(equipItem);
 						var propertiesSize = propertyList.GetByteCount();
 
 						packet.PutInt(equipItem.Id);
@@ -1842,7 +1878,7 @@ namespace Melia.Zone.Network
 
 				foreach (var equipItem in equip)
 				{
-					var propertyList = equipItem.Value.Properties.GetAll();
+					var propertyList = GetClientSafeItemProperties(equipItem.Value);
 					var propertiesSize = propertyList.GetByteCount();
 
 					packet.PutInt(equipItem.Value.Id);
@@ -1862,6 +1898,16 @@ namespace Melia.Zone.Network
 
 				character.Connection.Send(packet);
 			}
+		}
+
+		private static PropertyList GetClientSafeItemProperties(Item item)
+		{
+			var propertyList = item.Properties.GetAll();
+
+			if (propertyList.Count == 0)
+				propertyList.Add(new FloatProperty(PropertyName.CoolDown, 0));
+
+			return propertyList;
 		}
 
 		/// <summary>
@@ -6071,6 +6117,7 @@ namespace Melia.Zone.Network
 		/// <param name="conn"></param>
 		public static void ZC_CUSTOM_CAMERA_ZOOM(IZoneConnection conn, float distance, float time, float easing)
 		{
+			// CloverTOS: keep player-controlled camera distance intact.
 			return;
 
 			using var packet = Packet.Rent(Op.ZC_CUSTOM_CAMERA_ZOOM);
@@ -6129,6 +6176,7 @@ namespace Melia.Zone.Network
 		/// <param name="delay"></param>
 		public static void ZC_CHANGE_CAMERA_ZOOM(IActor actor, int i1, float range, float shakePower, float duration, float shakeAmount, float shakeDirection, float delay = 0.08460541f)
 		{
+			// CloverTOS: prevent automatic zoom/shockwave camera changes.
 			return;
 
 			using var packet = Packet.Rent(Op.ZC_CHANGE_CAMERA_ZOOM);
@@ -7964,6 +8012,9 @@ if ok~=true then ui.SysMsg('SSMIV '..tostring(err)) end;");
 		/// <param name="zoomUnit"></param>
 		public static void ZC_CUSTOM_WHEEL_ZOOM(Character character, byte type, float minDist, float maxDist, float zoomUnit)
 		{
+			// CloverTOS: do not change the client's zoom limits automatically.
+			return;
+
 			using var packet = Packet.Rent(Op.ZC_CUSTOM_WHEEL_ZOOM);
 
 			packet.PutByte(type);
@@ -8112,6 +8163,9 @@ if ok~=true then ui.SysMsg('SSMIV '..tostring(err)) end;");
 		/// <param name="zoomLevel">Defines the zoom level for the fixed camera. Use 0 for no change.</param>
 		public static void ZC_FIXCAMERA(Character character, Position pos, float zoomLevel)
 		{
+			// CloverTOS: camera position stays under player control.
+			return;
+
 			using var packet = Packet.Rent(Op.ZC_FIXCAMERA);
 			packet.PutPosition(pos);
 			packet.PutFloat(zoomLevel);

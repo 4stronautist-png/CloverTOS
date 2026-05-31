@@ -1,7 +1,7 @@
 //--- Melia Script ----------------------------------------------------------
 // Warps
 //--- Description -----------------------------------------------------------
-// Sets up warps in Fedimian Public House
+// Sets up warps in Klaipeda Tavern
 //---------------------------------------------------------------------------
 
 using Melia.Zone.Scripting;
@@ -11,7 +11,7 @@ public class c_request_1WarpsScript : GeneralScript
 {
 	protected override void Load()
 	{
-		// Fedimian Public House to Fedimian
-		AddWarp(1, "REQUEST1_FEDIMIAN", 90, From("c_request_1", 195, -130), To("c_fedimian", -778, -157));
+		// Klaipeda Tavern to Klaipeda
+		AddWarp(1, "REQUEST1_KLAIPEDA", 90, From("c_request_1", 195, -130), To("c_Klaipe", -1037.083, 248.538, 265.6501));
 	}
 }

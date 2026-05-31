@@ -20,6 +20,14 @@ namespace Melia.Barracks.Network
 	{
 		private static readonly Position CloverStartPosition = new(-599, 260, -1377);
 		private const string CloverStartMap = "f_siauliai_west";
+		private const string BarracksBgmResetScript = @"
+local login='SFA_Deives_Veliava_feat_Romanas(DLC_special_edition)'
+local loginFile='tos_SFA_Deives_Veliava_feat_Romanas(DLC_special_edition).mp3'
+local names={'April_Town','Night_Paradise','SFA_April_Town','SFA_Night_Paradise','SFA_Whisper_of_Moment','SFA_Openup_Po10','SFA_Open_Up_Po10_inst','SoundTeMP_Village_School','SoundTeMP_Village_school','Village_school','Intium_Arquebuiser_Lyudmila(short)','Initium_Arquebusier_Lyudmila(short)','tos_SoundTeMP_Village_School.mp3','SoundTeMP_Village_school.mp3','Intium_Arquebuiser_Lyudmila(short).mp3','tos_Initium_Arquebusier_Lyudmila(short).mp3','Tree_of_Savior','tos_Tree_of_Savior.mp3','Tree_of_Savior_Piano','tos_Tree_of_Savior_Piano.mp3','tos_Kevin_TOS_Carol_2017.mp3'}
+for _,n in ipairs(names) do pcall(function() StopBgm(n) end) pcall(function() StopBgm(n,1) end) pcall(function() StopMusic(n) end) pcall(function() imcSound.StopMusic(n) end) end
+pcall(function() StopMusic() end) pcall(function() imcSound.StopMusic() end) pcall(function() imcSound.StopBGM() end)
+pcall(function() PlayBgm(login,1) end) pcall(function() PlayBgm(loginFile,1) end) pcall(function() PlayMusic(login,1) end) pcall(function() imcSound.PlayBGM(login) end)
+";
 
 		/// <summary>
 		/// Sent when clicking [Enter] on login screen.
@@ -41,17 +49,11 @@ namespace Melia.Barracks.Network
 			Send.BC_LOGIN_PACKET_RECEIVED(conn);
 			Send.BC_DISCONNECT_PACKET_LOG_COUNT(conn);
 
-			// If TAIWAN is set as the service nation, the client doesn't
-			// send the account name and password, but something else.
-			// We might be able to handle this, but for the time being
-			// we'll just require the GLOBAL service nation, which gives
-			// us the login packet we expect.
+			// Some client builds can report TAIWAN even while using the
+			// regular local login packet. Accept it as long as the packet
+			// still contains the expected account credentials.
 			if (serviceNation == "TAIWAN")
-			{
-				Send.BC_MESSAGE(conn, "The TAIWAN service nation login is currently not supported. Please use the GLOBAL service nation instead.");
-				conn.Close(100);
-				return;
-			}
+				Log.Warning("CB_LOGIN: Client reported TAIWAN service nation for account '{0}', accepting it as GLOBAL.", accountName);
 
 			// Check the account name, which is commonly empty if the static
 			// configuration is set up incorrectly. Shouldn't cause any false
@@ -167,6 +169,7 @@ namespace Melia.Barracks.Network
 			Send.BC_NORMAL.CompanionInfo(conn);
 			Send.BC_NORMAL.TeamUI(conn);
 			Send.BC_NORMAL.ZoneTraffic(conn);
+			Send.BC_NORMAL.Run(conn, BarracksBgmResetScript);
 
 			if (conn.Account.Mailbox.HasMessages)
 			{

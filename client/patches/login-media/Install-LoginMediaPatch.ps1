@@ -17,7 +17,8 @@ function Write-Ok($Message) {
 $patchRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $assetsRoot = Join-Path $patchRoot "assets"
 $videoSource = Join-Path $assetsRoot "login_video.avi"
-$musicSource = Join-Path $assetsRoot "tos_maldra_intro2.mp3"
+$defaultLoginMusic = Join-Path $ClientPath "release\bgm\tos_SFA_Deives_Veliava_feat_Romanas(DLC_special_edition).mp3"
+$musicSource = if (Test-Path -LiteralPath $defaultLoginMusic) { $defaultLoginMusic } else { Join-Path $assetsRoot "tos_maldra_intro2.mp3" }
 
 if (-not (Test-Path -LiteralPath $videoSource)) {
     throw "Arquivo do video nao encontrado: $videoSource"
@@ -56,7 +57,10 @@ $targets = @(
     @{ Source = $videoSource; Target = Join-Path $videoDir "login_video.avi" },
     @{ Source = $videoSource; Target = Join-Path $videoDir "zmei_video.avi" },
     @{ Source = $musicSource; Target = Join-Path $bgmDir "tos_Kevin_TOS_Carol_2017.mp3" },
+    @{ Source = $musicSource; Target = Join-Path $bgmDir "Tree_of_Savior.mp3" },
     @{ Source = $musicSource; Target = Join-Path $bgmDir "tos_Tree_of_Savior_Piano.mp3" },
+    @{ Source = $musicSource; Target = Join-Path $bgmDir "Tree_of_Savior_Piano.mp3" },
+    @{ Source = $musicSource; Target = Join-Path $bgmDir "Orgel_Tree_of_Savior.mp3" },
     @{ Source = $musicSource; Target = Join-Path $bgmDir "tos_SFA_Openup_Po10.mp3" },
     @{ Source = $musicSource; Target = Join-Path $bgmDir "tos_Tree_of_Savior.mp3" }
 )

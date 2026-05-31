@@ -25,9 +25,6 @@ public class CustomNpcStylist : GeneralScript
 {
 	protected override void Load()
 	{
-		AddNpc(57223, L("[Stylist] Jeremy"), "c_Klaipe", -66, -547, 180, NpcDialog);
-		AddNpc(57223, L("[Stylist] Jeremy"), "c_fedimian", 245, -137, 0, NpcDialog);
-		AddNpc(57223, L("[Stylist] Jeremy"), "c_orsha", 385, 600, 0, NpcDialog);
 	}
 
 	private async Task NpcDialog(Dialog dialog)
@@ -35,8 +32,8 @@ public class CustomNpcStylist : GeneralScript
 		var pc = dialog.Player;
 		var hairType = GetHairType(pc.Gender, pc.Hair);
 
-		dialog.SetTitle(L("Jeremy"));
-		dialog.SetPortrait("Dlg_port_Vlaentinas_Naimon");
+		dialog.SetTitle(L("Anabell Swyn"));
+		dialog.SetPortrait("anabellswyn");
 
 		// If player's current hairstyle doesn't exist in database (e.g., after removing styles),
 		// default to the first available hairstyle for their gender

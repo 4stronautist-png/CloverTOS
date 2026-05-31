@@ -19201,4 +19201,5 @@
 { classId: 9101142, className: "CHATHEDRAL54_MQ04_PART2_add", image: "aurelius" },
 { classId: 9101143, className: "CHATHEDRAL54_MQ04_PART2_AG", image: "aurelius" },
 { classId: 9101144, className: "CHATHEDRAL55_MQ06_DLG04", image: "Raima" },
+{ classId: 9101145, className: "Hewg", image: "Hewg" },
 ]

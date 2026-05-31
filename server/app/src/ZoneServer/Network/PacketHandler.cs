@@ -25,6 +25,7 @@ using Melia.Zone.Services;
 using Melia.Zone.Skills;
 using Melia.Zone.Skills.Handlers.Swordsmen.Eskrimer;
 using Melia.Zone.Skills.Handlers.Base;
+using Melia.Zone.Skills.Handlers.Wizards.Necromancer;
 using Melia.Zone.Util;
 using Melia.Zone.World;
 using Melia.Zone.World.Actors;
@@ -449,6 +450,7 @@ namespace Melia.Zone.Network
 				var skillUpdateList = character.Skills.GetList(a => a.Data.OverheatCount > 0);
 				Send.ZC_UPDATE_SKL_SPDRATE_LIST(character, skillUpdateList);
 				Send.ZC_NORMAL.AccountProperties(character);
+				NecromancerSkillHelper.SyncCorpseParts(character);
 
 				// Send companion info
 				if (character.HasCompanions)
@@ -2252,6 +2254,24 @@ namespace Melia.Zone.Network
 			try
 			{
 				character.Direction = direction;
+				if (skillId == SkillId.Necromancer_FleshCannon)
+					return;
+
+				if (skillId == SkillId.Necromancer_Disinter && skill.Data.UseType == SkillUseType.Self)
+				{
+					if (!ZoneServer.Instance.SkillHandlers.TryGetHandler<IGroundSkillHandler>(skillId, out var handler))
+					{
+						character.ServerMessage(Localization.Get("This skill has not been implemented yet."));
+						Log.Warning("CZ_SKILL_GROUND: No Until Death ground-compatible handler for skill '{0}' found.", skillId);
+						return;
+					}
+
+					skill.PrepareCancellation();
+					RemoveWideMiasmaStealthOnSkillUse(character, skillId);
+					handler.Handle(skill, character, originPos, farPos, target);
+					return;
+				}
+
 				switch (skill.Data.UseType)
 				{
 					case SkillUseType.ForceGround:
@@ -4792,28 +4812,442 @@ namespace Melia.Zone.Network
 		[PacketHandler(Op.CZ_SEND_BEAUTYSHOP_TRYITON_LIST)]
 		public void CZ_SEND_BEAUTYSHOP_TRYITON_LIST(IZoneConnection conn, Packet packet)
 		{
-			var size = packet.GetShort();
-			var count = packet.GetInt();
-
-			BeautyStyle[] beautyStyles;
-			if (count > 0)
-			{
-				beautyStyles = new BeautyStyle[count];
-				for (var i = 0; i < count; i++)
-				{
-					beautyStyles[i] = new BeautyStyle
-					{
-						StyleName = packet.GetString(256),
-						StyleMod = packet.GetString(256),
-						StyleType = packet.GetString(256),
-						Value = packet.GetInt()
-					};
-				}
-			}
+			var beautyStyles = ReadBeautyShopStyles(packet);
 			var character = conn.SelectedCharacter;
-			//
-			//Send.ZC_NORMAL.Unknown_0D();
-			//Send.ZC_RES_BEAUTYSHOP_PURCHASED_HAIR_LIST(character);
+			if (character == null || character.Map?.ClassName != "c_barber_dress")
+				return;
+
+			ApplyBeautyShopTryOn(conn, character, beautyStyles);
+		}
+
+		/// <summary>
+		/// Sent when canceling Beauty Shop preview.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_SEND_BEAUTYSHOP_TRYITON_CANCEL)]
+		public void CZ_SEND_BEAUTYSHOP_TRYITON_CANCEL(IZoneConnection conn, Packet packet)
+		{
+			var character = conn.SelectedCharacter;
+			if (character == null)
+				return;
+
+			ResetBeautyShopTryOn(conn, character);
+		}
+
+		/// <summary>
+		/// Sent when finalizing Beauty Shop purchases.
+		/// </summary>
+		/// <param name="conn"></param>
+		/// <param name="packet"></param>
+		[PacketHandler(Op.CZ_SEND_BEAUTYSHOP_PURCHASE_LIST)]
+		public void CZ_SEND_BEAUTYSHOP_PURCHASE_LIST(IZoneConnection conn, Packet packet)
+		{
+			var character = conn.SelectedCharacter;
+			if (character == null)
+				return;
+
+			var beautyStyles = ReadBeautyShopStyles(packet);
+			if (beautyStyles.Count == 0)
+				return;
+
+			var items = new List<ItemData>();
+			foreach (var style in beautyStyles)
+			{
+				if (!TryResolveBeautyShopItem(style, out var itemData))
+				{
+					Log.Warning("Beauty Shop: Could not resolve purchase item. User: {0}, StyleName: {1}, StyleMod: {2}, StyleType: {3}, Value: {4}",
+						conn.Account.Name, style.StyleName, style.StyleMod, style.StyleType, style.Value);
+					continue;
+				}
+
+				items.Add(itemData);
+			}
+
+			if (items.Count == 0)
+				return;
+
+			var totalCost = items.Sum(GetBeautyShopPrice);
+			if (!conn.Account.Charge(totalCost))
+			{
+				character.ServerMessage("Insufficient TP.");
+				character.MsgBox("Insufficient TP.");
+				return;
+			}
+
+			var appliedSkins = 0;
+			var addedItems = 0;
+			foreach (var item in items)
+			{
+				if (TryApplyBeautyShopSkinPurchase(character, item))
+				{
+					appliedSkins++;
+					continue;
+				}
+
+				character.AddItem(item.Id, 1, "BeautyShop");
+				addedItems++;
+			}
+
+			Send.ZC_NORMAL.UsedMedalTotal(conn, conn.Account.Medals);
+			Send.ZC_NORMAL.AccountProperties(character, PropertyName.Medal, PropertyName.GiftMedal, PropertyName.PremiumMedal);
+			Send.ZC_RES_BEAUTYSHOP_PURCHASED_HAIR_LIST(character);
+			ResetBeautyShopTryOn(conn, character);
+			Send.ZC_EXEC_CLIENT_SCP(conn, "ui.CloseFrame('beautyshop')");
+			character.ServerMessage("Purchased {0} Beauty Shop item(s). Applied {1} skin(s).", addedItems, appliedSkins);
+		}
+
+		private const string BeautyShopOriginalSkinColorVar = "Melia.BeautyShop.OriginalSkinColor";
+		private const string BeautyShopHasOriginalSkinColorVar = "Melia.BeautyShop.HasOriginalSkinColor";
+
+		private static void ApplyBeautyShopTryOn(IZoneConnection conn, Character character, List<BeautyStyle> beautyStyles)
+		{
+			var items = beautyStyles
+				.Where(style => TryResolveBeautyShopItem(style, out _))
+				.Select(style =>
+				{
+					TryResolveBeautyShopItem(style, out var itemData);
+					return itemData;
+				})
+				.Where(itemData => itemData != null)
+				.ToList();
+
+			if (items.Count == 0)
+				return;
+
+			ClearBeautyShopVisualSlots(conn, character);
+
+			foreach (var itemData in items)
+			{
+				if (TryApplyBeautyShopSkinTryOn(conn, character, itemData))
+					continue;
+
+				if (!TryGetBeautyShopEquipSlot(itemData, out var slot))
+					continue;
+
+				var partNode = GetBeautyShopPartNode(itemData, slot);
+				Send.ZC_NORMAL.UpdateCharacterLook(conn, character, itemData.Id, slot, partNode);
+			}
+		}
+
+		public static void ResetBeautyShopTryOn(IZoneConnection conn, Character character)
+		{
+			if (character.Variables.Temp.GetBool(BeautyShopHasOriginalSkinColorVar, false))
+			{
+				character.SkinColor = unchecked((uint)character.Variables.Temp.GetInt(BeautyShopOriginalSkinColorVar, unchecked((int)character.SkinColor)));
+				character.Variables.Temp.SetBool(BeautyShopHasOriginalSkinColorVar, false);
+			}
+
+			SendUpdatedPcAppearance(conn, character);
+
+			foreach (var slot in BeautyShopVisualSlots)
+			{
+				var equippedItem = character.Inventory.GetEquip(slot);
+				var itemId = 0;
+				if (equippedItem is not null and not DummyEquipItem)
+				{
+					var briquettingIndex = (int)equippedItem.Properties.GetFloat(PropertyName.BriquettingIndex);
+					itemId = briquettingIndex > 0 ? briquettingIndex : equippedItem.Id;
+				}
+
+				Send.ZC_NORMAL.UpdateCharacterLook(conn, character, itemId, slot, GetBeautyShopPartNode(equippedItem?.Data, slot));
+			}
+		}
+
+		private static void ClearBeautyShopVisualSlots(IZoneConnection conn, Character character)
+		{
+			foreach (var slot in BeautyShopVisualSlots)
+				Send.ZC_NORMAL.UpdateCharacterLook(conn, character, 0, slot);
+		}
+
+		private static readonly EquipSlot[] BeautyShopVisualSlots =
+		{
+			EquipSlot.HairAccessory,
+			EquipSlot.SubsidiaryAccessory,
+			EquipSlot.Hat,
+			EquipSlot.Hair,
+			EquipSlot.Lens,
+			EquipSlot.Wing,
+			EquipSlot.SpecialCostume,
+			EquipSlot.EffectCostume,
+			EquipSlot.Outer1,
+			EquipSlot.Outer2,
+			EquipSlot.Top,
+			EquipSlot.Pants,
+			EquipSlot.Gloves,
+			EquipSlot.Shoes,
+		};
+
+		private static bool TryApplyBeautyShopSkinTryOn(IZoneConnection conn, Character character, ItemData itemData)
+		{
+			if (itemData == null || itemData.EquipType1 != EquipType.Skin)
+				return false;
+
+			if (!TryGetBeautyShopSkinColor(itemData, out var skinColor))
+				return true;
+
+			if (!character.Variables.Temp.GetBool(BeautyShopHasOriginalSkinColorVar, false))
+			{
+				character.Variables.Temp.SetInt(BeautyShopOriginalSkinColorVar, unchecked((int)character.SkinColor));
+				character.Variables.Temp.SetBool(BeautyShopHasOriginalSkinColorVar, true);
+			}
+
+			character.SkinColor = skinColor;
+			SendUpdatedPcAppearance(conn, character);
+			ClearBeautyShopVisualSlots(conn, character);
+			return true;
+		}
+
+		private static bool TryApplyBeautyShopSkinPurchase(Character character, ItemData itemData)
+		{
+			if (itemData == null || itemData.EquipType1 != EquipType.Skin)
+				return false;
+
+			if (!TryGetBeautyShopSkinColor(itemData, out var skinColor))
+				return false;
+
+			TryPlayBeautyShopChairAnimation(character);
+			character.SkinColor = skinColor;
+			character.Variables.Temp.SetBool(BeautyShopHasOriginalSkinColorVar, false);
+			if (character.Connection != null)
+				SendUpdatedPcAppearance(character.Connection, character);
+
+			ZoneServer.Instance.Database.SavePlayerData(character, character.Connection?.Account);
+			return true;
+		}
+
+		private static void TryPlayBeautyShopChairAnimation(Character character)
+		{
+			if (character?.Connection == null)
+				return;
+
+			if (!ZoneServer.Instance.Data.PacketStringDb.TryFind("barbershop_chair", out _))
+				return;
+
+			Send.ZC_PLAY_ANI(character, "barbershop_chair");
+		}
+
+		private static bool TryGetBeautyShopSkinColor(ItemData itemData, out uint skinColor)
+		{
+			skinColor = 0;
+			var className = itemData.Script?.StrArg ?? itemData.ClassName;
+			if (string.IsNullOrWhiteSpace(className))
+				return false;
+
+			var skinTone = ZoneServer.Instance.Data.SkinToneDb.Find(a => a.ClassName.Equals(className, StringComparison.OrdinalIgnoreCase));
+			if (skinTone == null)
+				return false;
+
+			skinColor = skinTone.Color;
+			return true;
+		}
+
+		private static bool TryGetBeautyShopEquipSlot(ItemData itemData, out EquipSlot slot)
+		{
+			slot = itemData?.EquipSlot?.ToUpperInvariant() switch
+			{
+				"HAT" => EquipSlot.HairAccessory,
+				"HAT_L" => EquipSlot.SubsidiaryAccessory,
+				"HAT_T" => EquipSlot.Hat,
+				"HAIR" => EquipSlot.Hair,
+				"LENS" => EquipSlot.Lens,
+				"WING" => EquipSlot.Wing,
+				"SPECIAL_COSTUME" => EquipSlot.SpecialCostume,
+				"EFFECT_COSTUME" => EquipSlot.EffectCostume,
+				"OUTER" => EquipSlot.Outer1,
+				"BODY" => EquipSlot.Outer2,
+				"SHIRT" => EquipSlot.Top,
+				"PANTS" => EquipSlot.Pants,
+				"GLOVES" => EquipSlot.Gloves,
+				"BOOTS" => EquipSlot.Shoes,
+				_ => EquipSlot.None,
+			};
+
+			if (slot != EquipSlot.None)
+				return true;
+
+			slot = itemData?.EquipType1 switch
+			{
+				EquipType.Outer => EquipSlot.Outer1,
+				EquipType.Hair => EquipSlot.Hair,
+				EquipType.Hat => EquipSlot.HairAccessory,
+				EquipType.Shirt => EquipSlot.Top,
+				EquipType.Pants => EquipSlot.Pants,
+				EquipType.Gloves => EquipSlot.Gloves,
+				EquipType.Boots => EquipSlot.Shoes,
+				_ => EquipSlot.None,
+			};
+
+			return slot != EquipSlot.None;
+		}
+
+		private static int GetBeautyShopPartNode(ItemData itemData, EquipSlot slot)
+		{
+			if (itemData == null || slot != EquipSlot.Hair)
+				return 0;
+
+			var hairClassName = itemData.Script?.StrArg;
+			if (!string.IsNullOrWhiteSpace(hairClassName) && ZoneServer.Instance.Data.HairTypeDb.TryFindByClassName(hairClassName, out var hairData))
+				return hairData.Index;
+
+			return 0;
+		}
+
+		private static void SendUpdatedPcAppearance(IZoneConnection conn, Character character)
+		{
+			using var packet = Packet.Rent(Op.ZC_UPDATED_PCAPPEARANCE);
+
+			packet.PutInt(character.Handle);
+			packet.AddAppearancePc(character);
+
+			conn.Send(packet);
+		}
+
+		private static List<BeautyStyle> ReadBeautyShopStyles(Packet packet)
+		{
+			foreach (var offset in new[] { 0, sizeof(short) })
+			{
+				var result = TryReadBeautyShopStyles(packet, offset);
+				if (result.Count != 0)
+					return result;
+			}
+
+			// Newer Beauty Shop packets place the list after a fixed client header
+			// and use compact strings: category(64), item class(256), option(64).
+			for (var offset = 0; offset <= 40; offset++)
+			{
+				var result = TryReadBeautyShopCompactStyles(packet, offset);
+				if (result.Count != 0)
+					return result;
+			}
+
+			return new List<BeautyStyle>();
+		}
+
+		private static List<BeautyStyle> TryReadBeautyShopStyles(Packet packet, int startOffset)
+		{
+			var result = new List<BeautyStyle>();
+			packet.Rewind();
+
+			if (startOffset > 0)
+				packet.Seek(startOffset, System.IO.SeekOrigin.Current);
+
+			if (packet.GetCurrentIndex() + sizeof(int) > packet.Length)
+				return result;
+
+			var count = packet.GetInt();
+			const int EntrySize = 256 + 256 + 256 + sizeof(int);
+			if (count <= 0 || count > 50 || packet.GetCurrentIndex() + count * EntrySize > packet.Length)
+				return result;
+
+			for (var i = 0; i < count && packet.GetCurrentIndex() < packet.Length; i++)
+			{
+				result.Add(new BeautyStyle
+				{
+					StyleName = packet.GetString(256),
+					StyleMod = packet.GetString(256),
+					StyleType = packet.GetString(256),
+					Value = packet.GetInt()
+				});
+			}
+
+			return result;
+		}
+
+		private static List<BeautyStyle> TryReadBeautyShopCompactStyles(Packet packet, int startOffset)
+		{
+			var result = new List<BeautyStyle>();
+			packet.Rewind();
+
+			if (startOffset > 0)
+				packet.Seek(startOffset, System.IO.SeekOrigin.Current);
+
+			if (packet.GetCurrentIndex() + sizeof(int) > packet.Length)
+				return result;
+
+			var count = packet.GetInt();
+			const int EntrySize = 64 + 256 + 64;
+			if (count <= 0 || count > 50 || packet.GetCurrentIndex() + count * EntrySize > packet.Length)
+				return result;
+
+			for (var i = 0; i < count && packet.GetCurrentIndex() < packet.Length; i++)
+			{
+				result.Add(new BeautyStyle
+				{
+					StyleName = packet.GetString(64),
+					StyleMod = packet.GetString(256),
+					StyleType = packet.GetString(64),
+					Value = 0
+				});
+			}
+
+			return result.Any(IsBeautyShopStyle)
+				? result
+				: new List<BeautyStyle>();
+		}
+
+		private static bool IsBeautyShopStyle(BeautyStyle style)
+		{
+			return IsBeautyShopToken(style.StyleName);
+		}
+
+		private static bool IsBeautyShopToken(string value)
+		{
+			return !string.IsNullOrWhiteSpace(value)
+				&& value.StartsWith("Beauty_Shop", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static bool TryResolveBeautyShopItem(BeautyStyle style, out ItemData itemData)
+		{
+			var itemDb = ZoneServer.Instance.Data.ItemDb;
+
+			foreach (var candidate in new[] { style.StyleMod, style.StyleType, style.StyleName })
+			{
+				if (!string.IsNullOrWhiteSpace(candidate) && itemDb.TryFind(candidate, out itemData))
+					return true;
+			}
+
+			if (TryResolveBeautyShopSkinByValue(style, out itemData))
+				return true;
+
+			if (style.Value > 0 && itemDb.TryFind(style.Value, out itemData))
+				return true;
+
+			itemData = null;
+			return false;
+		}
+
+		private static bool TryResolveBeautyShopSkinByValue(BeautyStyle style, out ItemData itemData)
+		{
+			itemData = null;
+			if (style.Value < 0 || style.Value > 9 || !IsBeautyShopSkinStyle(style))
+				return false;
+
+			var itemDb = ZoneServer.Instance.Data.ItemDb;
+			var skinIndexes = new[] { style.Value + 1, style.Value };
+			foreach (var skinIndex in skinIndexes)
+			{
+				if (skinIndex >= 1 && skinIndex <= 9 && itemDb.TryFind("skintone" + skinIndex, out itemData))
+					return true;
+			}
+
+			return false;
+		}
+
+		private static bool IsBeautyShopSkinStyle(BeautyStyle style)
+		{
+			return style.StyleType?.Equals("SKIN", StringComparison.OrdinalIgnoreCase) == true
+				|| style.StyleMod?.Contains("Skin", StringComparison.OrdinalIgnoreCase) == true
+				|| style.StyleName?.Contains("Skin", StringComparison.OrdinalIgnoreCase) == true
+				|| IsBeautyShopToken(style.StyleName);
+		}
+
+		private static int GetBeautyShopPrice(ItemData itemData)
+		{
+			if (itemData.EquipSlot == "SKIN" || itemData.EquipType1 == EquipType.Skin)
+				return 54;
+
+			return 54;
 		}
 
 		/// <summary>
@@ -5055,6 +5489,16 @@ namespace Melia.Zone.Network
 			if (this.IsLinkedSkillOnCooldown(character, ability))
 			{
 				const string message = "Aguarde o cooldown da habilidade para alterar esta passiva.";
+				character.AddonMessage("NOTICE_Dm_!", message, 3);
+				character.ServerMessage(message);
+				Send.ZC_OBJECT_PROPERTY(conn, ability, PropertyName.ActiveState);
+				Send.ZC_ADDON_MSG(character, "RESET_ABILITY_ACTIVE", ability.Active ? 1 : 0, ability.Data.ClassName);
+				return;
+			}
+
+			if (abilityId == AbilityId.Necromancer26 && character.Map?.Data?.Type != MapType.City)
+			{
+				const string message = "Esta passiva so pode ser ativada ou desativada em cidades.";
 				character.AddonMessage("NOTICE_Dm_!", message, 3);
 				character.ServerMessage(message);
 				Send.ZC_OBJECT_PROPERTY(conn, ability, PropertyName.ActiveState);
@@ -6470,6 +6914,80 @@ namespace Melia.Zone.Network
 			var medals = conn.Account.Medals;
 
 			Send.ZC_NORMAL.UsedMedalTotal(conn, medals);
+		}
+
+		/// <summary>
+		/// Opens the in-game TP shop. The client owns most of this UI, but it
+		/// expects the current TP balance to be available when the frame opens.
+		/// </summary>
+		[PacketHandler(Op.CZ_REQ_OPEN_INGAMESHOP_UI)]
+		public void CZ_REQ_OPEN_INGAMESHOP_UI(IZoneConnection conn, Packet packet)
+		{
+			var character = conn.SelectedCharacter;
+			if (character == null)
+				return;
+
+			Send.ZC_NORMAL.UsedMedalTotal(conn, conn.Account.Medals);
+			Send.ZC_NORMAL.AccountProperties(character, PropertyName.Medal, PropertyName.GiftMedal, PropertyName.PremiumMedal);
+		}
+
+		/// <summary>
+		/// Handles the local test item in the TP shop Limited tab.
+		/// </summary>
+		[PacketHandler(Op.CZ_REQ_BUY_INGAMESHOP_ITEM)]
+		public void CZ_REQ_BUY_INGAMESHOP_ITEM(IZoneConnection conn, Packet packet)
+		{
+			HandleLocalTpShopPurchase(conn, packet);
+		}
+
+		[PacketHandler(Op.CZ_REQ_BUY_ALL_INGAMESHOP_ITEM)]
+		public void CZ_REQ_BUY_ALL_INGAMESHOP_ITEM(IZoneConnection conn, Packet packet)
+		{
+			HandleLocalTpShopPurchase(conn, packet);
+		}
+
+		private static void HandleLocalTpShopPurchase(IZoneConnection conn, Packet packet)
+		{
+			const int testItemId = 633156;
+			const int testItemPrice = 20;
+
+			var character = conn.SelectedCharacter;
+			if (character == null)
+				return;
+
+			var values = ReadPacketInts(packet);
+			if (values.Count != 0 && !values.Contains(testItemId))
+			{
+				Log.Warning("TP Shop: User '{0}' sent unsupported in-game shop purchase packet. Values: {1}", conn.Account.Name, string.Join(", ", values));
+				return;
+			}
+
+			var amount = 1;
+
+			var totalCost = testItemPrice * amount;
+			if (!conn.Account.Charge(totalCost))
+			{
+				character.ServerMessage("Insufficient TP.");
+				character.MsgBox("Insufficient TP.");
+				return;
+			}
+
+			character.AddItem(testItemId, amount, "TPShop");
+			Send.ZC_NORMAL.UsedMedalTotal(conn, conn.Account.Medals);
+			Send.ZC_NORMAL.AccountProperties(character, PropertyName.Medal, PropertyName.GiftMedal, PropertyName.PremiumMedal);
+			Send.ZC_EXEC_CLIENT_SCP(conn, "ui.CloseFrame('tpitem')");
+			character.ServerMessage("Purchased {0} item(s) from the TP Shop.", amount);
+		}
+
+		private static List<int> ReadPacketInts(Packet packet)
+		{
+			var result = new List<int>();
+			packet.Rewind();
+
+			while (packet.GetCurrentIndex() + sizeof(int) <= packet.Length)
+				result.Add(packet.GetInt());
+
+			return result;
 		}
 
 		/// <summary>

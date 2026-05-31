@@ -217,6 +217,43 @@ namespace Melia.Zone.World.Actors.Monsters
 		/// </summary>
 		public ConcurrentBag<Item> StaticDrops { get; } = new ConcurrentBag<Item>();
 
+		public static bool IsSameMonsterFamily(int monsterId, int otherMonsterId)
+		{
+			if (monsterId == otherMonsterId)
+				return true;
+
+			var monsterFamily = GetMonsterFamilyKey(monsterId);
+			var otherFamily = GetMonsterFamilyKey(otherMonsterId);
+
+			return !string.IsNullOrWhiteSpace(monsterFamily) &&
+				string.Equals(monsterFamily, otherFamily, StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static string GetMonsterFamilyKey(int monsterId)
+		{
+			if (!ZoneServer.Instance.Data.MonsterDb.TryFind(monsterId, out var monsterData) || monsterData == null)
+				return null;
+
+			return NormalizeMonsterFamilyKey(!string.IsNullOrWhiteSpace(monsterData.ClassName) ? monsterData.ClassName : monsterData.Name);
+		}
+
+		private static string NormalizeMonsterFamilyKey(string className)
+		{
+			if (string.IsNullOrWhiteSpace(className))
+				return string.Empty;
+
+			var result = new char[className.Length];
+			var count = 0;
+
+			foreach (var ch in className)
+			{
+				if (char.IsLetterOrDigit(ch))
+					result[count++] = char.ToLowerInvariant(ch);
+			}
+
+			return new string(result, 0, count);
+		}
+
 		/// <summary>
 		/// Returns whether the monster is dead.
 		/// </summary>
@@ -1674,8 +1711,13 @@ namespace Melia.Zone.World.Actors.Monsters
 		/// Overrides the monster's properties with the given values.
 		/// </summary>
 		/// <param name="overrides"></param>
-		public void ApplyOverrides(PropertyOverrides overrides)
+		public void ApplyOverrides(PropertyOverrides overrides, bool syncClient = false)
 		{
+			var oldHp = this.Properties.GetFloat(PropertyName.HP);
+			var oldMhp = this.Properties.GetFloat(PropertyName.MHP);
+			var oldSp = this.Properties.GetFloat(PropertyName.SP);
+			var oldMsp = this.Properties.GetFloat(PropertyName.MSP);
+
 			foreach (var propertyOverride in overrides)
 			{
 				var propertyName = propertyOverride.Key;
@@ -1709,6 +1751,32 @@ namespace Melia.Zone.World.Actors.Monsters
 
 			this.Properties.SetFloat(PropertyName.HP, this.Properties.GetFloat(PropertyName.MHP));
 			this.Properties.SetFloat(PropertyName.SP, this.Properties.GetFloat(PropertyName.MSP));
+
+			if (syncClient)
+				this.SyncOverriddenCombatStatus(oldHp, oldMhp, oldSp, oldMsp);
+		}
+
+		private void SyncOverriddenCombatStatus(float oldHp, float oldMhp, float oldSp, float oldMsp)
+		{
+			if (this.Map == null)
+				return;
+
+			var hp = this.Properties.GetFloat(PropertyName.HP);
+			var mhp = this.Properties.GetFloat(PropertyName.MHP);
+			var sp = this.Properties.GetFloat(PropertyName.SP);
+			var msp = this.Properties.GetFloat(PropertyName.MSP);
+
+			if (Math.Abs(oldMhp - mhp) > 0.001f)
+				Send.ZC_UPDATE_MHP(this, (int)mhp);
+
+			if (Math.Abs(oldHp - hp) <= 0.001f &&
+				Math.Abs(oldMhp - mhp) <= 0.001f &&
+				Math.Abs(oldSp - sp) <= 0.001f &&
+				Math.Abs(oldMsp - msp) <= 0.001f)
+				return;
+
+			this.HpChangeCounter += 1;
+			Send.ZC_UPDATE_ALL_STATUS(this, this.HpChangeCounter);
 		}
 
 		/// <summary>
